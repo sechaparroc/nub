@@ -118,7 +118,7 @@ import java.util.Map;
  * @see TimingTask
  */
 public class Scene extends Graph implements PConstants {
-  public static String prettyVersion = "1.0.0-alpha.1";
+  public static String prettyVersion = "0.7.0";
   public static String version = "7";
 
   // P R O C E S S I N G A P P L E T A N D O B J E C T S
@@ -141,15 +141,11 @@ public class Scene extends Graph implements PConstants {
    * {@code this(pApplet, pApplet.g)}.
    *
    * @see #Scene(PApplet, PGraphics)
-   * @see #Scene(PApplet, PGraphics, int, int)
    * @see #Scene(PApplet, String, int, int)
-   * @see #Scene(PApplet, String, int, int, int, int)
    * @see #Scene(PApplet, String)
    * @see #Scene(PApplet, Node)
    * @see #Scene(PApplet, PGraphics, Node)
-   * @see #Scene(PApplet, PGraphics, Node, int, int)
    * @see #Scene(PApplet, String, Node, int, int)
-   * @see #Scene(PApplet, String, Node, int, int, int, int)
    * @see #Scene(PApplet, String, Node)
    */
   public Scene(PApplet pApplet) {
@@ -160,15 +156,11 @@ public class Scene extends Graph implements PConstants {
    * Same as {@code this(pApplet, pApplet.g, eye)}.
    *
    * @see #Scene(PApplet, PGraphics)
-   * @see #Scene(PApplet, PGraphics, int, int)
    * @see #Scene(PApplet, String, int, int)
-   * @see #Scene(PApplet, String, int, int, int, int)
    * @see #Scene(PApplet, String)
    * @see #Scene(PApplet)
    * @see #Scene(PApplet, PGraphics, Node)
-   * @see #Scene(PApplet, PGraphics, Node, int, int)
    * @see #Scene(PApplet, String, Node, int, int)
-   * @see #Scene(PApplet, String, Node, int, int, int, int)
    * @see #Scene(PApplet, String, Node)
    */
   public Scene(PApplet pApplet, Node eye) {
@@ -176,55 +168,13 @@ public class Scene extends Graph implements PConstants {
   }
 
   /**
-   * Same as {@code this(pApplet, pGraphics, 0, 0)}.
-   *
-   * @see #Scene(PApplet)
-   * @see #Scene(PApplet, PGraphics, int, int)
-   * @see #Scene(PApplet, String, int, int)
-   * @see #Scene(PApplet, String, int, int, int, int)
-   * @see #Scene(PApplet, String)
-   * @see #Scene(PApplet, Node)
-   * @see #Scene(PApplet, PGraphics, Node)
-   * @see #Scene(PApplet, PGraphics, Node, int, int)
-   * @see #Scene(PApplet, String, Node, int, int)
-   * @see #Scene(PApplet, String, Node, int, int, int, int)
-   * @see #Scene(PApplet, String, Node)
-   */
-  public Scene(PApplet pApplet, PGraphics pGraphics) {
-    this(pApplet, pGraphics, 0, 0);
-  }
-
-  /**
-   * Same as {@code this(pApplet, pGraphics, eye, 0, 0);}.
-   *
-   * @see #Scene(PApplet, PGraphics)
-   * @see #Scene(PApplet, PGraphics, int, int)
-   * @see #Scene(PApplet, String, int, int)
-   * @see #Scene(PApplet, String, int, int, int, int)
-   * @see #Scene(PApplet, String)
-   * @see #Scene(PApplet)
-   * @see #Scene(PApplet, Node)
-   * @see #Scene(PApplet, PGraphics, Node)
-   * @see #Scene(PApplet, String, Node, int, int)
-   * @see #Scene(PApplet, String, Node, int, int, int, int)
-   * @see #Scene(PApplet, String, Node)
-   */
-  public Scene(PApplet pApplet, PGraphics pGraphics, Node eye) {
-    this(pApplet, pGraphics, eye, 0, 0);
-  }
-
-  /**
    * Same as {@code this(pApplet, renderer, pApplet.width, pApplet.height)}.
    *
    * @see #Scene(PApplet)
-   * @see #Scene(PApplet, PGraphics, int, int)
-   * @see #Scene(PApplet, String, int, int, int, int)
    * @see #Scene(PApplet, PGraphics)
    * @see #Scene(PApplet, Node)
    * @see #Scene(PApplet, PGraphics, Node)
-   * @see #Scene(PApplet, PGraphics, Node, int, int)
    * @see #Scene(PApplet, String, Node, int, int)
-   * @see #Scene(PApplet, String, Node, int, int, int, int)
    * @see #Scene(PApplet, String, Node)
    */
   public Scene(PApplet pApplet, String renderer) {
@@ -235,14 +185,10 @@ public class Scene extends Graph implements PConstants {
    * Same as {@code this(pApplet, renderer, eye, pApplet.width, pApplet.height)}.
    *
    * @see #Scene(PApplet)
-   * @see #Scene(PApplet, PGraphics, int, int)
-   * @see #Scene(PApplet, String, int, int, int, int)
    * @see #Scene(PApplet, PGraphics)
    * @see #Scene(PApplet, Node)
    * @see #Scene(PApplet, PGraphics, Node)
-   * @see #Scene(PApplet, PGraphics, Node, int, int)
    * @see #Scene(PApplet, String)
-   * @see #Scene(PApplet, String, Node, int, int, int, int)
    * @see #Scene(PApplet, String, Node, int, int)
    */
   public Scene(PApplet pApplet, String renderer, Node eye) {
@@ -250,95 +196,51 @@ public class Scene extends Graph implements PConstants {
   }
 
   /**
-   * Same as {@code this(pApplet, renderer, width, height, 0, 0)}.
+   * Same as {@code this(pApplet, pApplet.createGraphics(width, height, renderer))}.
    *
    * @see #Scene(PApplet)
-   * @see #Scene(PApplet, PGraphics, int, int)
+   * @see #Scene(PApplet, String, int, int)
    * @see #Scene(PApplet, PGraphics)
-   * @see #Scene(PApplet, String, int, int, int, int)
    * @see #Scene(PApplet, String)
    * @see #Scene(PApplet, Node)
    * @see #Scene(PApplet, PGraphics, Node)
-   * @see #Scene(PApplet, PGraphics, Node, int, int)
    * @see #Scene(PApplet, String, Node, int, int)
-   * @see #Scene(PApplet, String, Node, int, int, int, int)
    * @see #Scene(PApplet, String, Node)
    */
   public Scene(PApplet pApplet, String renderer, int width, int height) {
-    this(pApplet, renderer, width, height, 0, 0);
+    this(pApplet, pApplet.createGraphics(width, height, renderer));
   }
 
   /**
-   * Same as {@code this(pApplet, renderer, eye, width, height, 0, 0)}.
+   * Same as {@code this(pApplet, pApplet.createGraphics(width, height, renderer), eye)}.
    *
    * @see #Scene(PApplet)
-   * @see #Scene(PApplet, PGraphics, int, int)
-   * @see #Scene(PApplet, String, int, int, int, int)
+   * @see #Scene(PApplet, String, int, int)
    * @see #Scene(PApplet, PGraphics)
+   * @see #Scene(PApplet, String)
    * @see #Scene(PApplet, Node)
    * @see #Scene(PApplet, PGraphics, Node)
-   * @see #Scene(PApplet, PGraphics, Node, int, int)
-   * @see #Scene(PApplet, String, Node, int, int, int, int)
+   * @see #Scene(PApplet, String, Node, int, int)
    * @see #Scene(PApplet, String, Node)
    */
   public Scene(PApplet pApplet, String renderer, Node eye, int width, int height) {
-    this(pApplet, renderer, eye, width, height, 0, 0);
+    this(pApplet, pApplet.createGraphics(width, height, renderer), eye);
   }
 
   /**
-   * Same as {@code this(pApplet, pApplet.createGraphics(width, height, renderer), x, y)}.
+   * Same as {@code this(pApplet, pGraphics, null)}.
    *
    * @see #Scene(PApplet)
    * @see #Scene(PApplet, String, int, int)
    * @see #Scene(PApplet, PGraphics)
-   * @see #Scene(PApplet, String, int, int, int, int)
    * @see #Scene(PApplet, String)
    * @see #Scene(PApplet, Node)
    * @see #Scene(PApplet, PGraphics, Node)
-   * @see #Scene(PApplet, PGraphics, Node, int, int)
-   * @see #Scene(PApplet, String, Node, int, int)
-   * @see #Scene(PApplet, String, Node, int, int, int, int)
-   * @see #Scene(PApplet, String, Node)
-   */
-  public Scene(PApplet pApplet, String renderer, int width, int height, int x, int y) {
-    this(pApplet, pApplet.createGraphics(width, height, renderer), x, y);
-  }
-
-  /**
-   * Same as {@code this(pApplet, pApplet.createGraphics(width, height, renderer), eye, x, y)}.
-   *
-   * @see #Scene(PApplet)
-   * @see #Scene(PApplet, String, int, int)
-   * @see #Scene(PApplet, PGraphics)
-   * @see #Scene(PApplet, String, int, int, int, int)
-   * @see #Scene(PApplet, String)
-   * @see #Scene(PApplet, Node)
-   * @see #Scene(PApplet, PGraphics, Node)
-   * @see #Scene(PApplet, PGraphics, Node, int, int)
    * @see #Scene(PApplet, String, Node, int, int)
    * @see #Scene(PApplet, String, Node)
    */
-  public Scene(PApplet pApplet, String renderer, Node eye, int width, int height, int x, int y) {
-    this(pApplet, pApplet.createGraphics(width, height, renderer), eye, x, y);
-  }
-
-  /**
-   * Same as {@code this(pApplet, pGraphics, null, x, y)}.
-   *
-   * @see #Scene(PApplet)
-   * @see #Scene(PApplet, String, int, int)
-   * @see #Scene(PApplet, PGraphics)
-   * @see #Scene(PApplet, String, int, int, int, int)
-   * @see #Scene(PApplet, String)
-   * @see #Scene(PApplet, Node)
-   * @see #Scene(PApplet, PGraphics, Node)
-   * @see #Scene(PApplet, PGraphics, Node, int, int)
-   * @see #Scene(PApplet, String, Node, int, int)
-   * @see #Scene(PApplet, String, Node, int, int, int, int)
-   * @see #Scene(PApplet, String, Node)
-   */
-  public Scene(PApplet pApplet, PGraphics pGraphics, int x, int y) {
-    this(pApplet, pGraphics, null, x, y);
+  public Scene(PApplet pApplet, PGraphics pGraphics) {
+    this(pApplet, pGraphics, null);
   }
 
   /**
@@ -357,21 +259,17 @@ public class Scene extends Graph implements PConstants {
    * @see #Scene(PApplet)
    * @see #Scene(PApplet, PGraphics)
    * @see #Scene(PApplet, String, int, int)
-   * @see #Scene(PApplet, String, int, int, int, int)
    * @see #Scene(PApplet, String)
    * @see #Scene(PApplet, Node)
    * @see #Scene(PApplet, PGraphics, Node)
    * @see #Scene(PApplet, String, Node, int, int)
-   * @see #Scene(PApplet, String, Node, int, int, int, int)
    * @see #Scene(PApplet, String, Node)
    */
-  public Scene(PApplet pApplet, PGraphics pGraphics, Node eye, int x, int y) {
+  public Scene(PApplet pApplet, PGraphics pGraphics, Node eye) {
     super(pGraphics, pApplet.createGraphics(pGraphics.width, pGraphics.height, pGraphics instanceof PGraphics3D ? P3D : P2D), pGraphics instanceof PGraphics3D ? Type.PERSPECTIVE : Type.TWO_D, eye, pGraphics.width, pGraphics.height);
     // 1. P5 objects
     _parent = pApplet;
     _offscreen = pGraphics != pApplet.g;
-    _upperLeftCornerX = _offscreen ? x : 0;
-    _upperLeftCornerY = _offscreen ? y : 0;
     // 2. Back buffer
     _backBuffer().noSmooth();
     _triangleShader = pApplet().loadShader("PickingBuffer.frag");
@@ -780,7 +678,7 @@ public class Scene extends Graph implements PConstants {
   }
 
   /**
-   * Same as {@code display(context())}. Only meaningful if the graph {@link #isOffscreen()}.
+   * Same as {@code display(context())}.
    *
    * @see #display(PGraphics)
    * @see #context()
@@ -790,21 +688,55 @@ public class Scene extends Graph implements PConstants {
   }
 
   /**
-   * Same as {@code pApplet().image(pgraphics, originCorner().x(), originCorner().y())}.
-   * Only meaningful if the graph {@link #isOffscreen()}.
+   * Same as {@code display(pgraphics, 0, 0)}.
+   *
+   * @see #display(PGraphics, int, int)
    */
   public void display(PGraphics pgraphics) {
-    if (isOffscreen())
+    display(pgraphics, 0, 0);
+  }
+
+  /**
+   * Same as {@code display(context(), pixelX, pixelY)}.
+   *
+   * @see #display(PGraphics, int, int)
+   * @see #context()
+   */
+  public void display(int pixelX, int pixelY) {
+    display(context(), pixelX, pixelY);
+  }
+
+  /**
+   * Displays the {@code pgraphics} on top of the main sketch canvas at the upper left
+   * corner: {@code (pixelX, pixelY)}. Only meaningful if the graph {@link #isOffscreen()}.
+   * <p>
+   * Displaying the {@code pgraphics} requires a call to the PApplet {@code image()}.
+   * However, to make {@link #hasMouseFocus()} work, calling this method instead is
+   * always necessary. It is always safe to call this method.
+   */
+  public void display(PGraphics pgraphics, int pixelX, int pixelY) {
+    if (isOffscreen()) {
+      pApplet().pushStyle();
+      _setUpperLeftCorner(pixelX, pixelY);
+      _lastOffDisplayed = frameCount();
+      pApplet().imageMode(CORNER);
       pApplet().image(pgraphics, _upperLeftCornerX, _upperLeftCornerY);
+      pApplet().popStyle();
+    }
   }
 
   /**
    * Display the {@link #_backBuffer()} used for picking at screen coordinates
-   * {@code (x, y)}. Mainly for debugging.
+   * on top of the main sketch canvas at the upper left corner:
+   * {@code (pixelX, pixelY)}. Mainly for debugging.
    */
-  public void displayBackBuffer(int x, int y) {
-    if (_backBuffer() != null)
-      pApplet().image(_backBuffer(), x, y);
+  public void displayBackBuffer(int pixelX, int pixelY) {
+    if (_backBuffer() != null) {
+      pApplet().pushStyle();
+      pApplet().imageMode(CORNER);
+      pApplet().image(_backBuffer(), pixelX, pixelY);
+      pApplet().popStyle();
+    }
   }
 
   /**
@@ -3128,6 +3060,15 @@ public class Scene extends Graph implements PConstants {
     for (float theta = minAngle; theta <= maxAngle; theta += step)
       pGraphics.vertex(radius * (float) Math.cos(theta), radius * (float) Math.sin(theta));
     pGraphics.endShape(PApplet.CLOSE);
+  }
+
+  /**
+   * Same as {@code return hasFocus(pApplet().mouseX, pApplet().mouseY)}.
+   *
+   * @see #hasFocus(int, int)
+   */
+  public boolean hasMouseFocus() {
+    return hasFocus(pApplet().mouseX, pApplet().mouseY);
   }
 
   /**

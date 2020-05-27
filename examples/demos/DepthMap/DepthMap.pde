@@ -59,10 +59,7 @@ void setup() {
         pg.popStyle();
       }
     };
-    shapes[i].setPickingThreshold(0);
     scene.randomize(shapes[i]);
-    // set picking precision to the pixels of the node projection
-    shapes[i].setPickingThreshold(0);
     shapes[i].setHighlighting(0);
   }
   shadowMap = createGraphics(w / 2, h / 2, P3D);
@@ -72,7 +69,7 @@ void setup() {
   shadowMap.shader(depthShader);
 
   scene.tag("light", shapes[(int) random(0, shapes.length - 1)]);
-  scene.node("light").setOrientation(new Quaternion(new Vector(0, 0, 1), scene.node("light").position()));
+  scene.node("light").setOrientation(Quaternion.from(Vector.plusK, scene.node("light").position()));
 }
 
 void draw() {

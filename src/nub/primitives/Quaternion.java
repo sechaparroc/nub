@@ -215,6 +215,87 @@ public class Quaternion {
     return new Quaternion(this);
   }
 
+  // TODO decide constants zero and identity
+
+  /**
+   * Returns a quaternion whose components are set to {@code (0, 0, 0, 1)}.
+   *
+   * @see #from(Object...)
+   */
+  public static final Quaternion identity = new Quaternion();
+
+  /**
+   * Converts various orientation representations to quaternion form and returns it.
+   * According to the numbers and types of params passed the following representations
+   * are supported:
+   * <p>
+   * <ul>
+   * <li>One {@code params}: if its type is {@link Matrix} it returns a quaternion from
+   * the given 'matrix-form' (see {@link #Quaternion(Matrix)}). If its type is {@code Quaternion}
+   * then the quaternion is cloned (see {@link #get()}) and returned. If it's of type {@code float[]}
+   * then a quaternion is returned from the 4-array elements (see {@link #Quaternion(float[])}).</li>
+   * <li>Two {@code params}: if both params are of type {@link Vector} it returns the quaternion
+   * which would produce the rotation from the first vector param to the second (see
+   * {@link #Quaternion(Vector, Vector)}). If the first {@code params} is of type
+   * {@link Vector} and the second of type {@link Float} it returns the quaternion from the
+   * given 'axis-angle form', (see {@link #Quaternion(Vector, float)}).</li>
+   * <li>Three {@code params}: If the three {@code params} are of type {@link Float} it returns a
+   * quaternion from the given 'Euler angles form', (see {@link #Quaternion(float, float, float)}).
+   * If the three {@code params} are of type {@link Vector} it returns a quaternion from the given
+   * 'rotated-basis form', (see {@link #Quaternion(Vector, Vector, Vector)}).</li>
+   * </ul>
+   * It {@code params} cannot be parsed a new Quaternion ({@code #identity}) is returned.
+   *
+   * @see #Quaternion(Matrix)
+   * @see #get()
+   * @see #Quaternion(float[])
+   * @see #Quaternion(Vector, Vector)
+   * @see #Quaternion(Vector, float)
+   * @see #Quaternion(Vector, Vector, Vector)
+   */
+  public static final Quaternion from(Object... params) {
+    switch (params.length) {
+      case 1:
+        if (params[0] instanceof Matrix)
+          return new Quaternion((Matrix) params[0]);
+        else if (params[0] instanceof Quaternion)
+          return ((Quaternion) params[0]).get();
+        else if (params[0] instanceof float[])
+          return new Quaternion((float[]) params[0]);
+        break;
+      case 2:
+        if (params[0] instanceof Vector)
+          if (params[1] instanceof Vector)
+            return new Quaternion((Vector) params[0], (Vector) params[1]);
+          else if (_numInstance(params[1]))
+            return new Quaternion((Vector) params[0], _toFloat(params[1]));
+        break;
+      case 3:
+        if (_numInstance(params[0]) && _numInstance(params[1]) && _numInstance(params[2]))
+          return new Quaternion(_toFloat(params[0]), _toFloat(params[1]), _toFloat(params[2]));
+        else if (params[0] instanceof Vector && params[1] instanceof Vector && params[2] instanceof Vector)
+          return new Quaternion((Vector) params[0], (Vector) params[1], (Vector) params[2]);
+        break;
+    }
+    System.out.println("Warning: some params in Quaternion.from(params) couldn't be parsed!");
+    return new Quaternion();
+  }
+
+  /**
+   * Internally used by {@link #from(Object...)}.
+   */
+  protected static boolean _numInstance(Object o) {
+    return o instanceof Float || o instanceof Integer || o instanceof Double;
+  }
+
+  /**
+   * Internally used by {@link #from(Object...)}.
+   */
+  protected static Float _toFloat(Object o) {
+    return _numInstance(o) ? o instanceof Integer ? ((Integer) o).floatValue() :
+        o instanceof Double ? ((Double) o).floatValue() : o instanceof Float ? (Float) o : null : null;
+  }
+
   /**
    * Randomize this quaternion. The quaternion is normalized too.
    *

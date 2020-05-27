@@ -814,6 +814,75 @@ public class Vector {
     return target;
   }
 
+  // Canonical version took from:
+  // https://github.com/jdf/peasycam/blob/master/src/peasy/org/apache/commons/math/geometry/Vector3D.java
+
+  // TODO: include these three?
+
+  /*
+  public static final Vector i() {
+    return Vector.i(1);
+  }
+
+  public static final Vector j() {
+    return Vector.j(1);
+  }
+
+  public static final Vector k() {
+    return Vector.k(1);
+  }
+
+  public static final Vector i(float scalar) {
+    return new Vector(scalar, 0, 0);
+  }
+
+  public static final Vector j(float scalar) {
+    return new Vector(0, scalar, 0);
+  }
+
+  public static final Vector k(float scalar) {
+    return new Vector(0, 0, scalar);
+  }
+
+   */
+
+  // TODO: decide constants
+
+  /**
+   * First canonical vector (coordinates: 1, 0, 0).
+   */
+  public static final Vector plusI = new Vector(1, 0, 0);
+
+  /**
+   * Opposite of the first canonical vector (coordinates: -1, 0, 0).
+   */
+  public static final Vector minusI = new Vector(-1, 0, 0);
+
+  /**
+   * Second canonical vector (coordinates: 0, 1, 0).
+   */
+  public static final Vector plusJ = new Vector(0, 1, 0);
+
+  /**
+   * Opposite of the second canonical vector (coordinates: 0, -1, 0).
+   */
+  public static final Vector minusJ = new Vector(0, -1, 0);
+
+  /**
+   * Third canonical vector (coordinates: 0, 0, 1).
+   */
+  public static final Vector plusK = new Vector(0, 0, 1);
+
+  /**
+   * Opposite of the third canonical vector (coordinates: 0, 0, -1).
+   */
+  public static final Vector minusK = new Vector(0, 0, -1);
+
+  /**
+   * Zero vector (coordinates: 0, 0, 0).
+   */
+  public static final Vector zero = new Vector(0, 0, 0);
+
   /**
    * Return this vector components as a String.
    */

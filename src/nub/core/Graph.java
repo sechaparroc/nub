@@ -136,6 +136,7 @@ import java.util.List;
 public class Graph {
   // offscreen
   protected int _upperLeftCornerX, _upperLeftCornerY;
+  protected long _lastOffDisplayed;
   protected boolean _offscreen;
 
   // 0. Contexts
@@ -1779,7 +1780,7 @@ public class Graph {
    * When {@code noMove} is set to {@code false}, the orientation modification is
    * compensated by a translation, so that the {@link #anchor()} stays projected at the
    * same position on screen. This is especially useful when the eye is an observer of the
-   * graph (default action binding).
+   * graph.
    * <p>
    * When {@code noMove} is true, the Eye {@link Node#position()} is left unchanged, which is
    * an intuitive behavior when the Eye is in first person mode.
@@ -2717,6 +2718,26 @@ public class Graph {
   }
 
   // Off-screen
+
+  /**
+   * Returns whether or not the scene has focus or not under the given pixel.
+   */
+  public boolean hasFocus(int pixelX, int pixelY) {
+    return (!isOffscreen() ||
+        _lastOffDisplayed + 1 >= frameCount()
+        // _lastOffRendered == frameCount()
+    )
+        && _upperLeftCornerX <= pixelX && pixelX < _upperLeftCornerX + width()
+        && _upperLeftCornerY <= pixelY && pixelY < _upperLeftCornerY + height();
+  }
+
+  /**
+   * Internal use by {@link #hasFocus(int, int)} and the display of offscreen scenes.
+   */
+  protected void _setUpperLeftCorner(int x, int y) {
+    _upperLeftCornerX = x;
+    _upperLeftCornerY = y;
+  }
 
   /**
    * Returns {@code true} if this scene is off-screen and {@code false} otherwise.

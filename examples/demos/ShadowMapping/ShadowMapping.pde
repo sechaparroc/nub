@@ -62,7 +62,6 @@ void setup() {
       }
     }
   };
-  landscape1.setPickingThreshold(0);
   landscape2 = new Node() {
     @Override
     public void graphics(PGraphics pg) {
@@ -80,7 +79,6 @@ void setup() {
       }
     }
   };
-  landscape2.setPickingThreshold(0);
   landscape2.cull();
   landscape3 = new Node() {
     @Override
@@ -99,7 +97,6 @@ void setup() {
       }
     }
   };
-  landscape3.setPickingThreshold(0);
   landscape3.cull();
   floor = new Node() {
     @Override
@@ -124,7 +121,6 @@ void setup() {
       pg.pushStyle();
     }
   };
-  light.setPickingThreshold(0);
   light.setMagnitude(0.195);
 
   animation = new TimingTask() {
@@ -134,8 +130,8 @@ void setup() {
         float lightAngle = frameCount * 0.002;
         light.setPosition(sin(lightAngle) * 160, 160, cos(lightAngle) * 160);
       }
-      light.setYAxis(Vector.projectVectorOnAxis(light.yAxis(), new Vector(0, 1, 0)));
-      light.setZAxis(new Vector(light.position().x(), light.position().y(), light.position().z()));
+      light.setYAxis(Vector.projectVectorOnAxis(light.yAxis(), Vector.plusJ));
+      light.setZAxis(light.position());
     }
   };
   animation.run(60);
