@@ -33,8 +33,8 @@ import java.util.List;
  */
 public class Posture {
   protected Node _reference;
-  protected HashMap<String, Node> _nodeInformation;
-  protected HashMap<Node, String> _namesInformation;
+  public HashMap<String, Node> _nodeInformation;
+  public HashMap<Node, String> _namesInformation;
 
   public Posture() {
     _nodeInformation = new HashMap<String, Node>();
@@ -168,6 +168,7 @@ public class Posture {
         joint = Node.detach(new Vector(), new Quaternion(), 1);
         joint.setReference(_nodeInformation.get(jsonJoint.getString("reference")));
       }
+      _nodeInformation.put(jsonJoint.getString("name"), joint);
       _namesInformation.put(joint, jsonJoint.getString("name"));
       joint.setTranslation(translation);
       joint.setRotation(rotation);
