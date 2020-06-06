@@ -199,6 +199,8 @@ public class PostureInterpolator {
 
   //Define a list of interpolators per joint
   protected void _initInterpolators() {
+    //Include the reference joint in the interpolation
+    _interpolators.put(_skeleton.reference(), new Interpolator(Node.detach(_skeleton.reference().translation().get(), _skeleton.reference().rotation().get(), _skeleton.reference().magnitude())));
     for (Node joint : _skeleton.BFS()) {
       Interpolator interpolator = new Interpolator(Node.detach(joint.translation().get(), joint.rotation().get(), joint.magnitude()));
       _interpolators.put(joint, interpolator);
@@ -216,7 +218,7 @@ public class PostureInterpolator {
     _postures.add(new KeyPosture(posture, _postures.isEmpty() ? time : _postures.get(_postures.size() - 1)._time + time));
     //add key frames
     for (Map.Entry<String, Node> entry : posture._nodeInformation.entrySet()) {
-      Node joint = _skeleton.joint(entry.getKey());
+      Node joint = entry.getKey().equals("") ? _skeleton.reference() : _skeleton.joint(entry.getKey());
       Interpolator interpolator = _interpolators.get(joint);
       Node info = entry.getValue();
       Node detach = Node.detach(info.translation().get(), info.rotation().get(), info.magnitude());
@@ -261,11 +263,9 @@ public class PostureInterpolator {
       interpolator.interpolate(time);
       //update skeleton joint
       Node node = interpolator.node();
-      //System.out.println("joint " + joint);
       joint.setTranslation(node.translation().get());
       joint.setRotation(node.rotation().get());
       joint.setMagnitude(node.magnitude());
-      //System.out.println("joint " + joint);
     }
     _skeleton.restoreTargetsState();
 
