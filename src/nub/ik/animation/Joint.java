@@ -5,6 +5,7 @@ package nub.ik.animation;
  */
 
 import nub.core.Node;
+import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import processing.core.PConstants;
@@ -22,6 +23,8 @@ public class Joint extends Node {
   protected List<PShape> _mesh;
   public static boolean axes = false;
   public static float constraintFactor = 0.5f;
+  public static boolean drawCylinder = false;
+
   //set to true only when the joint is the root (for rendering purposes)
   protected boolean _isRoot = false, _drawConstraint = true;
 
@@ -68,16 +71,28 @@ public class Joint extends Node {
       if (reference() instanceof Joint) {
         Joint ref = ((Joint) reference());
         pg.stroke(ref._r, ref._g, ref._b, _alpha);
+        pg.fill(ref._r, ref._g, ref._b, _alpha);
       } else {
         pg.stroke(_r, _g, _b, _alpha);
+        pg.fill(_r, _g, _b, _alpha);
       }
-
       Vector v = location(new Vector(), reference());
       float m = v.magnitude();
       if (pg.is2D()) {
         pg.line(_radius * v.x() / m, _radius * v.y() / m, (m - _radius) * v.x() / m, (m - _radius) * v.y() / m);
       } else {
-        pg.line(_radius * v.x() / m, _radius * v.y() / m, _radius * v.z() / m, (m - _radius) * v.x() / m, (m - _radius) * v.y() / m, (m - _radius) * v.z() / m);
+        if(drawCylinder) {
+          pg.pushMatrix();
+          //align Y axis with bone
+          pg.noStroke();
+          Quaternion q = new Quaternion(new Vector(0, 0, 1), v);
+          Node aux = Node.detach(Vector.multiply(v, _radius / m), q, 1);
+          Scene.applyTransformation(pg, aux);
+          Scene.drawCylinder(pg, _radius * 0.5f, m - 2 * _radius);
+          pg.popMatrix();
+        } else {
+          pg.line(_radius * v.x() / m, _radius * v.y() / m, _radius * v.z() / m, (m - _radius) * v.x() / m, (m - _radius) * v.y() / m, (m - _radius) * v.z() / m);
+        }
       }
     }
     pg.fill(_r, _g, _b, _alpha);
@@ -92,7 +107,6 @@ public class Joint extends Node {
     if (!depth) pg.hint(PConstants.ENABLE_DEPTH_TEST);
 
     pg.stroke(255);
-    //pg.strokeWeight(2);
     pg.popStyle();
   }
 
