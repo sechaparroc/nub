@@ -508,7 +508,7 @@ public class SkeletonBuilder extends PApplet {
     eyeXY.setPosition(scene.eye().position());
     eyeXY.setOrientation(scene.eye().orientation());
     eyeXY.setConstraint(constraint);
-    views[0] = new Scene(this, P3D, w / 3, h / 3, 0, 2 * h / 3);
+    views[0] = new Scene(this, P3D, w / 3, h / 3); //0, 2 * h / 3
     views[0].setRadius(scene.radius() * 4);
     views[0].setEye(eyeXY);
     views[0].setType(Graph.Type.ORTHOGRAPHIC);
@@ -518,7 +518,7 @@ public class SkeletonBuilder extends PApplet {
     eyeXZ.setPosition(0, scene.radius(), 0);
     eyeXZ.setOrientation(new Quaternion(new Vector(1, 0, 0), -HALF_PI));
     eyeXZ.setConstraint(constraint);
-    views[1] = new Scene(this, P3D, w / 3, h / 3, w / 3, 2 * h / 3);
+    views[1] = new Scene(this, P3D, w / 3, h / 3); // w / 3, 2 * h / 3
     views[1].setRadius(scene.radius() * 4);
     views[1].setEye(eyeXZ);
     views[1].setType(Graph.Type.ORTHOGRAPHIC);
@@ -529,7 +529,7 @@ public class SkeletonBuilder extends PApplet {
     eyeYZ.setPosition(scene.radius(), 0, 0);
     eyeYZ.setOrientation(new Quaternion(new Vector(0, 1, 0), HALF_PI));
     eyeYZ.setConstraint(constraint);
-    views[2] = new Scene(this, P3D, w / 3, h / 3, 2 * w / 3, 2 * h / 3);
+    views[2] = new Scene(this, P3D, w / 3, h / 3); // 2 * w / 3, 2 * h / 3
     views[2].setEye(eyeYZ);
     views[2].setRadius(scene.radius() * 4);
     views[2].setType(Graph.Type.ORTHOGRAPHIC);

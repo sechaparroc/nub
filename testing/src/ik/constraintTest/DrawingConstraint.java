@@ -44,12 +44,12 @@ public class DrawingConstraint extends PApplet {
     constraintRoot = new Node();
     constraintRoot.enableTagging(false);
 
-    thetaScene = new Scene(this, P2D, w / 3, h, w / 3, 0);
+    thetaScene = new Scene(this, P2D, w / 3, h); //w / 3, 0
     thetaScene.fit(1);
     thetaRoot = new Node();
     thetaRoot.enableTagging(false);
 
-    baseScene = new Scene(this, P2D, w / 3, h, 2 * w / 3, 0);
+    baseScene = new Scene(this, P2D, w / 3, h); //2 * w / 3, 0
     baseScene.fit(1);
     baseRoot = new Node();
     baseRoot.enableTagging(false);
@@ -104,9 +104,9 @@ public class DrawingConstraint extends PApplet {
 
   public void draw() {
     handleMouse();
-    drawScene(constraintScene, constraintRoot, "Constraint View");
-    drawScene(thetaScene, thetaRoot, "Side / Top View");
-    drawScene(baseScene, baseRoot, "Front View");
+    drawScene(constraintScene, constraintRoot, "Constraint View", 0, 0);
+    drawScene(thetaScene, thetaRoot, "Side / Top View", w / 3, 0);
+    drawScene(baseScene, baseRoot, "Front View", 2 * w / 3, 0);
     updateCostraint((BallAndSocket) j0.constraint(), t_lr, t_ud, base);
     if (solve) solver.solve();
   }
@@ -139,7 +139,7 @@ public class DrawingConstraint extends PApplet {
     b.update(constraint.left(), constraint.right(), constraint.up(), constraint.down());
   }
 
-  public void drawScene(Scene scene, Node root, String title) {
+  public void drawScene(Scene scene, Node root, String title, int x, int y) {
     scene.beginDraw();
     scene.context().background(0);
     scene.context().lights();
@@ -158,7 +158,7 @@ public class DrawingConstraint extends PApplet {
     scene.context().popStyle();
     scene.endHUD();
     scene.endDraw();
-    scene.display();
+    scene.display(x, y);
   }
 
   static class BaseControl extends Node {

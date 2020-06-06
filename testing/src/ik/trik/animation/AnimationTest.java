@@ -39,7 +39,7 @@ public class AnimationTest extends PApplet {
     //Relate the shape with a skinning method (CPU or GPU)
     skinning = new GPULinearBlendSkinning(skeleton, shapePath, texturePath, mainScene.radius());
     //Set the control scene
-    controlScene = new Scene(this, P2D, width, (int) (height * 0.3), 0, (int) (height * 0.7f));
+    controlScene = new Scene(this, P2D, width, (int) (height * 0.3)); //0, (int) (height * 0.7f)
     controlScene.setRadius(height * 0.3f / 2.f);
     controlScene.fit();
     //Setting the panel
@@ -73,7 +73,7 @@ public class AnimationTest extends PApplet {
     controlScene.context().background(150);
     controlScene.render(panel);
     controlScene.endDraw();
-    controlScene.display();
+    controlScene.display(0, (int) (height * 0.7f));
   }
 
   //Skeleton definition methods

@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 public class Viewer extends PApplet {
-  String path = "/testing/data/bvh/mocap.bvh";
+  String path = "/testing/data/bvh/0007_Cartwheel001.bvh";
   Scene scene;
   BVHLoader parser;
   List<Skeleton> skeletons;
@@ -50,8 +50,11 @@ public class Viewer extends PApplet {
 
     skeletons.add(new Skeleton(parser, SimpleTRIK.HeuristicMode.EXPRESSIVE_FINAL, scene, 0, 255, 0, scene.radius() * 0.01f));
     //skeletons.add(new Skeleton(parser, SimpleTRIK.HeuristicMode.EXPRESSIVE_FINAL, scene, color(255,0,0), scene.radius() * 0.01f));
-    //parser.root().cull(true);
+    //Joint.constraintFactor = 0;
+    parser.root().cull(true);
     //skeleton._root.cull(true);
+    //for(Skeleton sk : skeletons) sk._reference.cull(true);
+
   }
 
   public void draw() {
@@ -207,7 +210,7 @@ public class Viewer extends PApplet {
     protected void _createSolver(SimpleTRIK.HeuristicMode mode) {
       _solver = new TRIKTree(_root, mode);
       _solver.setMaxError(0.1f);
-      _solver.setDirection(false);
+      _solver.setDirection(true);
       _solver.setSearchingAreaRadius(0.3f, true);
       _solver.setOrientationWeight(0.5f);
 

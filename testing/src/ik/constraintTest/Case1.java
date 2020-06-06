@@ -51,7 +51,7 @@ public class Case1 extends PApplet {
     scene.fit(1);
     scene.setRightHanded();
 
-    auxiliar = new Scene(this, P3D, width, height, 0, 0);
+    auxiliar = new Scene(this, P3D, width, height);
     auxiliar.setType(Graph.Type.ORTHOGRAPHIC);
     auxiliar.setRadius(numJoints * boneLength * 2.5f);
     auxiliar.setRightHanded();
@@ -162,7 +162,7 @@ public class Case1 extends PApplet {
       auxiliar.drawAxes();
       auxiliar.render();
       auxiliar.endDraw();
-      auxiliar.display();
+      auxiliar.display(0,0);
     }
     scene.endHUD();
 

@@ -17,7 +17,7 @@ public class OptionPanel {
   protected List<Slider> _frameSliders = new ArrayList<>();
 
   public OptionPanel(PApplet pApplet, float x, float y, int width, int height) {
-    _scene = new Scene(pApplet, pApplet.createGraphics(width, height, PConstants.P2D), (int) x, (int) y);
+    _scene = new Scene(pApplet, pApplet.createGraphics(width, height, PConstants.P2D)); //(int) x, (int) y
     _scene.pApplet().textSize(_scene.height() / 50.f);
     setupPanel();
   }

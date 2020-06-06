@@ -73,7 +73,7 @@ public class ExpressiveTest extends PApplet {
 
 
     //Set the delegation scene
-    delegationScene = new Scene(this, P2D, width, (int) (height * 0.3), 0, (int) (height * 0.7f));
+    delegationScene = new Scene(this, P2D, width, (int) (height * 0.3)); // 0, (int) (height * 0.7f)
     delegationScene.setRadius(height * 0.3f / 2.f);
     delegationScene.fit();
     //Setting the panel
@@ -117,7 +117,7 @@ public class ExpressiveTest extends PApplet {
     delegationScene.context().background(0);
     delegationScene.render();
     delegationScene.endDraw();
-    delegationScene.display();
+    delegationScene.display(0, (int) (height * 0.7f));
     mainScene.endHUD();
   }
 

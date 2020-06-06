@@ -11,7 +11,7 @@ public class TRIKConstrained extends PApplet {
     int w = 1200;
     int h = 1200;
     //Choose a renderer P2D or P3D
-    String renderer = P2D;
+    String renderer = P3D;
 
     Scene scene;
     float length = 50;

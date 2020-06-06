@@ -215,10 +215,9 @@ public class Util {
   }
 
   public static Node createTarget(Scene scene, PShape shape, float targetRadius) {
-    PGraphics pg = scene.context();
-    return new Node() {
+    Node node =  new Node() {
       @Override
-      public void visit() {
+      public void graphics(PGraphics pg) {
         Scene.drawAxes(pg, targetRadius * 2);
         if (scene.node() == this) {
           shape.setFill(pg.color(0, 255, 0));
@@ -229,6 +228,8 @@ public class Util {
         pg.shape(shape);
       }
     };
+    node.setPickingThreshold(0);
+    return node;
   }
 
   public static ArrayList<Node> createTargets(int num, Scene scene, float targetRadius) {
