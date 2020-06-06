@@ -207,7 +207,7 @@ public class FinalHeuristic extends Heuristic {
         dist = error;
 
         //Handiness
-        if (i + 3 < _context.usableChainInformation().size()) {
+        /*if (i + 3 < _context.usableChainInformation().size()) {
           NodeInformation j_i2 = _context.usableChainInformation().get(i + 2);
           NodeInformation j_i3 = _context.usableChainInformation().get(i + 3);
           Vector b1 = Vector.subtract(j_i1.node().position(), j_i.node().position());
@@ -229,7 +229,7 @@ public class FinalHeuristic extends Heuristic {
               //System.out.println("---> new dist : " + dist);
             }
           }
-        }
+        }*/
       }
 
       if (_log) {
@@ -305,14 +305,12 @@ public class FinalHeuristic extends Heuristic {
   }
 
   protected Solution[] applyTriangulation(int i, NodeInformation j_i, NodeInformation j_i1, Vector endEffector, Vector target, boolean checkHinge) {
-    //checkHinge = true;
-    Hinge h_i1 = null;
     Vector v_i = j_i1.locationWithCache(j_i.positionCache());
     Vector normal;
     //In this case we apply triangulation over j_i1
     if (j_i1.node().constraint() instanceof Hinge) {
       //Project endEffector to lie on the plane defined by the axis of rotation
-      h_i1 = ((Hinge) j_i1.node().constraint());
+      Hinge h_i1 = ((Hinge) j_i1.node().constraint());
       //1. find rotation axis
       normal = h_i1.orientation().rotate(new Vector(0, 0, 1));
       if (_log) System.out.println("normal " + normal);
@@ -323,13 +321,15 @@ public class FinalHeuristic extends Heuristic {
       endEffector = Vector.projectVectorOnPlane(endEffector, normal);
       target = Vector.projectVectorOnPlane(target, normal);
     } else {
+      //find the normal vector (we know in advance that normal = Z axis if the scene is 2D)
       normal = _context.is2D() ? new Vector(0,0,1) : Vector.cross(endEffector, target, null);
+      //If target and eff are collinear compare v_i against target
       if (normal.squaredNorm() < 0.0001f) {
         normal = Vector.cross(target, v_i, null);
-      }
-      //pick any vector if all are collinear
-      if (normal.squaredNorm() < 0.0001f) {
-        normal = target.orthogonalVector();
+        //If v_i and target are collinear use any vector
+        if (normal.squaredNorm() < 0.0001f) {
+          normal = target.orthogonalVector();
+        }
       }
       normal.normalize();
     }
@@ -347,8 +347,6 @@ public class FinalHeuristic extends Heuristic {
     }
 
     float angle = Vector.angleBetween(a,b);
-    //Math.min(Math.max(Vector.dot(a, b) / (a_mag * b_mag), -1), 1);
-    //angle = (float) (Math.acos(angle));
     if (_log) {
       System.out.println("dot a ,b  : " + Vector.dot(a, b));
       System.out.println("a mag * b mag : " + (a_mag * b_mag));
@@ -357,21 +355,12 @@ public class FinalHeuristic extends Heuristic {
       System.out.println("cross : " + Vector.cross(b, a_neg, null));
       System.out.println("Normal : " + normal);
       System.out.println("Dot : " + Vector.dot(Vector.cross(b, a_neg, null), normal));
-
     }
 
     float angle_1, angle_2;
 
     if (Vector.dot(Vector.cross(b, a_neg, null), normal) < 0) {
       angle = -angle;
-    }
-
-    //Find limits centered at angle
-    float max = (float) Math.PI;
-    float min = -max;
-    if (_log) {
-      System.out.println("--- max limit : " + Math.toDegrees(max));
-      System.out.println("--- min limit : " + Math.toDegrees(min));
     }
 
     if (a_mag + b_mag <= c_mag) {
@@ -402,9 +391,7 @@ public class FinalHeuristic extends Heuristic {
     } else {
       //Apply law of cosines
       float current = angle;
-
-      float expected = Math.min(Math.max(-(c_mag * c_mag - a_mag * a_mag - b_mag * b_mag) / (2f * a_mag * b_mag), -1), 1);
-      expected = (float) (Math.acos(expected));
+      float expected = _findC(a_mag, b_mag, c_mag);
 
       if (_log) {
         System.out.println("current : " + Math.toDegrees(current));
@@ -430,9 +417,8 @@ public class FinalHeuristic extends Heuristic {
     }
 
     //Constraint the angles according to the joint limits (prefer the solution with least damping)
-    float constrained_angle_1 = Math.min(max, Math.max(min, angle_1));
-    float constrained_angle_2 = Math.min(max, Math.max(min, angle_2));
-    ;
+    float constrained_angle_1 = (float) Math.min(Math.PI, Math.max(-Math.PI, angle_1));
+    float constrained_angle_2 = (float) Math.min(Math.PI, Math.max(-Math.PI, angle_2));
 
     if (_log) {
       System.out.println("--> constrained angle 1 : " + Math.toDegrees(constrained_angle_1));
@@ -504,7 +490,7 @@ public class FinalHeuristic extends Heuristic {
       Quaternion quat = Quaternion.compose(j_i.node().rotation().inverse(), h.idleRotation());
       Vector tw = h.restRotation().rotate(new Vector(0, 0, 1));
       tw = quat.rotate(tw);
-      //Project b & c on the plane of rot
+      //Project p & q on the plane of rot
       p = Vector.projectVectorOnPlane(p, tw);
       q = Vector.projectVectorOnPlane(q, tw);
     }
@@ -647,5 +633,28 @@ public class FinalHeuristic extends Heuristic {
       pg.popMatrix();
       pg.popStyle();
     }
+  }
+
+  /*
+  * Robust implementation of law of cosines to find angle C
+  * more info at https://people.eecs.berkeley.edu/~wkahan/Triangle.pdf
+  * */
+  protected float _findC(float a, float b, float c){
+    //swap if required
+    if(a < b){
+      float aux = a;
+      a = b;
+      b = aux;
+    }
+    //compute mu
+    float mu;
+    if(b >= c){
+        mu = c - (a - b);
+    } else if(c > b){
+        mu = b - (a - c);
+    } else {
+      return Float.NaN;
+    }
+    return (float)(2*Math.atan(Math.sqrt(((a-b)+c)*mu/((a+(b+c))*((a-c)+b)))));
   }
 }
