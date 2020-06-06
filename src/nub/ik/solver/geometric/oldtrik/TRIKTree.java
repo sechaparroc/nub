@@ -115,13 +115,16 @@ public class TRIKTree extends Solver {
         Vector t = solver.context().chain().get(solver.context().chain().size() - 1).location(child._solver.target());
         current_coords.add(eff.get());
         desired_coords.add(t.get());
+        //current_coords.add(eff.get().normalize(null));
+        //desired_coords.add(t.get().normalize(null));
+
       }
     }
 
     if (childrenModified <= 0) return false;
 
     //in case a children was modified and the node is not a leaf
-    Quaternion rotation = QCP.CalcRMSDRotationalMatrix(desired_coords, current_coords, null);
+    Quaternion rotation = FA3R.FA3R(desired_coords, current_coords);
     solver.context().chain().get(solver.context().chain().size() - 1).rotate(rotation);
     Node target = Node.detach(new Vector(), new Quaternion(), 1f);
     //solve ik for current chain
