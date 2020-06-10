@@ -6,10 +6,10 @@ import nub.ik.solver.trik.Context;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 
-public class TwistHeuristic extends Heuristic {
+public class Twist extends Heuristic {
   protected float _maxTwistDirection = (float) Math.toRadians(15), _maxTwistCCD = (float) Math.toRadians(15);
 
-  public TwistHeuristic(Context context) {
+  public Twist(Context context) {
     super(context);
   }
 

@@ -9,12 +9,12 @@ import nub.primitives.Vector;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LookAheadHeuristic extends Heuristic {
+public class LookAhead extends Heuristic {
 
-  protected ForwardHeuristic _heuristic;
+  protected Heuristic _heuristic;
   protected int _lookAhead = 3; //how many action to look in the future
 
-  public LookAheadHeuristic(ForwardHeuristic heuristic) {
+  public LookAhead(Heuristic heuristic) {
     super(heuristic._context);
     _heuristic = heuristic;
     _states = new ArrayList<>();
