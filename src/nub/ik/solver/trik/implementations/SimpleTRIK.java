@@ -12,8 +12,7 @@ import java.util.List;
 public class SimpleTRIK extends Solver {
 
   public enum HeuristicMode {
-    CCD, FORWARD, LOOK_AHEAD_FORWARD, BACKWARD, FORWARD_TRIANGULATION, BACKWARD_TRIANGULATION, FORWARD_CCD_DOUBLE_PASS, BACK_AND_FORTH,
-    CCD_BACK_AND_FORTH, CCDT_BACK_AND_FORTH, BACK_AND_FORTH_T, FINAL, EXPRESSIVE_FINAL;;
+    CCD, LOOK_AHEAD_FORWARD, FORWARD_TRIANGULATION, BACKWARD_TRIANGULATION, COMBINED, COMBINED_EXPRESSIVE;;
   }
 
   protected boolean _disable_order_swapping = false; //TODO : REMOVE!
@@ -40,94 +39,57 @@ public class SimpleTRIK extends Solver {
 
   public SimpleTRIK(List<? extends Node> chain, Node target, HeuristicMode mode) {
     super();
-    this._context = new Context(chain, target, false);
+    this._context = new Context(chain, target, true);
     _context.setSolver(this);
     _setHeuristicMode(mode);
-    this._twistHeuristic = new TwistHeuristic(_context);
+    this._twistHeuristic = new Twist(_context);
     _enableTwist = false;
     enableSmooth(false);
-    _context.setSingleStep(false);
+    _context.setSingleStep(true);
   }
 
   protected void _setHeuristicMode(HeuristicMode mode) {
     switch (mode) {
-      case FINAL: {
+      case COMBINED: {
         _disable_order_swapping = true;
-        _mainHeuristic = new FinalHeuristic(_context);
+        _mainHeuristic = new Combined(_context);
         _context.setTopToBottom(false);
         context().enableDelegation(false);
-        ((FinalHeuristic) _mainHeuristic).checkHinge(false);
         //context().setDelegationFactor(1f);
         _secondaryHeuristic = _mainHeuristic;
         break;
       }
-      case EXPRESSIVE_FINAL: {
+      case COMBINED_EXPRESSIVE: {
         _disable_order_swapping = true;
-        _mainHeuristic = new FinalHeuristic(_context);
+        _mainHeuristic = new Combined(_context);
         _context.setTopToBottom(false);
         context().enableDelegation(true);
         context().setDelegationFactor(0.1f);
-        ((FinalHeuristic) _mainHeuristic).checkHinge(false);
         _secondaryHeuristic = _mainHeuristic;
         break;
       }
 
       case CCD: {
-        _mainHeuristic = new CCDHeuristic(_context);
+        _mainHeuristic = new CCD(_context);
         _context.setTopToBottom(false);
-        break;
-      }
-
-      case CCD_BACK_AND_FORTH: {
-        _mainHeuristic = new BackAndForthCCDHeuristic(_context, false, false);
-        _context.setTopToBottom(false);
-        break;
-      }
-      case CCDT_BACK_AND_FORTH: {
-        _mainHeuristic = new BackAndForthCCDHeuristic(_context, true, true);
-        _context.setTopToBottom(true);
         break;
       }
 
       case LOOK_AHEAD_FORWARD: {
-        _mainHeuristic = new LookAheadHeuristic(new ForwardHeuristic(_context));
+        _mainHeuristic = new LookAhead(new TRIK(_context));
         _context.setTopToBottom(true);
         break;
       }
 
-      case FORWARD: {
-        _mainHeuristic = new ForwardHeuristic(_context);
-        _context.setTopToBottom(true);
-        break;
-      }
-      case BACKWARD: {
-        _mainHeuristic = new BackwardHeuristic(_context);
-        _context.setTopToBottom(false);
-        break;
-      }
       case FORWARD_TRIANGULATION: {
-        _mainHeuristic = new ForwardTriangulation(_context);
+        _mainHeuristic = new Triangulation(_context);
         _context.setTopToBottom(true);
         break;
       }
       case BACKWARD_TRIANGULATION: {
-        _mainHeuristic = new BackwardTriangulation(_context);
+        _mainHeuristic = new Triangulation(_context);
         _context.setTopToBottom(false);
         break;
-      }
-      case BACK_AND_FORTH: {
-        _context.setTopToBottom(true);
-        //_mainHeuristic = new ForwardHeuristic(_context);
-        //_secondaryHeuristic = new BackwardHeuristic(_context);
-        _mainHeuristic = new BackAndForthCCDHeuristic(_context, false, true);
-        _secondaryHeuristic = new BackAndForthCCDHeuristic(_context, false, false);
-      }
-      case BACK_AND_FORTH_T: {
-        _context.setTopToBottom(false);
-        //_mainHeuristic = new ForwardHeuristic(_context);
-        //_secondaryHeuristic = new BackwardHeuristic(_context);
-        _mainHeuristic = new BackAndForthCCDHeuristic(_context, true, true);
-        _secondaryHeuristic = new BackAndForthCCDHeuristic(_context, true, false);
       }
     }
     _heuristicMode = mode;
@@ -179,7 +141,7 @@ public class SimpleTRIK extends Solver {
       _update();
       _stepCounter = -1;
 
-      if (!_disable_order_swapping && (_heuristicMode == HeuristicMode.BACK_AND_FORTH || _heuristicMode == HeuristicMode.FINAL || _heuristicMode == HeuristicMode.EXPRESSIVE_FINAL)) {
+      if (!_disable_order_swapping && (_heuristicMode == HeuristicMode.COMBINED || _heuristicMode == HeuristicMode.COMBINED_EXPRESSIVE)) {
         context().setTopToBottom(!context().topToBottom());
         Heuristic aux = _mainHeuristic;
         _mainHeuristic = _secondaryHeuristic;
@@ -211,7 +173,7 @@ public class SimpleTRIK extends Solver {
       }
     }
 
-    if (!_disable_order_swapping && (_heuristicMode == HeuristicMode.BACK_AND_FORTH || _heuristicMode == HeuristicMode.FINAL || _heuristicMode == HeuristicMode.EXPRESSIVE_FINAL)) {
+    if (!_disable_order_swapping && (_heuristicMode == HeuristicMode.COMBINED || _heuristicMode == HeuristicMode.COMBINED_EXPRESSIVE)) {
       context().setTopToBottom(!context().topToBottom());
       Heuristic aux = _mainHeuristic;
       _mainHeuristic = _secondaryHeuristic;
@@ -320,7 +282,7 @@ public class SimpleTRIK extends Solver {
 
     if (_context.singleStep()) _stepCounter = 0;
 
-    if (!_disable_order_swapping && ((_heuristicMode == HeuristicMode.BACK_AND_FORTH || _heuristicMode == HeuristicMode.FINAL || _heuristicMode == HeuristicMode.EXPRESSIVE_FINAL) && context().topToBottom() == false)) {
+    if (!_disable_order_swapping && ((_heuristicMode == HeuristicMode.COMBINED || _heuristicMode == HeuristicMode.COMBINED_EXPRESSIVE) && context().topToBottom() == false)) {
       context().setTopToBottom(true);
       Heuristic aux = _mainHeuristic;
       _mainHeuristic = _secondaryHeuristic;
