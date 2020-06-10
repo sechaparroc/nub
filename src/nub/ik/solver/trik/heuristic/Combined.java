@@ -14,7 +14,7 @@ import processing.core.PGraphics;
 
 import java.util.HashMap;
 
-public class FinalHeuristic extends Heuristic {
+public class Combined extends Heuristic {
   /**
    * The idea of this heuristics is to apply and interchange popular CCD Step along with Triangulation step. Here most of the work is done by the first joints,
    * hence the obtained solution could not seem natural when working with unconstrained chains. For this purposes a smoothing stage is required in which each
@@ -24,17 +24,11 @@ public class FinalHeuristic extends Heuristic {
   HashMap<String, Pair<Vector, Vector>> vectors = new HashMap<>();
   protected int _smoothingIterations = 30;
   protected Quaternion[] _initialRotations;
-  protected boolean _checkHinge = true;
 
   protected boolean _enableWeights = false;
   protected float maxAngle = 111f * (float) Math.toRadians(40);
 
-
-  public void checkHinge(boolean check) {
-    _checkHinge = check;
-  }
-
-  public FinalHeuristic(Context context) {
+  public Combined(Context context) {
     super(context);
     _initialRotations = new Quaternion[_context.chain().size()];
     _log = false;
@@ -106,15 +100,9 @@ public class FinalHeuristic extends Heuristic {
     }
 
     if (i == _context.last() - 1) {
-      Quaternion q_i = applyCCD(i, j_i, eff_wrt_j_i, target_wrt_j_i, true);
+      Quaternion q_i = findCCD(i, j_i, eff_wrt_j_i, target_wrt_j_i, true);
       j_i.rotateAndUpdateCache(q_i, false, _context.endEffectorInformation()); //Apply local rotation
-      if (_context.direction()) {
-        float max_dist = _context.searchingAreaRadius();
-        float radius = Vector.distance(_context.endEffectorInformation().positionCache(), j_i.positionCache());
-        //find max theta allowed
-        float max_theta = (float) Math.acos(Math.max(Math.min(1 - (max_dist * max_dist) / (2 * radius * radius), 1), -1));
-        j_i.rotateAndUpdateCache(applyOrientationalCCD(i, max_theta), false, _context.endEffectorInformation());
-      }
+      CCD.applyOrientationalCCD(this, i);
       return;
     }
 
@@ -123,8 +111,8 @@ public class FinalHeuristic extends Heuristic {
     Vector eff_wrt_j_i1 = j_i1.locationWithCache(_context.endEffectorInformation().positionCache());
     Vector target_wrt_j_i1 = j_i1.locationWithCache(target);
     //Find the two solutions of the triangulation problem on joint j_i1
-    Solution[] solutions;
-    solutions = applyTriangulation(i, j_i, j_i1, eff_wrt_j_i1, target_wrt_j_i1, _checkHinge);
+    Quaternion[] solutions;
+    solutions = findTriangulationSolutions(i, j_i, j_i1, eff_wrt_j_i1, target_wrt_j_i1);
 
     //Keep original State of J_i and J_i1
     NodeInformation endEffector = _context.endEffectorInformation();
@@ -144,17 +132,17 @@ public class FinalHeuristic extends Heuristic {
       j_i1.updateCacheUsingReference();
       //Apply solution find by triangulation
       Quaternion q;
-      q = solutions[s].quaternion();
+      q = solutions[s];
       j_i1.rotateAndUpdateCache(q, false, endEffector);
       //Apply CCD t times (best local action if joint rotation constraints are quite different)
-      j_i.rotateAndUpdateCache(applyCCD(i, j_i, j_i.locationWithCache(endEffector.positionCache()), j_i.locationWithCache(target), true), true, endEffector);
+      j_i.rotateAndUpdateCache(findCCD(i, j_i, j_i.locationWithCache(endEffector.positionCache()), j_i.locationWithCache(target), true), true, endEffector);
       j_i1.updateCacheUsingReference();
 
       for (int t = 0; t < _times; t++) {
         j_i1.updateCacheUsingReference();
-        Quaternion q_i1 = applyCCD(i + 1, j_i1, j_i1.locationWithCache(endEffector.positionCache()), j_i1.locationWithCache(target), true);
+        Quaternion q_i1 = findCCD(i + 1, j_i1, j_i1.locationWithCache(endEffector.positionCache()), j_i1.locationWithCache(target), true);
         j_i1.rotateAndUpdateCache(q_i1, false, endEffector);
-        Quaternion q_i = applyCCD(i, j_i, j_i.locationWithCache(endEffector.positionCache()), j_i.locationWithCache(target), true);
+        Quaternion q_i = findCCD(i, j_i, j_i.locationWithCache(endEffector.positionCache()), j_i.locationWithCache(target), true);
         j_i.rotateAndUpdateCache(q_i, false, endEffector);
       }
       j_i1.updateCacheUsingReference();
@@ -163,23 +151,24 @@ public class FinalHeuristic extends Heuristic {
         vectors.put("zi " + (s + 1), new Pair<>(j_i.positionCache().get(), j_i1.positionCache().get()));
         vectors.put("zf " + (s + 1), new Pair<>(j_i1.positionCache().get(), endEffector.positionCache().get()));
       }
-
-      if (_context.direction()) {
-        float max_dist = _context.searchingAreaRadius();
-        float radius = Vector.distance(endEffector.positionCache(), j_i1.positionCache());
-        //find max theta allowed
-        float max_theta = (float) Math.acos(Math.max(Math.min(1 - (max_dist * max_dist) / (2 * radius * radius), 1), -1));
-        j_i1.rotateAndUpdateCache(applyOrientationalCCD(i + 1, max_theta), false, endEffector);
-      }
-
+      CCD.applyOrientationalCCD(this, i + 1);
       //store state in final vector
       final_j_i[s] = new NodeState(j_i);
       final_j_i1[s] = new NodeState(j_i1);
       final_eff[s] = new NodeState(endEffector);
 
       a = Math.abs(_context.quaternionDistance(initial_j_i.rotation(), j_i.node().rotation()) + _context.quaternionDistance(initial_j_i1.rotation(), j_i1.node().rotation()));
+      if (_log) {
+        System.out.println("(->) Angle ");
+        System.out.println("      Rotation distance : " + a);
+        System.out.println("      Orientation distance : " + Math.abs(_context.quaternionDistance(initial_j_i1.orientation(), j_i1.node().orientation())));
+        System.out.println("      Initial Orientation j_i1 : " + initial_j_i1.orientation());
+        System.out.println("      Final Orientation j_i1 : " + j_i1.node().orientation());
+
+      }
+
       //a = Math.abs(_context.quaternionDistance(initial_j_i.rotation(), j_i.node().rotation()));
-      //a = Math.abs(_context.quaternionDistance(initial_j_i1.orientation(), j_i1.node().orientation()));
+      a += Math.abs(_context.quaternionDistance(initial_j_i1.orientation(), j_i1.node().orientation()));
       //a += 0.5f * Math.abs(_context.quaternionDistance(_initialRotations[i], j_i.node().rotation()) - _context.quaternionDistance(_initialRotations[i + 1], j_i1.node().rotation()));
       if (_log) {
         System.out.println("---> a : " + a);
@@ -234,7 +223,6 @@ public class FinalHeuristic extends Heuristic {
 
       if (_log) {
         System.out.println("---> dist : " + dist);
-        System.out.println("---> constraint error : " + solutions[s].value());
       }
 
       dist = dist + 0.1f * a;// + solutions[s].value();// + length_distance * _lengthWeight;
@@ -278,33 +266,7 @@ public class FinalHeuristic extends Heuristic {
   }
 
 
-  protected class Solution {
-    protected Quaternion _quaternion;
-    protected float _value;
-
-    protected Solution(Quaternion q, float v) {
-      _quaternion = q;
-      _value = v;
-    }
-
-    protected void setQuaternion(Quaternion q) {
-      _quaternion = q;
-    }
-
-    protected void setValue(float v) {
-      _value = v;
-    }
-
-    protected Quaternion quaternion() {
-      return _quaternion;
-    }
-
-    protected float value() {
-      return _value;
-    }
-  }
-
-  protected Solution[] applyTriangulation(int i, NodeInformation j_i, NodeInformation j_i1, Vector endEffector, Vector target, boolean checkHinge) {
+  protected Quaternion[] findTriangulationSolutions(int i, NodeInformation j_i, NodeInformation j_i1, Vector endEffector, Vector target) {
     Vector v_i = j_i1.locationWithCache(j_i.positionCache());
     Vector normal;
     //In this case we apply triangulation over j_i1
@@ -347,6 +309,7 @@ public class FinalHeuristic extends Heuristic {
     }
 
     float angle = Vector.angleBetween(a,b);
+
     if (_log) {
       System.out.println("dot a ,b  : " + Vector.dot(a, b));
       System.out.println("a mag * b mag : " + (a_mag * b_mag));
@@ -391,7 +354,7 @@ public class FinalHeuristic extends Heuristic {
     } else {
       //Apply law of cosines
       float current = angle;
-      float expected = _findC(a_mag, b_mag, c_mag);
+      float expected = Triangulation.findCfromTriangle(a_mag, b_mag, c_mag);
 
       if (_log) {
         System.out.println("current : " + Math.toDegrees(current));
@@ -416,119 +379,39 @@ public class FinalHeuristic extends Heuristic {
       System.out.println("--> angle 2 : " + Math.toDegrees(angle_2));
     }
 
-    //Constraint the angles according to the joint limits (prefer the solution with least damping)
-    float constrained_angle_1 = (float) Math.min(Math.PI, Math.max(-Math.PI, angle_1));
-    float constrained_angle_2 = (float) Math.min(Math.PI, Math.max(-Math.PI, angle_2));
+    Quaternion[] deltas = new Quaternion[2];
+    deltas[0] = new Quaternion(normal, angle_1);
+    deltas[1] = new Quaternion(normal, angle_2);
 
-    if (_log) {
-      System.out.println("--> constrained angle 1 : " + Math.toDegrees(constrained_angle_1));
-      System.out.println("--> constrained angle 2 : " + Math.toDegrees(constrained_angle_2));
-      System.out.println("--> ratio angle 1 : " + (Math.abs(constrained_angle_1) + 1) / (Math.abs(angle_1) + 1));
-      System.out.println("--> ration angle 2 : " + (Math.abs(constrained_angle_2) + 1) / (Math.abs(angle_2) + 1));
-
-    }
-
-    Solution[] deltas = new Solution[2];
-    deltas[0] = new Solution(new Quaternion(normal, constrained_angle_1), 1 - (Math.abs(constrained_angle_1) + 1) / (Math.abs(angle_1) + 1));
-    deltas[1] = new Solution(new Quaternion(normal, constrained_angle_2), 1 - (Math.abs(constrained_angle_2) + 1) / (Math.abs(angle_2) + 1));
-    for (Solution delta : deltas) {
+    for (int k = 0; k < deltas.length; k++) {
       if (_enableWeights) {
         //smooth angle
-        delta.setQuaternion(new Quaternion(delta.quaternion().axis(), delta.quaternion().angle() * _context.delegationAtJoint(i + 1)));
+        deltas[k] = new Quaternion(deltas[k].axis(), deltas[k].angle() * _context.delegationAtJoint(i + 1));
         //clamp rotation if required
-        delta.setQuaternion(_clampRotation(j_i1.node().rotation(), _initialRotations[i + 1], Quaternion.compose(j_i1.node().rotation(), delta.quaternion()), maxAngle));
+        deltas[k] = Util.clampRotation(j_i1.node().rotation(), _initialRotations[i + 1], Quaternion.compose(j_i1.node().rotation(), deltas[k]), maxAngle);
       }
       if (j_i1.node().constraint() != null) {
-        delta.setQuaternion(j_i1.node().constraint().constrainRotation(delta.quaternion(), j_i1.node()));
+        deltas[k] = j_i1.node().constraint().constrainRotation(deltas[k], j_i1.node());
       }
       if (_log) {
-        System.out.println("--> delta : " + delta.quaternion().axis() + " angle : " + Math.toDegrees(delta.quaternion().angle()));
+        System.out.println("--> delta : " + deltas[k].axis() + " angle : " + Math.toDegrees(deltas[k].angle()));
       }
-      delta.quaternion().normalize();
+      deltas[k].normalize();
     }
     return deltas;
   }
 
-  //Try to approach to target final position by means of twisting
-  protected Quaternion applyCCDTwist(NodeInformation j_i, NodeInformation j_i1, Vector endEffector, Vector target, float maxAngle) {
-    Vector j_i_to_eff_proj, j_i_to_target_proj;
-    Vector tw = j_i1.node().translation(); // w.r.t j_i
-    //Project the given vectors in the plane given by twist axis
-    try {
-      j_i_to_target_proj = Vector.projectVectorOnPlane(target, tw);
-      j_i_to_eff_proj = Vector.projectVectorOnPlane(endEffector, tw);
-    } catch (Exception e) {
-      return new Quaternion(tw, 0);
-    }
-
-    //Perform this operation only when Projected Vectors have not a despicable length
-    if (j_i_to_target_proj.magnitude() < 0.3 * target.magnitude() && j_i_to_eff_proj.magnitude() < 0.3 * endEffector.magnitude()) {
-      return new Quaternion(tw, 0);
-    }
-
-    //Find the angle between projected vectors
-    float angle = Vector.angleBetween(j_i_to_eff_proj, j_i_to_target_proj);
-    //clamp angle
-    angle = Math.min(angle, maxAngle);
-    if (Vector.cross(j_i_to_eff_proj, j_i_to_target_proj, null).dot(tw) < 0)
-      angle *= -1;
-
-    Quaternion twist = new Quaternion(tw, angle);
-    if (_smooth) {
-      twist = _clampRotation(twist, _smoothAngle);
-    }
-    twist.normalize();
-    return twist;
-  }
-
-
-  protected Quaternion applyCCD(int i, NodeInformation j_i, Vector endEffector, Vector target, boolean checkHinge) {
-    Vector p = endEffector;
-    Vector q = target;
-    if (checkHinge && j_i.node().constraint() != null && j_i.node().constraint() instanceof Hinge) {
-      Hinge h = (Hinge) j_i.node().constraint();
-      Quaternion quat = Quaternion.compose(j_i.node().rotation().inverse(), h.idleRotation());
-      Vector tw = h.restRotation().rotate(new Vector(0, 0, 1));
-      tw = quat.rotate(tw);
-      //Project p & q on the plane of rot
-      p = Vector.projectVectorOnPlane(p, tw);
-      q = Vector.projectVectorOnPlane(q, tw);
-    }
-    //Apply desired rotation removing twist component
-    Quaternion delta = new Quaternion(p, q);
+  protected Quaternion findCCD(int i, NodeInformation j_i, Vector endEffector, Vector target, boolean checkHinge) {
+    Quaternion delta = CCD.findCCD(j_i, endEffector, target, checkHinge);
     if (_enableWeights) {
       //smooth angle
       delta = new Quaternion(delta.axis(), delta.angle() * _context.delegationAtJoint(i));
-      delta = _clampRotation(j_i.node().rotation(), _initialRotations[i], Quaternion.compose(j_i.node().rotation(), delta), maxAngle);
-    }
-    if (j_i.node().constraint() != null) {
-      delta = j_i.node().constraint().constrainRotation(delta, j_i.node());
-    }
-    delta.normalize();
-    return delta;
-  }
-
-  protected Quaternion applyOrientationalCCD(int i, float maxAngle) {
-    NodeInformation j_i = _context.usableChainInformation().get(i);
-    Quaternion O_i = j_i.orientationCache();
-    Quaternion O_i_inv = O_i.inverse();
-    Quaternion O_eff = _context.usableChainInformation().get(_context.last()).orientationCache();
-    Quaternion target = _context.worldTarget().orientation();
-    Quaternion O_i1_to_eff = Quaternion.compose(O_i.inverse(), O_eff);
-    O_i1_to_eff.normalize();
-    Quaternion delta = Quaternion.compose(O_i_inv, target);
-    delta.normalize();
-    delta.compose(O_i1_to_eff.inverse());
-    delta.normalize();
-    if (j_i.node().constraint() != null) {
-      delta = j_i.node().constraint().constrainRotation(delta, j_i.node());
+      delta = Util.clampRotation(j_i.node().rotation(), _initialRotations[i], Quaternion.compose(j_i.node().rotation(), delta), maxAngle);
       delta.normalize();
     }
-    //clamp rotation
-    delta = _clampRotation(delta, maxAngle);
+    delta = Util.constraintRotation(j_i, delta);
     return delta;
   }
-
 
   @Override
   public NodeInformation[] nodesToModify(int i) {
@@ -536,44 +419,7 @@ public class FinalHeuristic extends Heuristic {
     return null;
   }
 
-  protected static Quaternion _clampRotation(Quaternion rotation, float maxAngle) {
-    float angle = rotation.angle();
-    float angleVal = Math.abs(angle);
-    float angleSign = Math.signum(angle);
-    Vector axis = rotation.axis();
-    if (Math.abs(angle) > Math.PI) {
-      axis.multiply(-1);
-      angle = angleSign * (float) (2 * Math.PI - angleVal);
-    }
-    if (Math.abs(angle) > maxAngle) {
-      rotation = new Quaternion(axis, angleSign * maxAngle);
-    }
-    return rotation;
-  }
-
-  protected static Quaternion _clampRotation(Quaternion q_cur, Quaternion q_i, Quaternion q_f, float maxAngle) {
-    Quaternion diff = Quaternion.compose(q_i.inverse(), q_f);
-    diff.normalize();
-
-    float angle = diff.angle();
-    float angleVal = Math.abs(angle);
-    float angleSign = Math.signum(angle);
-    Vector axis = diff.axis();
-
-    if (Math.abs(angle) > Math.PI) {
-      axis.multiply(-1);
-      angle = angleSign * (float) (2 * Math.PI - angleVal);
-    }
-
-    if (Math.abs(angle) > maxAngle) {
-      diff = new Quaternion(axis, angleSign * maxAngle);
-    }
-
-    Quaternion delta = Quaternion.compose(q_cur.inverse(), q_i);
-    delta.compose(diff);
-    return delta;
-  }
-
+  //Methods for visual debugging
 
   public void drawVectors(Scene scene) {
     if (!_context.debug()) return;
@@ -633,28 +479,5 @@ public class FinalHeuristic extends Heuristic {
       pg.popMatrix();
       pg.popStyle();
     }
-  }
-
-  /*
-  * Robust implementation of law of cosines to find angle C
-  * more info at https://people.eecs.berkeley.edu/~wkahan/Triangle.pdf
-  * */
-  protected float _findC(float a, float b, float c){
-    //swap if required
-    if(a < b){
-      float aux = a;
-      a = b;
-      b = aux;
-    }
-    //compute mu
-    float mu;
-    if(b >= c){
-        mu = c - (a - b);
-    } else if(c > b){
-        mu = b - (a - c);
-    } else {
-      return Float.NaN;
-    }
-    return (float)(2*Math.atan(Math.sqrt(((a-b)+c)*mu/((a+(b+c))*((a-c)+b)))));
   }
 }
