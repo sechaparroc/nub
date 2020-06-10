@@ -1,6 +1,5 @@
 package nub.ik.solver.trik;
 
-import nub.ik.solver.geometric.oldtrik.NodeInformation;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 

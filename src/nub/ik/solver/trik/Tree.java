@@ -1,4 +1,4 @@
-package nub.ik.solver.geometric.oldtrik;
+package nub.ik.solver.trik;
 
 import nub.core.Node;
 import nub.ik.solver.Solver;
@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class TRIKTree extends Solver {
+public class Tree extends Solver {
   protected static class TreeNode {
     protected TreeNode _parent;
     protected List<TreeNode> _children;
@@ -59,11 +59,11 @@ public class TRIKTree extends Solver {
   protected float _current = 10e10f, _best = 10e10f;
   protected HashMap<Node, Node> _endEffectorMap = new HashMap<>();
 
-  public TRIKTree(Node root) {
+  public Tree(Node root) {
     this(root, SimpleTRIK.HeuristicMode.COMBINED_EXPRESSIVE);
   }
 
-  public TRIKTree(Node root, SimpleTRIK.HeuristicMode mode) {
+  public Tree(Node root, SimpleTRIK.HeuristicMode mode) {
     super();
     TreeNode dummy = new TreeNode(); //Dummy TreeNode to Keep Reference
     _mode = mode;

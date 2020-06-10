@@ -6,7 +6,7 @@ import nub.core.Node;
 import nub.core.constraint.BallAndSocket;
 import nub.core.constraint.Constraint;
 import nub.ik.loader.bvh.BVHLoader;
-import nub.ik.solver.geometric.oldtrik.TRIKTree;
+import nub.ik.solver.trik.Tree;
 import nub.ik.solver.trik.implementations.SimpleTRIK;
 import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
@@ -143,7 +143,7 @@ public class Viewer extends PApplet {
     Scene _scene;
     Node _reference;
     Joint _root;
-    TRIKTree _solver;
+    Tree _solver;
     BVHLoader _loader;
     HashMap<Joint, Node> _jointToNode;
     HashMap<String, Joint> _structure;
@@ -208,7 +208,7 @@ public class Viewer extends PApplet {
     }
 
     protected void _createSolver(SimpleTRIK.HeuristicMode mode) {
-      _solver = new TRIKTree(_root, mode);
+      _solver = new Tree(_root, mode);
       _solver.setMaxError(0.1f);
       _solver.setDirection(true);
       _solver.setSearchingAreaRadius(0.3f, true);

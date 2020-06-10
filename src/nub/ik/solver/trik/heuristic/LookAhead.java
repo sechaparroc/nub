@@ -1,6 +1,6 @@
 package nub.ik.solver.trik.heuristic;
 
-import nub.ik.solver.geometric.oldtrik.NodeInformation;
+import nub.ik.solver.trik.NodeInformation;
 import nub.ik.solver.trik.NodeState;
 import nub.ik.solver.trik.State;
 import nub.primitives.Quaternion;

@@ -2,7 +2,7 @@ package nub.ik.solver.trik.heuristic;
 
 import nub.core.Node;
 import nub.core.constraint.Hinge;
-import nub.ik.solver.geometric.oldtrik.NodeInformation;
+import nub.ik.solver.trik.NodeInformation;
 import nub.ik.solver.trik.Context;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;

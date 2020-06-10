@@ -13,7 +13,7 @@ package nub.core;
 
 import nub.ik.solver.Solver;
 import nub.ik.solver.geometric.TreeSolver;
-import nub.ik.solver.geometric.oldtrik.TRIKTree;
+import nub.ik.solver.trik.Tree;
 import nub.primitives.Matrix;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -4676,7 +4676,7 @@ public class Graph {
     for (Solver solver : _solvers) {
       Node head = null;
       if (solver instanceof TreeSolver) head = ((TreeSolver) solver).head();
-      else if (solver instanceof TRIKTree) head = ((TRIKTree) solver).head();
+      else if (solver instanceof Tree) head = ((Tree) solver).head();
       else return null;
       //If Head is Contained in any structure do nothing
       if (!((isReachable(head) && isReachable(node)) ? Node.path(head, node) : new ArrayList<Node>()).isEmpty())
@@ -4685,7 +4685,7 @@ public class Graph {
 
     Solver solver;
 
-    if (_useTRIK) solver = new TRIKTree(node);
+    if (_useTRIK) solver = new Tree(node);
     else solver = new TreeSolver(node);
     _solvers.add(solver);
     //Add task
@@ -4708,7 +4708,7 @@ public class Graph {
     for (Solver solver : _solvers) {
       Node head = null;
       if (solver instanceof TreeSolver) head = ((TreeSolver) solver).head();
-      else if (solver instanceof TRIKTree) head = ((TRIKTree) solver).head();
+      else if (solver instanceof Tree) head = ((Tree) solver).head();
       else return false;
       if (head == node) {
         toRemove = solver;
@@ -4727,7 +4727,7 @@ public class Graph {
     for (Solver solver : _solvers) {
       Node head = null;
       if (solver instanceof TreeSolver) head = ((TreeSolver) solver).head();
-      else if (solver instanceof TRIKTree) head = ((TRIKTree) solver).head();
+      else if (solver instanceof Tree) head = ((Tree) solver).head();
       else return null;
 
       if (head == node) {
@@ -4740,7 +4740,7 @@ public class Graph {
   public static boolean addIKTarget(Node endEffector, Node target) {
     for (Solver solver : _solvers) {
       if (solver instanceof TreeSolver && ((TreeSolver) solver).addTarget(endEffector, target)) return true;
-      if (solver instanceof TRIKTree && ((TRIKTree) solver).addTarget(endEffector, target)) return true;
+      if (solver instanceof Tree && ((Tree) solver).addTarget(endEffector, target)) return true;
     }
     return false;
   }

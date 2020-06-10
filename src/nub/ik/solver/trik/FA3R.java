@@ -1,4 +1,4 @@
-package nub.ik.solver.geometric.oldtrik;
+package nub.ik.solver.trik;
 
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;

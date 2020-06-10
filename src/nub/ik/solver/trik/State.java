@@ -2,7 +2,6 @@ package nub.ik.solver.trik;
 
 import nub.core.Node;
 import nub.core.constraint.Constraint;
-import nub.ik.solver.geometric.oldtrik.NodeInformation;
 
 import java.util.ArrayList;
 import java.util.List;

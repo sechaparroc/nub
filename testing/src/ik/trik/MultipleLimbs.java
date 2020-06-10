@@ -6,7 +6,7 @@ import nub.core.Interpolator;
 import nub.core.Node;
 import nub.core.constraint.Constraint;
 import nub.core.constraint.Hinge;
-import nub.ik.solver.geometric.oldtrik.TRIKTree;
+import nub.ik.solver.trik.Tree;
 import nub.ik.solver.trik.implementations.SimpleTRIK;
 import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
@@ -78,8 +78,8 @@ public class MultipleLimbs extends PApplet {
   }
 
 
-  public TRIKTree createSolver(Node root, float radius) {
-    TRIKTree solver = new TRIKTree(root, SimpleTRIK.HeuristicMode.COMBINED);
+  public Tree createSolver(Node root, float radius) {
+    Tree solver = new Tree(root, SimpleTRIK.HeuristicMode.COMBINED);
     solver.setTimesPerFrame(10);
     solver.setMaxIterations(10);
     solver.setChainTimesPerFrame(15);

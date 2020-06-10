@@ -4,7 +4,6 @@ import nub.core.Graph;
 import nub.core.Node;
 import nub.core.constraint.Constraint;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.oldtrik.NodeInformation;
 import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;

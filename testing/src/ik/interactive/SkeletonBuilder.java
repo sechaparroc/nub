@@ -7,7 +7,7 @@ import nub.core.constraint.Constraint;
 import nub.core.constraint.Hinge;
 import nub.ik.solver.Solver;
 import nub.ik.solver.geometric.TreeSolver;
-import nub.ik.solver.geometric.oldtrik.TRIKTree;
+import nub.ik.solver.trik.Tree;
 import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -394,7 +394,7 @@ public class SkeletonBuilder extends PApplet {
     if (key == CODED) {
       if (keyCode == SHIFT) {
         for (Solver solver : scene.treeSolvers()) {
-          if (solver instanceof TRIKTree) ((TRIKTree) solver).setDirection(true);
+          if (solver instanceof Tree) ((Tree) solver).setDirection(true);
         }
       }
     }
@@ -404,7 +404,7 @@ public class SkeletonBuilder extends PApplet {
     if (key == CODED) {
       if (keyCode == SHIFT) {
         for (Solver solver : scene.treeSolvers()) {
-          if (solver instanceof TRIKTree) ((TRIKTree) solver).setDirection(false);
+          if (solver instanceof Tree) ((Tree) solver).setDirection(false);
         }
       }
     }
@@ -472,7 +472,7 @@ public class SkeletonBuilder extends PApplet {
       target.setReference(((Joint) scene.node()).reference());
       //scene.addIKTarget(endEffector, target);
       if (solver instanceof TreeSolver) ((TreeSolver) solver).addTarget(endEffector, target);
-      if (solver instanceof TRIKTree) ((TRIKTree) solver).addTarget(endEffector, target);
+      if (solver instanceof Tree) ((Tree) solver).addTarget(endEffector, target);
 
       targets.add(target);
     }

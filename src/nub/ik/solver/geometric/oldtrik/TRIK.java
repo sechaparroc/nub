@@ -7,6 +7,7 @@ import nub.core.constraint.Constraint;
 import nub.core.constraint.Hinge;
 import nub.ik.solver.Solver;
 import nub.ik.solver.trik.Context;
+import nub.ik.solver.trik.NodeInformation;
 import nub.ik.visualization.InterestingEvent;
 import nub.ik.visualization.VisualizerMediator;
 import nub.primitives.Quaternion;

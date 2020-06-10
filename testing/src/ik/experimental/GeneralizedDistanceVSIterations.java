@@ -3,7 +3,7 @@ package ik.experimental;
 import ik.basic.Util;
 import nub.core.Node;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.oldtrik.NodeInformation;
+import nub.ik.solver.trik.NodeInformation;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import processing.core.PApplet;

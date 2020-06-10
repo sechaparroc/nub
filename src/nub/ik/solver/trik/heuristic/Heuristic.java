@@ -1,6 +1,6 @@
 package nub.ik.solver.trik.heuristic;
 
-import nub.ik.solver.geometric.oldtrik.NodeInformation;
+import nub.ik.solver.trik.NodeInformation;
 import nub.ik.solver.trik.Context;
 
 public abstract class Heuristic {
