@@ -78,7 +78,7 @@ public class DrawingConstraint extends PApplet {
     structure.add(j0);
     structure.add(j1);
 
-    solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.FINAL);
+    solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.COMBINED);
     target = new Joint(constraintScene, color(255, 0, 0), 0.2f * constraintScene.radius());
     target.setRoot(true);
     target.setReference(constraintRoot);

@@ -5,7 +5,8 @@ import nub.core.Graph;
 import nub.core.Interpolator;
 import nub.core.Node;
 import nub.ik.solver.Solver;
-import nub.ik.solver.trik.heuristic.FinalHeuristic;
+import nub.ik.solver.trik.heuristic.Combined;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.ik.solver.trik.implementations.SimpleTRIK;
 import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
@@ -161,8 +162,8 @@ public class HeuristicBenchmark extends PApplet {
 
     for (Solver s : solvers) {
       if (s instanceof SimpleTRIK) {
-        if (((SimpleTRIK) s).mainHeuristic() instanceof FinalHeuristic) {
-          FinalHeuristic hig = (FinalHeuristic) ((SimpleTRIK) s).mainHeuristic();
+        if (((SimpleTRIK) s).mainHeuristic() instanceof Combined) {
+          Combined hig = (Combined) ((SimpleTRIK) s).mainHeuristic();
           hig.drawVectors(scene);
           if (showContours) hig.drawPositionContourMap(scene);
         }
@@ -248,6 +249,8 @@ public class HeuristicBenchmark extends PApplet {
       for (Solver s : solvers) {
         if (s instanceof SimpleTRIK)
           ((SimpleTRIK) s).context().setSingleStep(!((SimpleTRIK) s).context().singleStep());
+        if (s instanceof IKSolver)
+          ((IKSolver) s).context().setSingleStep(!((IKSolver) s).context().singleStep());
       }
     }
 

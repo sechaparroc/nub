@@ -48,7 +48,7 @@ public class Viewer extends PApplet {
 
     skeletons = new ArrayList<Skeleton>();
 
-    skeletons.add(new Skeleton(parser, SimpleTRIK.HeuristicMode.EXPRESSIVE_FINAL, scene, 0, 255, 0, scene.radius() * 0.01f));
+    skeletons.add(new Skeleton(parser, SimpleTRIK.HeuristicMode.COMBINED_EXPRESSIVE, scene, 0, 255, 0, scene.radius() * 0.01f));
     //skeletons.add(new Skeleton(parser, SimpleTRIK.HeuristicMode.EXPRESSIVE_FINAL, scene, color(255,0,0), scene.radius() * 0.01f));
     //Joint.constraintFactor = 0;
     parser.root().cull(true);

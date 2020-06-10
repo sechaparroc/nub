@@ -8,8 +8,8 @@ import nub.core.constraint.PlanarPolygon;
 import nub.ik.solver.Solver;
 import nub.ik.solver.geometric.CCDSolver;
 import nub.ik.solver.geometric.ChainSolver;
-import nub.ik.solver.geometric.MySolver;
 import nub.ik.solver.geometric.oldtrik.TRIK;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.ik.solver.trik.implementations.SimpleTRIK;
 import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
@@ -28,10 +28,15 @@ public class Util {
   public enum ConstraintType {NONE, HINGE, CONE_POLYGON, CONE_ELLIPSE, CONE_CIRCLE, MIX, HINGE_ALIGNED, MIX_CONSTRAINED}
 
   public enum SolverType {
-    HC, FABRIK, FABRIK_H1, FABRIK_H2, FABRIK_H1_H2, HGSA, SDLS, PINV, TRANSPOSE, CCD, CCD_V2, GA, HAEA, MySolver, TRIK_V1, TRIK_V2, TRIK_V3, TRIK_V4,
-    FORWARD_TRIK, BACKWARD_TRIK, CCD_TRIK, FORWARD_TRIK_AND_TWIST, BACKWARD_TRIK_AND_TWIST, CCD_TRIK_AND_TWIST, FORWARD_TRIANGULATION_TRIK, FORWARD_TRIANGULATION_TRIK_AND_TWIST,
-    BACKWARD_TRIANGULATION_TRIK, BACKWARD_TRIANGULATION_TRIK_AND_TWIST, BACK_AND_FORTH_TRIK, LOOK_AHEAD_FORWARD, LOOK_AHEAD_FORWARD_AND_TWIST,
-    CCDT_BACK_AND_FORTH, CCD_BACK_AND_FORTH, BACK_AND_FORTH_TRIK_T, FINAL_TRIK, EXPRESSIVE_FINAL_TRIK
+    FABRIK, FABRIK_H1, FABRIK_H2, FABRIK_H1_H2, CCD, CCD_V2, TRIK_V1, TRIK_V2, TRIK_V3, TRIK_V4,
+    CCD_TRIK, CCD_TRIK_AND_TWIST, FORWARD_TRIANGULATION_TRIK, FORWARD_TRIANGULATION_TRIK_AND_TWIST,
+    BACKWARD_TRIANGULATION_TRIK, BACKWARD_TRIANGULATION_TRIK_AND_TWIST, LOOK_AHEAD_FORWARD, LOOK_AHEAD_FORWARD_AND_TWIST,
+    CCDT_BACK_AND_FORTH, CCD_BACK_AND_FORTH, BACK_AND_FORTH_TRIK_T, FINAL_TRIK, EXPRESSIVE_FINAL_TRIK,
+    //Latest ones
+    TRIANGULATION_HEURISTIC, BACK_AND_FORTH_TRIANGULATION_HEURISTIC,
+    CCD_HEURISTIC, BACK_AND_FORTH_CCD_HEURISTIC,
+    TRIK_HEURISTIC, BACK_AND_FORTH_TRIK_HEURISTIC,
+    COMBINED_HEURISTIC, COMBINED_EXPRESSIVE
   }
 
   public static Solver createSolver(SolverType type, List<Node> structure) {
@@ -67,8 +72,6 @@ public class Util {
         solver.setFixTwisting(true);
         return solver;
       }
-      case MySolver:
-        return new MySolver(structure);
       case TRIK_V1: {
         TRIK solver = new TRIK(structure);
         return solver;
@@ -95,47 +98,10 @@ public class Util {
         return solver;
       }
 
-      case FORWARD_TRIK: {
-        SimpleTRIK solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.FORWARD);
-        //solver.enableTwist(false);
-        return solver;
-      }
-
-      case BACKWARD_TRIK: {
-        SimpleTRIK solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.BACKWARD);
-        //solver.enableTwist(false);
-        return solver;
-
-      }
-
       case CCD_TRIK: {
         SimpleTRIK solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.CCD);
         solver.enableTwist(false);
         return solver;
-      }
-
-      case CCDT_BACK_AND_FORTH: {
-        SimpleTRIK solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.CCDT_BACK_AND_FORTH);
-        //solver.enableTwist(false);
-        return solver;
-      }
-
-      case CCD_BACK_AND_FORTH: {
-
-        SimpleTRIK solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.CCD_BACK_AND_FORTH);
-        //solver.enableTwist(false);
-        return solver;
-      }
-
-      case FORWARD_TRIK_AND_TWIST: {
-        SimpleTRIK solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.FORWARD);
-        return solver;
-      }
-
-      case BACKWARD_TRIK_AND_TWIST: {
-        SimpleTRIK solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.BACKWARD);
-        return solver;
-
       }
 
       case CCD_TRIK_AND_TWIST: {
@@ -165,17 +131,6 @@ public class Util {
         return solver;
       }
 
-      case BACK_AND_FORTH_TRIK: {
-        SimpleTRIK solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.BACK_AND_FORTH);
-        //solver.enableTwist(false);
-        return solver;
-      }
-
-      case BACK_AND_FORTH_TRIK_T: {
-        SimpleTRIK solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.BACK_AND_FORTH_T);
-        //solver.enableTwist(false);
-        return solver;
-      }
       case LOOK_AHEAD_FORWARD: {
         SimpleTRIK solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.LOOK_AHEAD_FORWARD);
         //solver.enableTwist(false);
@@ -188,13 +143,53 @@ public class Util {
       }
 
       case FINAL_TRIK: {
-        SimpleTRIK solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.FINAL);
+        SimpleTRIK solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.COMBINED);
         return solver;
       }
 
       case EXPRESSIVE_FINAL_TRIK: {
-        SimpleTRIK solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.EXPRESSIVE_FINAL);
+        SimpleTRIK solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.COMBINED_EXPRESSIVE);
         //solver.enableSmooth(true);
+        return solver;
+      }
+
+      case CCD_HEURISTIC:{
+        IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.CCD);
+        return solver;
+      }
+
+      case BACK_AND_FORTH_CCD_HEURISTIC:{
+        IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.BACK_AND_FORTH_CCD);
+        return solver;
+      }
+
+      case TRIK_HEURISTIC:{
+        IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.TRIK);
+        return solver;
+      }
+
+      case BACK_AND_FORTH_TRIK_HEURISTIC:{
+        IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.BACK_AND_FORTH_TRIK);
+        return solver;
+      }
+
+      case TRIANGULATION_HEURISTIC:{
+        IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.TRIANGULATION);
+        return solver;
+      }
+
+      case BACK_AND_FORTH_TRIANGULATION_HEURISTIC:{
+        IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.BACK_AND_FORTH_TRIANGULATION);
+        return solver;
+      }
+
+      case COMBINED_EXPRESSIVE:{
+        IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.COMBINED_EXPRESSIVE);
+        return solver;
+      }
+
+      case COMBINED_HEURISTIC:{
+        IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.COMBINED);
         return solver;
       }
       default:
@@ -469,9 +464,6 @@ public class Util {
     if (solver instanceof CCDSolver) {
       pg.text("CCD" + "\n Error: " + String.format("%.7f", solver.error()) + "\nAccum error : " + solver.accumulatedError() + "\n iter : " + solver.lastIteration(), pos.x() - 30, pos.y() + 10, pos.x() + 30, pos.y() + 50);
     }
-    if (solver instanceof MySolver) {
-      pg.text("MySolver" + "\n Error: " + String.format("%.7f", solver.error()) + "\n iter : " + solver.lastIteration(), pos.x() - 30, pos.y() + 10, pos.x() + 30, pos.y() + 50);
-    }
     if (solver instanceof TRIK) {
       TRIK trik = (TRIK) solver;
       String error = "\n Error (pos): " + String.format("%.7f", trik.positionError());
@@ -486,61 +478,24 @@ public class Util {
     if (solver instanceof SimpleTRIK) {
       SimpleTRIK trik = (SimpleTRIK) solver;
 
-      String heuristics = "";
-      switch (trik.mode()) {
-        case BACKWARD: {
-          heuristics += "BACKWARD TRIK";
-          break;
-        }
-        case FORWARD: {
-          heuristics += "FORWARD TRIK";
-          break;
-        }
-        case CCD: {
-          heuristics += "CCD TRIK";
-          break;
-        }
-        case CCD_BACK_AND_FORTH: {
-          heuristics += "CCD BACK AND FORTH";
-          break;
-        }
-
-        case CCDT_BACK_AND_FORTH: {
-          heuristics += "CCDT BACK AND FORTH";
-          break;
-        }
-        case FORWARD_TRIANGULATION: {
-          heuristics += "TRIANGULATION TRIK";
-          break;
-        }
-
-        case BACKWARD_TRIANGULATION: {
-          heuristics += "BKW TRIANGULATION TRIK";
-          break;
-        }
-
-        case BACK_AND_FORTH: {
-          heuristics += "BACK AND FORTH";
-          break;
-        }
-        case BACK_AND_FORTH_T: {
-          heuristics += "BACK AND FORTH T";
-          break;
-        }
-        case FINAL: {
-          heuristics += "Final";
-          break;
-        }
-
-        case EXPRESSIVE_FINAL: {
-          heuristics += "Expressive final";
-          break;
-        }
-      }
+      String heuristics = String.join(" ", trik.mode().name().split("_"));
       if (trik.enableTwist()) heuristics += "\nWITH TWIST";
       String error = "\n Error (pos): " + String.format("%.7f", trik.positionError());
       if (trik.direction()) {
         error += "\n Error (or): " + String.format("%.7f", trik.orientationError());
+      }
+      error += "\nAccum error : " + solver.accumulatedError();
+      pg.text(heuristics + error + "\n iter : " + solver.lastIteration(), pos.x() - 30, pos.y() + 10, pos.x() + 30, pos.y() + 50);
+    }
+
+    if (solver instanceof IKSolver) {
+      IKSolver ikSolver = (IKSolver) solver;
+
+      String heuristics = String.join(" ", ikSolver.mode().name().split("_"));
+      if (ikSolver.enableTwist()) heuristics += "\nWITH TWIST";
+      String error = "\n Error (pos): " + String.format("%.7f", ikSolver.positionError());
+      if (ikSolver.direction()) {
+        error += "\n Error (or): " + String.format("%.7f", ikSolver.orientationError());
       }
       error += "\nAccum error : " + solver.accumulatedError();
       pg.text(heuristics + error + "\n iter : " + solver.lastIteration(), pos.x() - 30, pos.y() + 10, pos.x() + 30, pos.y() + 50);

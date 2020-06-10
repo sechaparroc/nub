@@ -7,7 +7,6 @@ import nub.core.constraint.Hinge;
 import nub.ik.solver.Solver;
 import nub.ik.solver.geometric.CCDSolver;
 import nub.ik.solver.geometric.ChainSolver;
-import nub.ik.solver.geometric.MySolver;
 import nub.ik.solver.geometric.oldtrik.TRIK;
 import nub.ik.solver.trik.implementations.SimpleTRIK;
 import nub.ik.animation.Joint;
@@ -24,7 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public class NaiveLocomotion extends PApplet {
-  public enum IKMode {BIOIK, FABRIK, CCD, MYSOLVER, TRIK, SIMPLETRIK}
+  public enum IKMode {FABRIK, CCD, TRIK, SIMPLETRIK}
 
   ;
   Scene scene;
@@ -104,12 +103,6 @@ public class NaiveLocomotion extends PApplet {
         ((ChainSolver) solver).setTargetDirection(new Vector(0, 0, 1));
         break;
       }
-      case MYSOLVER: {
-        solver = new MySolver(limb);
-        ((MySolver) solver).setTarget(target);
-        break;
-      }
-
       case TRIK: {
         solver = new TRIK(limb);
         ((TRIK) solver).setTarget(target);
@@ -120,7 +113,7 @@ public class NaiveLocomotion extends PApplet {
       }
 
       case SIMPLETRIK: {
-        solver = new SimpleTRIK(limb, SimpleTRIK.HeuristicMode.EXPRESSIVE_FINAL);
+        solver = new SimpleTRIK(limb, SimpleTRIK.HeuristicMode.COMBINED_EXPRESSIVE);
         ((SimpleTRIK) solver).context().setDirection(true);
         ((SimpleTRIK) solver).context().setSearchingAreaRadius(0.2f, true);
         ((SimpleTRIK) solver).context().setOrientationWeight(0.5f);

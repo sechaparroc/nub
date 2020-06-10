@@ -56,7 +56,7 @@ public class SimpleSphericalPolygon extends PApplet{
         List<Node> skeleton = new ArrayList<Node>();
         skeleton.add(j1);
         skeleton.add(j2);
-        solver = new SimpleTRIK(skeleton, SimpleTRIK.HeuristicMode.FINAL);
+        solver = new SimpleTRIK(skeleton, SimpleTRIK.HeuristicMode.COMBINED);
         Node target = Util.createTarget(scene, scene.radius() * 0.07f);
         target.set(j2);
         solver.setTarget(j2, target);

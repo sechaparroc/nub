@@ -79,7 +79,7 @@ public class MultipleLimbs extends PApplet {
 
 
   public TRIKTree createSolver(Node root, float radius) {
-    TRIKTree solver = new TRIKTree(root, SimpleTRIK.HeuristicMode.FINAL);
+    TRIKTree solver = new TRIKTree(root, SimpleTRIK.HeuristicMode.COMBINED);
     solver.setTimesPerFrame(10);
     solver.setMaxIterations(10);
     solver.setChainTimesPerFrame(15);

@@ -6,13 +6,11 @@ import nub.core.Node;
 import nub.core.constraint.Hinge;
 import nub.ik.animation.Joint;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.CCDSolver;
 import nub.ik.solver.trik.implementations.SimpleTRIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import processing.core.PApplet;
-import processing.core.PShape;
 import processing.event.MouseEvent;
 
 import java.util.ArrayList;
@@ -46,7 +44,7 @@ public class SimpleHinge extends PApplet {
     List<Node> skeleton = new ArrayList<Node>();
     skeleton.add(j1);
     skeleton.add(j2);
-    solver = new SimpleTRIK(skeleton, SimpleTRIK.HeuristicMode.FINAL);
+    solver = new SimpleTRIK(skeleton, SimpleTRIK.HeuristicMode.COMBINED);
     Node target = Util.createTarget(scene, scene.radius() * 0.07f);
     target.set(j2);
     solver.setTarget(j2, target);

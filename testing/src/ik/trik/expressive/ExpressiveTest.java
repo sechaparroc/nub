@@ -3,7 +3,7 @@ package ik.trik.expressive;
 import ik.basic.Util;
 import nub.core.Node;
 import nub.core.constraint.Constraint;
-import nub.ik.solver.trik.heuristic.FinalHeuristic;
+import nub.ik.solver.trik.heuristic.Combined;
 import nub.ik.solver.trik.implementations.SimpleTRIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -45,7 +45,7 @@ public class ExpressiveTest extends PApplet {
     //Util.generateConstraints(structure, Util.ConstraintType.CONE_CIRCLE, 0, true);
 
     //solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.FINAL);
-    solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.EXPRESSIVE_FINAL);
+    solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.COMBINED_EXPRESSIVE);
     solver.setTarget(structure.get(numJoints - 1), target);
     //solver.enableSmooth(true);
     //solver.context().setSingleStep(!solve);
@@ -103,8 +103,8 @@ public class ExpressiveTest extends PApplet {
     mainScene.drawAxes();
     mainScene.render();
 
-    if (solver.mainHeuristic() instanceof FinalHeuristic) {
-      FinalHeuristic hig = (FinalHeuristic) (solver.mainHeuristic());
+    if (solver.mainHeuristic() instanceof Combined) {
+      Combined hig = (Combined) (solver.mainHeuristic());
       hig.drawVectors(mainScene);
     }
 

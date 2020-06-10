@@ -9,7 +9,6 @@ import nub.ik.solver.Solver;
 import nub.ik.solver.geometric.CCDSolver;
 import nub.ik.solver.geometric.ChainSolver;
 import nub.ik.solver.geometric.FABRIKSolver;
-import nub.ik.solver.geometric.MySolver;
 import nub.ik.solver.geometric.oldtrik.TRIK;
 import nub.ik.solver.trik.implementations.SimpleTRIK;
 import nub.ik.animation.Joint;
@@ -27,7 +26,7 @@ import java.util.List;
 
 public class NaiveBiped extends PApplet {
 
-  public enum IKMode {FABRIK, CCD, MYSOLVER, TRIK, SIMPLETRIK}
+  public enum IKMode {FABRIK, CCD, TRIK, SIMPLETRIK}
 
   ;
 
@@ -82,12 +81,6 @@ public class NaiveBiped extends PApplet {
     if (debug) {
       hint(DISABLE_DEPTH_TEST);
       for (Solver solver : solvers) {
-        if (solver instanceof MySolver) {
-          scene.beginHUD();
-          Vector t = scene.screenLocation(((MySolver) solver).target());
-          text(" " + ((MySolver) solver).target().position(), t.x(), t.y());
-          scene.endHUD();
-        }
         if (!(solver instanceof ChainSolver)) continue;
         ChainSolver s = (ChainSolver) solver;
                 /*if(s.iterationsHistory() != null && !s.iterationsHistory().isEmpty() && show[0]) {
@@ -175,11 +168,6 @@ public class NaiveBiped extends PApplet {
         ((ChainSolver) solver).setTargetDirection(new Vector(0, 0, 1));
         break;
       }
-      case MYSOLVER: {
-        solver = new MySolver(limb);
-        ((MySolver) solver).setTarget(target);
-        break;
-      }
 
       case TRIK: {
         solver = new TRIK(limb);
@@ -191,7 +179,7 @@ public class NaiveBiped extends PApplet {
       }
 
       case SIMPLETRIK: {
-        solver = new SimpleTRIK(limb, SimpleTRIK.HeuristicMode.EXPRESSIVE_FINAL);
+        solver = new SimpleTRIK(limb, SimpleTRIK.HeuristicMode.COMBINED_EXPRESSIVE);
         ((SimpleTRIK) solver).context().setDirection(true);
         ((SimpleTRIK) solver).context().setSearchingAreaRadius(3f, true);
         ((SimpleTRIK) solver).context().setOrientationWeight(0.1f);

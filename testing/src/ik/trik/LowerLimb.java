@@ -43,14 +43,14 @@ public class LowerLimb extends PApplet {
     createPath(target, 9f, 7, 2, boneLength * numJoints * 0.2f, 10);
 
     //Create the IK solver
-    SimpleTRIK solver = new SimpleTRIK(skeleton, SimpleTRIK.HeuristicMode.FINAL);
+    SimpleTRIK solver = new SimpleTRIK(skeleton, SimpleTRIK.HeuristicMode.COMBINED);
     solver.setTimesPerFrame(5);
     solver.setMaxIterations(5);
     solver.setMaxError(scene.radius() * 0.001f);
     solver.setTarget(skeleton.get(skeleton.size() - 1), target);
 
     List<Joint> skeleton2 = createSkeleton(scene, numJoints, boneLength, radius, color(0, 255, 0));
-    SimpleTRIK solver2 = new SimpleTRIK(skeleton2, SimpleTRIK.HeuristicMode.FINAL);
+    SimpleTRIK solver2 = new SimpleTRIK(skeleton2, SimpleTRIK.HeuristicMode.COMBINED);
     solver2.context().enableDelegation(true);
 
     //solver2.enableSmooth(true);

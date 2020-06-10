@@ -90,7 +90,7 @@ public class Case1 extends PApplet {
     CCDSolver ccdSolver = new CCDSolver(structures.get(i++));
     solvers.add(ccdSolver);
     //CCD TRIK
-    SimpleTRIK simpleTRIK = new SimpleTRIK(structures.get(i++), SimpleTRIK.HeuristicMode.FINAL);
+    SimpleTRIK simpleTRIK = new SimpleTRIK(structures.get(i++), SimpleTRIK.HeuristicMode.COMBINED);
     solvers.add(simpleTRIK);
 
     //ChainSolver chainSolver;

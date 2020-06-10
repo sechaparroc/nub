@@ -2,8 +2,6 @@ package ik.basic;
 
 import nub.core.Graph;
 import nub.core.Node;
-import nub.ik.solver.geometric.CCDSolver;
-import nub.ik.solver.geometric.ChainSolver;
 import nub.ik.solver.trik.implementations.SimpleTRIK;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -78,7 +76,7 @@ public class InstantiateIK2 extends PApplet {
     //3. Relate the structure with a Solver. In this example we instantiate a solver
 
     //A Chain solver constructor receives an ArrayList containing the Skeleton structure
-    SimpleTRIK solver1 = new SimpleTRIK(skeleton1, SimpleTRIK.HeuristicMode.FINAL);
+    SimpleTRIK solver1 = new SimpleTRIK(skeleton1, SimpleTRIK.HeuristicMode.COMBINED);
 
     //Optionally you could modify the following parameters of the Solver:
     //Maximum distance between end effector and target, If is below maxError, then we stop executing IK solver (Default value is 0.01)

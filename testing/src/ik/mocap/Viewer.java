@@ -203,7 +203,7 @@ public class Viewer extends PApplet {
 
       //BioIk chain = new BioIk(fr, 10, 4);
       //ChainSolver chain = new ChainSolver((ArrayList) fr);
-      SimpleTRIK chain = new SimpleTRIK((ArrayList) fr, SimpleTRIK.HeuristicMode.EXPRESSIVE_FINAL);
+      SimpleTRIK chain = new SimpleTRIK((ArrayList) fr, SimpleTRIK.HeuristicMode.COMBINED_EXPRESSIVE);
       //SimpleTRIK chain = new TRIK((ArrayList) fr);
       //chain.setLookAhead(3);
       //chain.enableWeight(true);
