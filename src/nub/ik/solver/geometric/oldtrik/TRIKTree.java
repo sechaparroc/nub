@@ -55,12 +55,12 @@ public class TRIKTree extends Solver {
   }
 
   protected TreeNode _root;
-  protected SimpleTRIK.HeuristicMode _mode = SimpleTRIK.HeuristicMode.EXPRESSIVE_FINAL;
+  protected SimpleTRIK.HeuristicMode _mode = SimpleTRIK.HeuristicMode.COMBINED_EXPRESSIVE;
   protected float _current = 10e10f, _best = 10e10f;
   protected HashMap<Node, Node> _endEffectorMap = new HashMap<>();
 
   public TRIKTree(Node root) {
-    this(root, SimpleTRIK.HeuristicMode.EXPRESSIVE_FINAL);
+    this(root, SimpleTRIK.HeuristicMode.COMBINED_EXPRESSIVE);
   }
 
   public TRIKTree(Node root, SimpleTRIK.HeuristicMode mode) {
