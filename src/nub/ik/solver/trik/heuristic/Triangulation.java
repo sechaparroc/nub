@@ -57,16 +57,12 @@ public class Triangulation extends Heuristic {
 
 
     float a_mag = a.magnitude(), b_mag = b.magnitude(), c_mag = c.magnitude();
-
-
     Quaternion delta;
     if (a_mag + b_mag <= c_mag) {
       //Chain must be extended as much as possible
-      if (context.debug()) System.out.println("Extend chain!");
       delta = new Quaternion(a, c);
     } else if (c_mag < Math.abs(a_mag - b_mag)) {
       //Chain must be contracted as much as possible
-      if (context.debug()) System.out.println("Contract chain!");
       delta = new Quaternion(a, Vector.multiply(c, -1));
     } else {
       //Apply law of cosines
@@ -80,7 +76,7 @@ public class Triangulation extends Heuristic {
 
     if(!updateCouple) return;
     //update the next joint using CCD
-    context.usableChainInformation().get(i + 1).updateCacheUsingReference();
+    j_i1.updateCacheUsingReference();
     CCD.applyCCD(heuristic, i + 1);
   }
 
@@ -98,14 +94,14 @@ public class Triangulation extends Heuristic {
     }
     //compute mu
     float mu;
-    if(b >= c){
+    if(b >= c && c >= 0){
       mu = c - (a - b);
-    } else if(c > b){
+    } else if(c > b && b >= 0){
       mu = b - (a - c);
     } else {
       return Float.NaN;
     }
-    return (float)(2*Math.atan(Math.sqrt(((a-b)+c)*mu/((a+(b+c))*((a-c)+b)))));
+    return (float)(2*Math.atan(Math.sqrt(Math.abs(((a-b)+c)*mu/((a+(b+c))*((a-c)+b))))));
   }
 
 
