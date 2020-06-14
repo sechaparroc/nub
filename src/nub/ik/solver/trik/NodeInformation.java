@@ -13,10 +13,10 @@ public class NodeInformation {
   //THIS CLASS IS USED IN ORDER TO AVOID REDUNDANT WORK
   //TODO: Move this class and refine
   public static boolean disableCache = false; //DISABLE CACHE ONLY FOR HIGH PRECISION BENCHMARK
-  NodeInformation _reference;
-  Node _node;
-  Quaternion _orientationCache;
-  Vector _positionCache;
+  protected NodeInformation _reference;
+  protected Node _node;
+  protected Quaternion _orientationCache;
+  protected Vector _positionCache;
 
   public NodeInformation(NodeInformation ref, Node node) {
     this._reference = ref;
@@ -125,7 +125,10 @@ public class NodeInformation {
   //Rotate the node by delta and update the orientation/position of the remaining nodes
   public void rotateAndUpdateCache(Quaternion delta, boolean useConstraint, NodeInformation... nodeInfoList) {
     Constraint constraint = _node.constraint();
-    if (useConstraint && constraint != null) delta = constraint.constrainRotation(delta, _node);
+    if (useConstraint && constraint != null){
+      delta = constraint.constrainRotation(delta, _node);
+      delta.normalize();
+    }
 
     _node.setConstraint(null);
     Quaternion orientation = Quaternion.compose(orientationCache(), delta);
@@ -182,7 +185,7 @@ public class NodeInformation {
   }
 
   public static void _updateCache(List<NodeInformation> nodeInfoList) {
-    Quaternion orientation = nodeInfoList.get(0).node().reference() != null ? nodeInfoList.get(0).node().reference().orientation() : new Quaternion();
+    Quaternion orientation = nodeInfoList.get(0).node().reference() != null ? nodeInfoList.get(0).node().reference().orientation().get() : new Quaternion();
     orientation.normalize();
     Vector position = nodeInfoList.get(0).node().reference() != null ? nodeInfoList.get(0).node().reference().position() : new Vector();
     for (NodeInformation nodeInfo : nodeInfoList) {
