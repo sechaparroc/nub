@@ -60,6 +60,7 @@ public class Context {
   protected float _weightRatio = 3f, _weightRatioNear = 1.2f; //how many times is position more important than orientation
   protected float _weightThreshold = 0.1f; //change error measurement when the chain is near the target
   protected int _last = -1;
+  protected int _endEffectorId;
 
   protected boolean _singleStep = false;
 
@@ -131,6 +132,7 @@ public class Context {
 
     this._worldTarget = target == null ? Node.detach(new Vector(), new Quaternion(), 1) : Node.detach(_target.position(), _target.orientation(), 1);
     this._last = _chain.size() - 1;
+    _endEffectorId = _last;
     _delegationAtJoint = new float[chain.size() - 1];
     update();
   }
@@ -163,6 +165,11 @@ public class Context {
   public int last() {
     return _last;
   }
+
+  public int endEffectorId(){
+    return _endEffectorId;
+  }
+
 
   public boolean direction() {
     return _direction;
@@ -198,7 +205,7 @@ public class Context {
   }
 
   public NodeInformation endEffectorInformation() {
-    return _usableChainInformation.get(_last);
+    return _usableChainInformation.get(_endEffectorId);
   }
 
   public float weightRatio() {
@@ -227,6 +234,19 @@ public class Context {
 
   public void setAvgLength(float avgLength) {
     _avgLength = avgLength;
+  }
+
+  public void setTarget(Node endEffector, Node target){
+    _endEffectorId = chain().indexOf(endEffector);
+    _target = target;
+  }
+
+  public void setEndEffector(int id){
+    _endEffectorId = id;
+  }
+
+  public void setEndEffector(Node endEffector){
+    _endEffectorId = chain().indexOf(endEffector);
   }
 
   public void setTarget(Node target) {
