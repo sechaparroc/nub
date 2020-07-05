@@ -24,6 +24,7 @@ public class Joint extends Node {
   public static boolean axes = false;
   public static float constraintFactor = 0.5f;
   public static boolean drawCylinder = false;
+  protected Node _auxNode = Node.detach(new Vector(), new Quaternion(), 1);
 
   //set to true only when the joint is the root (for rendering purposes)
   protected boolean _isRoot = false, _drawConstraint = true;
@@ -86,8 +87,9 @@ public class Joint extends Node {
           //align Y axis with bone
           pg.noStroke();
           Quaternion q = new Quaternion(new Vector(0, 0, 1), v);
-          Node aux = Node.detach(Vector.multiply(v, _radius / m), q, 1);
-          Scene.applyTransformation(pg, aux);
+          _auxNode.setPosition(Vector.multiply(v, _radius / m));
+          _auxNode.setOrientation(q);
+          Scene.applyTransformation(pg, _auxNode);
           Scene.drawCylinder(pg, _radius * 0.5f, m - 2 * _radius);
           pg.popMatrix();
         } else {
