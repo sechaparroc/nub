@@ -35,7 +35,7 @@ public class TRIK extends Heuristic {
 
     @Override
     public NodeInformation[] nodesToModify(int i) {
-        if(i == _context.last() - 1) return new NodeInformation[]{_context.usableChainInformation().get(i)};
+        if(i == _context.endEffectorId() - 1) return new NodeInformation[]{_context.usableChainInformation().get(i)};
         else return new NodeInformation[]{_context.usableChainInformation().get(i), _context.usableChainInformation().get(i + 1)};
     }
 
@@ -94,7 +94,7 @@ public class TRIK extends Heuristic {
         NodeInformation j_i1 = context.usableChainInformation().get(i + 1);
         //find the rotation that reaches the target while keeps the orientation
         Quaternion delta_i = findReachStep(j_i, j_i1, eff_wrt_j_i, target_wrt_j_i, true);
-        if(i == context.last() - 1){
+        if(i == context.endEffectorId() - 1){
             //check just a joint instead of a couple of joints
             j_i.rotateAndUpdateCache(delta_i, false, context.endEffectorInformation());
         } else {

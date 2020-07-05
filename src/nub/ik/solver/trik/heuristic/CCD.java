@@ -63,7 +63,7 @@ public class CCD extends Heuristic {
     Quaternion delta = findCCD(j_i, eff_wrt_j_i, target_wrt_j_i, true);
     if (heuristic._smooth) delta = Util.clampRotation(delta, heuristic._smoothAngle);
     delta = Util.constraintRotation(j_i, delta);
-    j_i.rotateAndUpdateCache(delta, true, endEffector); //Apply local rotation
+    j_i.rotateAndUpdateCache(delta, false, endEffector); //Apply local rotation
   }
 
   public static void applyOrientationalCCD(Heuristic heuristic, int i){
@@ -71,7 +71,7 @@ public class CCD extends Heuristic {
     NodeInformation j_i = context.usableChainInformation().get(i);
     if (context.direction()) {
       float maxAngle = Util.findMaxDirectionalAngle(j_i, context.endEffectorInformation(), context.searchingAreaRadius());
-      Quaternion deltaDirection = findOrientationalCCD(j_i, context.usableChainInformation().get(context.last()), context.worldTarget());
+      Quaternion deltaDirection = findOrientationalCCD(j_i, context.usableChainInformation().get(context.endEffectorId()), context.worldTarget());
       deltaDirection = Util.clampRotation(deltaDirection, maxAngle);
       deltaDirection = Util.constraintRotation(j_i, deltaDirection);
       j_i.rotateAndUpdateCache(deltaDirection, false, context.endEffectorInformation());

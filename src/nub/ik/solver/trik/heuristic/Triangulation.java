@@ -25,8 +25,8 @@ public class Triangulation extends Heuristic {
 
   @Override
   public void applyActions(int i) {
-    applyTriangulation(this, i, i < _context.last() - 1 && !_context.topToBottom());
-    if(i == _context.last() - 1) return;
+    applyTriangulation(this, i, i < _context.endEffectorId() - 1 && !_context.topToBottom());
+    if(i == _context.endEffectorId() - 1) return;
     if(_context.topToBottom()) {
       CCD.applyOrientationalCCD(this, i);
       _context.usableChainInformation().get(i + 1).updateCacheUsingReference();

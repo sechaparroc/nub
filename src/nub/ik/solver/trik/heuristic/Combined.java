@@ -55,7 +55,7 @@ public class Combined extends Heuristic {
       _context.usableChainInformation().get(i + 1).updateCacheUsingReference();
       int currentIteration = _context._currentIteration();
       if (_context.singleStep()) {
-        currentIteration = currentIteration / _context.chain().size();
+        currentIteration = currentIteration / (_context.endEffectorId() + 1);
       }
 
       if (_log) {
@@ -99,7 +99,7 @@ public class Combined extends Heuristic {
       System.out.println("On i : " + i);
     }
 
-    if (i == _context.last() - 1) {
+    if (i == _context.endEffectorId() - 1) {
       Quaternion q_i = findCCD(i, j_i, eff_wrt_j_i, target_wrt_j_i, true);
       j_i.rotateAndUpdateCache(q_i, false, _context.endEffectorInformation()); //Apply local rotation
       CCD.applyOrientationalCCD(this, i);

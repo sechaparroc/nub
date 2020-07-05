@@ -9,7 +9,7 @@ public class BackAndForth extends Heuristic {
      */
     public enum Mode{ CCD, TRIK, TRIANGULATION }
 
-    protected int _times = 3;
+    protected int _times = 2;
     protected Mode _mode;
 
     public BackAndForth(Context context, Mode mode) {
@@ -43,7 +43,7 @@ public class BackAndForth extends Heuristic {
                 CCD.applyCCD(this, i);
             }
         }
-        if(i >= _context.last() - 1) return;
+        if(i >= _context.endEffectorId() - 1) return;
         //Apply CCD Back and Forth k times
         NodeInformation j_i1 = _context.usableChainInformation().get(i + 1);
         for (int t = 0; t < _times; t++) {
