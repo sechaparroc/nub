@@ -12,6 +12,9 @@ public class FA3R {
      * Author: Jin Wu, Zebo Zhou et al.
      * e-mail: jin_wu_uestc@hotmail.com;	klinsmann.zhou@gmail.com
      * https://github.com/zarathustr/FA3R/blob/master/FA3R.cpp
+     *
+     * For an intuitive explanation of the problem please visit
+     * http://nghiaho.com/?page_id=671
      * */
 
 
@@ -21,21 +24,26 @@ public class FA3R {
         z_new[2] = k * (z[2] + x[0] * y[1] - x[1] * y[0]);
     }
 
-    public static Quaternion FA3R(List<Vector> Q, List<Vector> P){
+    public static Quaternion FA3R(List<Vector> Q, List<Vector> P, Vector Q_centroid, Vector P_centroid){
         int n = P.size();
+        if(n == 0) return new Quaternion();
+        if(n == 1){
+            return new Quaternion(P.get(0), Q.get(0));
+        }
+
         double[][] sigma_ = new double[3][3];
         //float dist = 0;
         for(int i = 0; i < n; i++){
             double  w = 1.f/n;
-            sigma_[0][0] += (Q.get(i).x()) * (P.get(i).x()) * w;
-            sigma_[0][1] += (Q.get(i).x()) * (P.get(i).y()) * w;
-            sigma_[0][2] += (Q.get(i).x()) * (P.get(i).z()) * w;
-            sigma_[1][0] += (Q.get(i).y()) * (P.get(i).x()) * w;
-            sigma_[1][1] += (Q.get(i).y()) * (P.get(i).y()) * w;
-            sigma_[1][2] += (Q.get(i).y()) * (P.get(i).z()) * w;
-            sigma_[2][0] += (Q.get(i).z()) * (P.get(i).x()) * w;
-            sigma_[2][1] += (Q.get(i).z()) * (P.get(i).y()) * w;
-            sigma_[2][2] += (Q.get(i).z()) * (P.get(i).z()) * w;
+            sigma_[0][0] += (Q.get(i).x() - Q_centroid.x()) * (P.get(i).x() - P_centroid.x()) * w;
+            sigma_[0][1] += (Q.get(i).x() - Q_centroid.x()) * (P.get(i).y() - P_centroid.y()) * w;
+            sigma_[0][2] += (Q.get(i).x() - Q_centroid.x()) * (P.get(i).z() - P_centroid.z()) * w;
+            sigma_[1][0] += (Q.get(i).y() - Q_centroid.y()) * (P.get(i).x() - P_centroid.x()) * w;
+            sigma_[1][1] += (Q.get(i).y() - Q_centroid.y()) * (P.get(i).y() - P_centroid.y()) * w;
+            sigma_[1][2] += (Q.get(i).y() - Q_centroid.y()) * (P.get(i).z() - P_centroid.z()) * w;
+            sigma_[2][0] += (Q.get(i).z() - Q_centroid.z()) * (P.get(i).x() - P_centroid.x()) * w;
+            sigma_[2][1] += (Q.get(i).z() - Q_centroid.z()) * (P.get(i).y() - P_centroid.y()) * w;
+            sigma_[2][2] += (Q.get(i).z() - Q_centroid.z()) * (P.get(i).z() - P_centroid.z()) * w;
             //dist += Vector.distance(P.get(i).normalize(new Vector()), Q.get(i).normalize(new Vector()));
         }
         //if(dist / n < 0.01) return new Quaternion();
@@ -51,7 +59,7 @@ public class FA3R {
 
         double k;
 
-        for(int i = 0; i < 50; ++i)
+        for(int i = 0; i < 15; ++i)
         {
             k = 2.0 / (hx[0] * hx[0] + hx[1] * hx[1] + hx[2] * hx[2] +
                     hy[0] * hy[0] + hy[1] * hy[1] + hy[2] * hy[2] +
