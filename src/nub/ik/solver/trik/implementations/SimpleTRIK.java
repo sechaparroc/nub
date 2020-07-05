@@ -39,13 +39,13 @@ public class SimpleTRIK extends Solver {
 
   public SimpleTRIK(List<? extends Node> chain, Node target, HeuristicMode mode) {
     super();
-    this._context = new Context(chain, target, true);
+    this._context = new Context(chain, target, false);
     _context.setSolver(this);
     _setHeuristicMode(mode);
     this._twistHeuristic = new Twist(_context);
     _enableTwist = false;
     enableSmooth(false);
-    _context.setSingleStep(true);
+    _context.setSingleStep(false);
   }
 
   protected void _setHeuristicMode(HeuristicMode mode) {
