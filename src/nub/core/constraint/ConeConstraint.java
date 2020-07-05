@@ -132,64 +132,6 @@ public abstract class ConeConstraint extends Constraint {
     setRestRotation(reference, up, twist, twist);
   }
 
-  @Override
-  public Quaternion constrainRotation(Quaternion rotation, Node node) {
-    //Define how much idle rotation must change according to this rules:
-    //(1) idle * idle_change = node * rotation * offset
-    //(2) idle * idle_change * rest_rotation = idle * rest_rotation * rest_change
-    //(3) offset is applied w.r.t idle space
-    Quaternion delta_idle = Quaternion.compose(_idleRotation.inverse(), node.rotation());
-    delta_idle.normalize();
-    delta_idle.compose(rotation);
-    delta_idle.normalize();
-    delta_idle.compose(_offset);
-    Quaternion delta_rest = Quaternion.compose(_restRotation.inverse(), delta_idle);
-    delta_rest.normalize();
-    delta_rest.compose(_restRotation);
-    delta_rest.normalize();
-
-    //work w.r.t rest space
-    //Decompose delta in terms of twist and swing (twist vector w.r.t rest)
-    Vector tw = new Vector(0, 0, 1); // w.r.t idle
-    Vector rotationAxis = new Vector(delta_rest._quaternion[0], delta_rest._quaternion[1], delta_rest._quaternion[2]);
-    rotationAxis = Vector.projectVectorOnAxis(rotationAxis, tw); // w.r.t idle
-    //Get rotation component on Axis direction
-    Quaternion rotationTwist = new Quaternion(rotationAxis.x(), rotationAxis.y(), rotationAxis.z(), delta_rest.w()); //w.r.t rest
-    Quaternion rotationSwing = Quaternion.compose(delta_rest, rotationTwist.inverse()); //w.r.t rest
-    //Constraint swing
-    Vector new_pos = rotationSwing.rotate(new Vector(0, 0, 1)); //get twist desired target position
-    Vector constrained = apply(new_pos); // constraint target position
-    rotationSwing = new Quaternion(tw, constrained); // get constrained swing rotation
-    //Constraint twist
-    //Find idle twist
-    //compare angles
-    float twistAngle = rotationTwist.angle();
-    if (rotationAxis.dot(tw) < 0) twistAngle = -twistAngle;
-    //Check that twist angle is in range [-min, max]
-    if ((twistAngle < 0 && -twistAngle > _min) || (twistAngle > 0 && twistAngle > _max)) {
-
-      twistAngle = twistAngle < 0 ? (float) (twistAngle + 2 * Math.PI) : twistAngle;
-      twistAngle = twistAngle - _max < (float) (-_min + 2 * Math.PI) - twistAngle ? _max : -_min;
-    }
-    rotationTwist = new Quaternion(tw, twistAngle); //w.r.t rest
-
-    //constrained change
-    Quaternion constrained_change = Quaternion.compose(rotationSwing, rotationTwist);
-    //find change in terms of frame rot
-    //_idle * constrained_change = frame * rot
-    Quaternion rot = Quaternion.compose(node.rotation().inverse(), _idleRotation);
-    rot.normalize();
-    rot.compose(_restRotation);
-    rot.normalize();
-    rot.compose(constrained_change);
-    rot.normalize();
-    rot.compose(_restRotation.inverse());
-    rot.normalize();
-    rot.compose(_offset.inverse());
-    rot.normalize();
-    return rot;
-  }
-
   public abstract Vector apply(Vector target);
 
   @Override
@@ -247,7 +189,7 @@ public abstract class ConeConstraint extends Constraint {
     }
   }
 
-  //Convinient methods to apply stereographic projection.
+  //Convenient methods to apply stereographic projection.
   /*more info at http://www.ams.org/publicoutreach/feature-column/fc-2014-02*/
   protected Vector _stereographicProjection(Vector v){float d = (1 + v.z());
     float X = 2 * v.x() / d;
@@ -258,6 +200,94 @@ public abstract class ConeConstraint extends Constraint {
   protected Vector _inverseStereographicProjection(Vector v){
     float s = 4 / (v.x() * v.x() + v.y() * v.y() + 4);
     return new Vector(s * v.x(), s * v.y(), 2 * s - 1);
+  }
+
+  protected static void decomposeQuaternion(Quaternion q, Vector twistAxis, Quaternion twist, Quaternion swing){
+    Vector r = new Vector(q.x(), q.y(), q.z());
+    Vector p = Vector.projectVectorOnAxis(r, twistAxis);
+    twist.set(new Quaternion(p.x(), p.y(), p.z(), q.w()));
+    swing.set(Quaternion.compose(q, twist.inverse()));
+    swing.normalize();
+  }
+
+  //Define how much idle rotation must change according to this rules:
+  //(1) idle * idle_change = node * rotation * offset
+  //(2) idle * idle_change * rest_rotation = idle * rest_rotation * rest_change
+  //(3) offset is applied w.r.t idle space
+
+  protected Quaternion fromReferenceToRest(Quaternion rotation){
+      Quaternion delta_idle = Quaternion.compose(_idleRotation.inverse(), rotation);
+      delta_idle.normalize();
+      delta_idle.compose(_offset);
+      delta_idle.normalize();
+      Quaternion delta_rest = Quaternion.compose(_restRotation.inverse(), delta_idle);
+      delta_rest.normalize();
+      delta_rest.compose(_restRotation);
+      delta_rest.normalize();
+      //Choose the closest path
+      if (Quaternion.dot(delta_rest, _restRotation) < 0) {
+          delta_rest.negate();
+      }
+      return delta_rest;
+  }
+
+  protected Quaternion fromRestToNode(Quaternion node, Quaternion rotation){
+      Quaternion delta = Quaternion.compose(node.inverse(), _idleRotation);
+      delta.normalize();
+      delta.compose(_restRotation);
+      delta.normalize();
+      delta.compose(rotation);
+      delta.normalize();
+      delta.compose(_restRotation.inverse());
+      delta.normalize();
+      delta.compose(_offset.inverse());
+      delta.normalize();
+      return delta;
+  }
+
+  public Quaternion constrainRotation(Quaternion rotation, Node node){
+      //1. Find the rotation in terms of rest coordinate frame
+      Vector z_axis = new Vector(0,0,1);
+      Quaternion desired = Quaternion.compose(node.rotation(), rotation);
+      desired.normalize();
+      Quaternion delta_rest = fromReferenceToRest(desired);
+      if (Quaternion.dot(delta_rest, _restRotation) < 0) {
+          delta_rest.negate();
+      }
+
+      //3. Constraint swing - Here we must work on rest space
+      Vector new_twist_dir = delta_rest.rotate(z_axis);
+      Vector new_twist_constrained_dir = apply(new_twist_dir);
+      Quaternion swing_wrt_rest_constrained = new Quaternion(z_axis, new_twist_constrained_dir);
+      //4. fix twist
+      Quaternion diff = Quaternion.compose(delta_rest, swing_wrt_rest_constrained.inverse());
+      //Get twist component
+      Quaternion twist = new Quaternion();
+      twist.normalize();
+      decomposeQuaternion(diff, new_twist_constrained_dir, twist, new Quaternion());
+
+      float twistAngle = twist.angle();
+      Vector rotationAxis = twist.axis();
+      if (rotationAxis.dot(new_twist_constrained_dir) < 0) twistAngle = -twistAngle;
+
+      if(Math.abs(twistAngle) > Math.PI) //express as shortest quaternion
+          twistAngle = (float) (twistAngle - Math.signum(twistAngle) * 2 * Math.PI);
+
+      if(Math.abs(twistAngle) > 0.005) {
+          //Check that twist angle is in range [-min, max]
+          if (-_min > twistAngle || twistAngle > _max) {
+              twistAngle = twistAngle < 0 ? (float) (twistAngle + 2 * Math.PI) : twistAngle;
+              twistAngle = twistAngle - _max < (float) (-_min + 2 * Math.PI) - twistAngle ? _max : -_min;
+          }
+          twist = new Quaternion(new_twist_constrained_dir, twistAngle); //w.r.t rest
+      } else{
+          twist = new Quaternion();
+      }
+
+      Quaternion constrained = Quaternion.compose(twist, swing_wrt_rest_constrained);
+      constrained.normalize();
+      //5. Find the rotation in terms of node
+      return fromRestToNode(node.rotation(), constrained);
   }
 }
 
