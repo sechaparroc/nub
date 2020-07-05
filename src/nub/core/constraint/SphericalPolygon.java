@@ -87,9 +87,14 @@ public class SphericalPolygon extends ConeConstraint {
   }
 
   public Vector apply(Vector target) {
+    if(target.dot(_visiblePoint) > 0.99999) return target;
     Vector point = target;
-    if (!_isInside(point)) {
+    int index = _findSlice(point);
+    if (Vector.dot(_b.get(index), point) < 0) { //outside the reach cone
       Vector constrained = _closestPoint(point);
+      //Vector diff = Vector.subtract(point, _visiblePoint);
+      //float t_i = -Vector.dot(_visiblePoint, _b.get(index)) / Vector.dot(diff, _b.get(index));
+      //Vector constrained = Vector.add(_visiblePoint, Vector.multiply(diff , t_i));
       return constrained;
     }
     return target;
@@ -127,16 +132,15 @@ public class SphericalPolygon extends ConeConstraint {
     }
   }
 
-  protected boolean _isInside(Vector L) {
+  protected int _findSlice(Vector L) {
+    //Check if visible point is inside
     //1. Find i s.t p_i = S_i . L >= 0 and p_j = S_j . L < 0 with j = i + 1
-    int index = 0;
     for (int i = 0; i < _vertices.size(); i++) {
       if (Vector.dot(_s.get(i), L) >= 0 && Vector.dot(_s.get((i + 1) % _vertices.size()), L) < 0) {
-        index = i;
-        break;
+        return  i;
       }
     }
-    return Vector.dot(_b.get(index), L) >= 0;
+    return -1;
   }
 
   protected Vector _closestPoint(Vector point) {
@@ -151,7 +155,6 @@ public class SphericalPolygon extends ConeConstraint {
       //Get distance to line
       float t = Vector.dot(edge, Vector.subtract(point, v_j));
       t /= edge.magnitude() * edge.magnitude();
-
       if (t < 0) {
         dist = Vector.distance(v_j, point);
         projection = v_j.get();
