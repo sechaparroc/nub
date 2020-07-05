@@ -12,6 +12,11 @@ public class Util {
      * */
     public static Quaternion constraintRotation(NodeInformation j_i, Quaternion rotation){
         if (j_i.node().constraint() != null) {
+            // See: https://stackoverflow.com/questions/2886606/flipping-issue-when-interpolating-rotations-using-quaternions
+            if (Quaternion.dot(rotation, j_i.node().rotation()) < 0) {
+                // change sign
+                rotation.negate();
+            }
             rotation = j_i.node().constraint().constrainRotation(rotation, j_i.node());
             rotation.normalize();
         }
