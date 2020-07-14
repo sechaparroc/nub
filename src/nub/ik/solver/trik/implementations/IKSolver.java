@@ -20,7 +20,7 @@ public class IKSolver extends Solver {
         COMBINED, COMBINED_EXPRESSIVE,
     }
 
-    protected boolean _swapOrder = true; //swap the order of traversal at each iteration
+    protected boolean _swapOrder = false; //swap the order of traversal at each iteration
     protected boolean _enableDeadLockResolution = false;
     protected Context _context;
     protected HeuristicMode _heuristicMode;
