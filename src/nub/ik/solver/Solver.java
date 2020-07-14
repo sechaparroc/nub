@@ -36,7 +36,6 @@ public abstract class Solver {
   protected boolean _change_temp = false; //TODO : Clean this!
   protected boolean _accumulate = false;
   protected float _accumulatedError = 0; //TODO : Remove this
-  protected float _timePerIteration = 0;
 
   protected VisualizerMediator _mediator;
   protected boolean _enableMediator = false;
@@ -52,6 +51,10 @@ public abstract class Solver {
 
   public void setMaxError(float maxError) {
     _maxError = maxError;
+  }
+
+  public int maxIterations(){
+    return _maxIterations;
   }
 
   public void setMaxIterations(int maxIterations) {
@@ -140,8 +143,6 @@ public abstract class Solver {
     return null;
   }
 
-  ;
-
   public VisualizerMediator mediator() {
     return _mediator;
   }
@@ -156,6 +157,4 @@ public abstract class Solver {
 
   public void registerStructure(VisualizerMediator mediator) {
   }
-
-  ;
 }
