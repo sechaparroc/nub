@@ -2,7 +2,7 @@ package nub.ik.solver.trik;
 
 import nub.core.Node;
 import nub.ik.solver.Solver;
-import nub.ik.solver.trik.implementations.SimpleTRIK;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 
@@ -15,26 +15,32 @@ public class Tree extends Solver {
   protected static class TreeNode {
     protected TreeNode _parent;
     protected List<TreeNode> _children;
-    protected SimpleTRIK _solver;
+    protected List<TreeNode> _reachableLeafNodes; //Reachable leaf nodes from current node
+    protected IKSolver _solver;
     protected float _weight = 1.f;
+
+    protected boolean _outerTarget = false;
 
     public TreeNode() {
       _children = new ArrayList<TreeNode>();
+      _reachableLeafNodes = new ArrayList<TreeNode>();
     }
 
-    public TreeNode(SimpleTRIK solver) {
+    public TreeNode(IKSolver solver) {
       this._solver = solver;
-      _solver.setTimesPerFrame(5);
+      _solver.setTimesPerFrame(1);
       _children = new ArrayList<TreeNode>();
+      _reachableLeafNodes = new ArrayList<TreeNode>();
     }
 
-    protected TreeNode(TreeNode parent, SimpleTRIK solver) {
+    protected TreeNode(TreeNode parent, IKSolver solver) {
       this._parent = parent;
       this._solver = solver;
       if (parent != null) {
         parent._addChild(this);
       }
       _children = new ArrayList<TreeNode>();
+      _reachableLeafNodes = new ArrayList<TreeNode>();
     }
 
     protected boolean _addChild(TreeNode n) {
@@ -49,21 +55,23 @@ public class Tree extends Solver {
       return _weight;
     }
 
-    protected SimpleTRIK _solver() {
+    protected IKSolver _solver() {
       return _solver;
     }
   }
 
   protected TreeNode _root;
-  protected SimpleTRIK.HeuristicMode _mode = SimpleTRIK.HeuristicMode.COMBINED_EXPRESSIVE;
+  protected IKSolver.HeuristicMode _mode = IKSolver.HeuristicMode.COMBINED_EXPRESSIVE;
   protected float _current = 10e10f, _best = 10e10f;
   protected HashMap<Node, Node> _endEffectorMap = new HashMap<>();
+  protected float _distanceFactor = 5;
+
 
   public Tree(Node root) {
-    this(root, SimpleTRIK.HeuristicMode.COMBINED_EXPRESSIVE);
+    this(root, IKSolver.HeuristicMode.COMBINED_EXPRESSIVE);
   }
 
-  public Tree(Node root, SimpleTRIK.HeuristicMode mode) {
+  public Tree(Node root, IKSolver.HeuristicMode mode) {
     super();
     TreeNode dummy = new TreeNode(); //Dummy TreeNode to Keep Reference
     _mode = mode;
@@ -78,11 +86,11 @@ public class Tree extends Solver {
     if (node == null) return;
     if (node.children().isEmpty()) { //Is a leaf node, hence we've found a chain of the structure
       list.add(node);
-      SimpleTRIK solver = new SimpleTRIK(list, _mode);
+      IKSolver solver = new IKSolver(list, _mode);
       new TreeNode(parent, solver);
     } else if (node.children().size() > 1) {
       list.add(node);
-      SimpleTRIK solver = new SimpleTRIK(list, _mode);
+      IKSolver solver = new IKSolver(list, _mode);
       TreeNode treeNode = new TreeNode(parent, solver);
       for (Node child : node.children()) {
         List<Node> newList = new ArrayList<>();
@@ -94,54 +102,126 @@ public class Tree extends Solver {
     }
   }
 
+  protected void _findReachableLeafNodes(TreeNode treeNode){
+    treeNode._reachableLeafNodes.clear();
+    if(treeNode._outerTarget == true){ // a leaf node has been reached
+      return;
+    }
+    for(TreeNode child : treeNode._children){
+      _findReachableLeafNodes(child);
+      //Add the reachable leaf nodes of the child to the current node
+      if(child._outerTarget == true) treeNode._reachableLeafNodes.add(child);
+      treeNode._reachableLeafNodes.addAll(child._reachableLeafNodes);
+    }
+  }
+
+  protected void _findLeafNodesTargets(TreeNode treeNode, List<Vector> effs, List<Vector> targets, Vector effs_centroid, Vector targets_centroid){
+    effs.clear();
+    targets.clear();
+    Node node = treeNode._solver.context().chain().get(treeNode._solver.context().endEffectorId());
+    for(TreeNode leaf : treeNode._reachableLeafNodes){
+      Vector eff = node.location(leaf._solver.context().chain().get(leaf._solver.context().endEffectorId()));
+      Vector target = node.location(leaf._solver.target());
+      if(eff.magnitude() < 0.1) continue; //Too near from current node
+      effs.add(eff);
+      targets.add(target);
+      effs_centroid.add(eff);
+      targets_centroid.add(target);
+    }
+    effs_centroid.divide(effs.size());
+    targets_centroid.divide(effs.size());
+  }
+
+  protected float _applyBestRotation(TreeNode treeNode, List<Vector> effs, List<Vector> targets){
+      IKSolver solver = treeNode._solver;
+      Quaternion rotation = FA3R.FA3R(targets, effs, new Vector(), new Vector());
+      if(solver.context().chain().get(solver.context().endEffectorId()).constraint() != null)
+          rotation = solver.context().chain().get(solver.context().endEffectorId()).constraint().constrainRotation(rotation, solver.context().chain().get(solver.context().endEffectorId()));
+      //Avoid the rotation if the angle is relative small
+      if(Math.abs(rotation.angle()) < Math.toRadians(2))
+          rotation = new Quaternion();
+      //constraint the rotation
+      float prev_error = 0;
+      float next_error = 0;
+      for(int k = 0; k < effs.size(); k++){
+          prev_error += Math.pow(Vector.subtract(effs.get(k), targets.get(k)).magnitude(), _distanceFactor);
+          next_error += Math.pow(Vector.subtract(rotation.rotate(effs.get(k)), targets.get(k)).magnitude(), _distanceFactor);
+      }
+      prev_error /= effs.size();
+      next_error /= effs.size();
+
+      if(next_error < prev_error) {
+          Quaternion expected = Quaternion.compose(solver.context().chain().get(solver.context().endEffectorId()).rotation(), rotation);
+          expected.normalize();
+          solver.context().chain().get(solver.context().endEffectorId()).rotate(rotation);
+          return next_error;
+      }
+      return prev_error;
+  }
+
   protected boolean _solve(TreeNode treeNode) {
     if (treeNode._children == null || treeNode._children.isEmpty()) {
-      SimpleTRIK solver = treeNode._solver;
+      IKSolver solver = treeNode._solver;
       if (solver.target() == null) return false;
       //solve ik for current chain
       solver.reset();
-      solver.solve(); //Perform a given number of iterations
+      for(int i = 0; i < solver.maxIterations(); i++) {
+        solver.solve(); //Perform a given number of iterations
+      }
       return true;
     }
 
-    int childrenModified = 0;
-    SimpleTRIK solver = treeNode._solver;
-    List<Vector> current_coords = new ArrayList<Vector>();
-    List<Vector> desired_coords = new ArrayList<Vector>();
+    IKSolver solver = treeNode._solver;
     for (TreeNode child : treeNode._children()) {
-      if (_solve(child)) {
-        childrenModified++;
-        Vector eff = solver.context().chain().get(solver.context().chain().size() - 1).location(child._solver.context().chain().get(child._solver.context().chain().size() - 1));
-        Vector t = solver.context().chain().get(solver.context().chain().size() - 1).location(child._solver.target());
-        current_coords.add(eff.get());
-        desired_coords.add(t.get());
-        //current_coords.add(eff.get().normalize(null));
-        //desired_coords.add(t.get().normalize(null));
+      _solve(child);
+    }
 
+    List<Vector> effs = new ArrayList<Vector>();
+    List<Vector> targets = new ArrayList<Vector>();
+    Vector effs_centroid = new Vector();
+    Vector targets_centroid = new Vector();
+
+    if(!treeNode._reachableLeafNodes.isEmpty()) {
+      //Get the information of the leaf nodes
+      _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid);
+
+      //Define the target position
+      Vector targetTranslation = Vector.subtract(targets_centroid, effs_centroid);
+      Node target = solver.target() == null ? Node.detach(new Vector(), new Quaternion(), 1f) : solver.target();
+      target.setPosition(solver.context().chain().get(solver.context().endEffectorId()).worldLocation(targetTranslation));
+      solver.setTarget(target);
+
+      //Apply best rotation
+      float minError = _applyBestRotation(treeNode, effs, targets);
+      //Apply IK
+      if (solver.context().chain().size() >= 2) {//If the solver has only a node we require to update manually
+        if (!(solver.context().chain().size() == 2 && solver.context().chain().get(1).translation().magnitude() < 0.1)) {
+          solver.reset();
+          //Apply best rotation & keep best state
+          List<NodeState> bestState = Context.saveState(solver.context().chainInformation());
+          for (int i = 0; i < solver.maxIterations(); i++) {
+            solver.solve(); //Perform a given number of iterations
+            //Fix eff rotation
+            _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid);
+            float err = _applyBestRotation(treeNode, effs, targets);
+            //Keep best configuration
+            if (err < minError) {
+              bestState = Context.saveState(solver.context().chainInformation());
+              minError = err;
+            } else {
+              Context.restoreState(bestState);
+              solver.reset();
+              //reduce the distance to the target
+              targetTranslation.multiply(0.5f);
+              solver.target().setPosition(solver.context().chain().get(solver.context().endEffectorId()).worldLocation(targetTranslation));
+            }
+          }
+          //update to best state
+          Context.restoreState(bestState);
+        }
       }
     }
 
-    if (childrenModified <= 0) return false;
-
-    //in case a children was modified and the node is not a leaf
-    Quaternion rotation = FA3R.FA3R(desired_coords, current_coords);
-    solver.context().chain().get(solver.context().chain().size() - 1).rotate(rotation);
-    Node target = Node.detach(new Vector(), new Quaternion(), 1f);
-    //solve ik for current chain
-    //Set the target position
-    Vector translation = new Vector();
-    for (int i = 0; i < current_coords.size(); i++) {
-      Vector o = rotation.rotate(current_coords.get(i));
-      translation.add(Vector.subtract(desired_coords.get(i), o)); //TODO: consider weights
-    }
-    translation.multiply(1f / current_coords.size());
-    target.setPosition(solver.context().chain().get(solver.context().chain().size() - 1).worldLocation(translation));
-
-    solver.setTarget(target);
-    if (solver.context().chain().size() >= 2) {//If the solver has only a node we require to update manually
-      solver.reset();
-      solver.solve(); //Perform a given number of iterations
-    }
     return true;
   }
 
@@ -233,13 +313,25 @@ public class Tree extends Solver {
 
   protected boolean _addTarget(TreeNode treeNode, Node endEffector, Node target) {
     if (treeNode == null) return false;
+    boolean nodeFound = false;
+    Node prevEndEffector = null;
     for (Node node : treeNode._solver().context().chain()) {
       if (node == endEffector) {
-        treeNode._solver().setTarget(target);
-        _endEffectorMap.put(endEffector, target);
-        return true;
+        treeNode._solver().setTarget(endEffector, target);
+        nodeFound = true;
+      } else{
+        if(_endEffectorMap.containsKey(node)) prevEndEffector = node;
       }
     }
+    if(nodeFound){
+      treeNode._outerTarget = true;
+      _endEffectorMap.put(endEffector, target);
+      if(prevEndEffector != null){
+          _endEffectorMap.remove(prevEndEffector);
+      }
+      return true;
+    }
+
     for (TreeNode child : treeNode._children()) {
       _addTarget(child, endEffector, target);
     }
@@ -247,7 +339,9 @@ public class Tree extends Solver {
   }
 
   public boolean addTarget(Node endEffector, Node target) {
-    return _addTarget(_root, endEffector, target);
+    boolean added = _addTarget(_root, endEffector, target);
+    _findReachableLeafNodes(this._root); //update reachable leaf nodes
+    return added;
   }
 
 
