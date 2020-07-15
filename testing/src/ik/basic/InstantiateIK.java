@@ -3,6 +3,7 @@ package ik.basic;
 import nub.core.Graph;
 import nub.core.Node;
 import nub.ik.solver.geometric.ChainSolver;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import nub.processing.TimingTask;
@@ -71,6 +72,9 @@ public class InstantiateIK extends PApplet {
     //End Effector
     Node endEffector = createJoint(scene, skeleton.get(4), new Vector(0, length), jointRadius, true);
     skeleton.add(endEffector);
+
+    endEffector = skeleton.get(skeleton.size() - 2);
+
     //As targets and effectors lie on the same spot, is preferable to disable End Effectors tracking
     endEffector.enableTagging(false);
 
@@ -83,7 +87,7 @@ public class InstantiateIK extends PApplet {
     //3. Relate the structure with a Solver. In this example we instantiate a solver
     //As we're dealing with a Chain Structure a Chain Solver is preferable
     //A Chain solver constructor receives an ArrayList containing the Skeleton structure
-    ChainSolver solver = new ChainSolver(skeleton);
+    IKSolver solver = new IKSolver(skeleton, IKSolver.HeuristicMode.COMBINED_EXPRESSIVE);
 
     //Optionally you could modify the following parameters of the Solver:
     //Maximum distance between end effector and target, If is below maxError, then we stop executing IK solver (Default value is 0.01)

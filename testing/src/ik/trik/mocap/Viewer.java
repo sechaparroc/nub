@@ -7,12 +7,11 @@ import nub.core.constraint.BallAndSocket;
 import nub.core.constraint.Constraint;
 import nub.ik.loader.bvh.BVHLoader;
 import nub.ik.solver.trik.Tree;
-import nub.ik.solver.trik.implementations.SimpleTRIK;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
-import nub.processing.TimingTask;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.event.MouseEvent;
@@ -23,7 +22,10 @@ import java.util.List;
 import java.util.Map;
 
 public class Viewer extends PApplet {
-  String path = "/testing/data/bvh/0007_Cartwheel001.bvh";
+  //String path = "/testing/data/bvh/0007_Cartwheel001.bvh";
+  boolean absolute = true;
+  //String path = "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/cmu-mocap-master/data/001/01_02.bvh";
+  String path = "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__SlowFly.bvh";
   Scene scene;
   BVHLoader parser;
   List<Skeleton> skeletons;
@@ -36,22 +38,25 @@ public class Viewer extends PApplet {
   }
 
   public void setup() {
+    Joint.depth  = true;
     Joint.axes = true;
+    Joint.drawCylinder = true;
+
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRadius(100);
     scene.eye().rotate(new Quaternion(0, 0, PI));
-    scene.fit(1);
-    scene.setRadius(400);
-    parser = new BVHLoader(sketchPath() + path, scene, null);
+    scene.setRadius(600);
+    scene.fit(0);
+    parser = new BVHLoader(absolute ? path : (sketchPath() + path), scene, null);
+    parser.nextPose(true);
+    parser.nextPose(true);
     parser.generateConstraints();
-
+    System.out.println("Height : " + calculateHeight(parser));
     skeletons = new ArrayList<Skeleton>();
 
-    skeletons.add(new Skeleton(parser, SimpleTRIK.HeuristicMode.COMBINED_EXPRESSIVE, scene, 0, 255, 0, scene.radius() * 0.01f));
-    //skeletons.add(new Skeleton(parser, SimpleTRIK.HeuristicMode.EXPRESSIVE_FINAL, scene, color(255,0,0), scene.radius() * 0.01f));
-    //Joint.constraintFactor = 0;
-    parser.root().cull(true);
+    skeletons.add(new Skeleton(parser, IKSolver.HeuristicMode.COMBINED, scene, 0, 255, 0, scene.radius() * 0.01f, new Vector(0,0,-scene.radius())));
+    //skeletons.add(new Skeleton(parser, IKSolver.HeuristicMode.COMBINED, scene, 255,0,0, scene.radius() * 0.01f));
+    //parser.root().cull(true);
     //skeleton._root.cull(true);
     //for(Skeleton sk : skeletons) sk._reference.cull(true);
 
@@ -67,8 +72,7 @@ public class Viewer extends PApplet {
     //Draw Constraints
     scene.drawAxes();
     scene.render();
-    //skeleton.renderNames();
-
+    //skeletons.get(0).renderNames();
     if (readNext) {
       readNextPose();
     }
@@ -81,20 +85,23 @@ public class Viewer extends PApplet {
     for (Skeleton skeleton : skeletons) {
       Constraint c = skeleton._root.constraint();
       skeleton._root.setConstraint(null);
-      skeleton._root.setPosition(parser.root().position().get());
-      skeleton._root.setOrientation(parser.root().orientation().get());
+      skeleton._root.setPosition(skeleton._reference.worldLocation(parser.root().position().get()));
+      skeleton._root.setOrientation(skeleton._reference.worldDisplacement(parser.root().orientation().get()));
       skeleton._root.setConstraint(c);
-      //update targets
+
       for (Node joint : scene.branch(skeleton._root)) {
-        if (joint.children() == null || joint.children().isEmpty()) {
+          if (joint.children() == null || joint.children().isEmpty()) {
           Node node = skeleton._jointToNode.get(joint);
           Node target = skeleton._targets.get(parser.joint().get(node.id()).name());
-          target.setPosition(node.position().get());
-          target.setOrientation(node.orientation().get());
+          if(target == null) continue;
+          target.setPosition(skeleton._reference.worldLocation(node.position().get()));
+          target.setOrientation(skeleton._reference.worldDisplacement(node.orientation().get()));
           //modify end effector rotation
           joint.setRotation(node.rotation());
         }
       }
+      skeleton._solver.change(true);
+      skeleton._solver.solve();
     }
   }
 
@@ -105,7 +112,15 @@ public class Viewer extends PApplet {
     if (key == 'S' || key == 's') {
       readNextPose();
     }
+    if(key == ' '){
+        skeletons.get(0)._solver.change(true);
+        skeletons.get(0)._solver.solve();
+    }
   }
+
+public void mousePressed(){
+    prev = new Vector(mouseX, mouseY);
+}
 
 
   @Override
@@ -115,7 +130,8 @@ public class Viewer extends PApplet {
 
   public void mouseDragged() {
     if (mouseButton == LEFT) {
-      scene.mouseSpin();
+      if(keyPressed) rotate(scene.node());
+      else scene.mouseSpin();
     } else if (mouseButton == RIGHT) {
       scene.mouseTranslate();
     } else {
@@ -150,10 +166,11 @@ public class Viewer extends PApplet {
     HashMap<String, Node> _targets;
     float _radius;
 
-    public Skeleton(BVHLoader loader, SimpleTRIK.HeuristicMode mode, Scene scene, int red, int green, int blue, float radius) {
+    public Skeleton(BVHLoader loader, IKSolver.HeuristicMode mode, Scene scene, int red, int green, int blue, float radius, Vector offset) {
       _scene = scene;
       _radius = radius;
       _reference = new Node();
+      _reference.setTranslation(offset);
       _reference.enableTagging(false);
       _createSkeleton(loader, red, green, blue, radius);
       _createSolver(mode);
@@ -207,30 +224,29 @@ public class Viewer extends PApplet {
 
     }
 
-    protected void _createSolver(SimpleTRIK.HeuristicMode mode) {
+    protected void _createSolver(IKSolver.HeuristicMode mode) {
       _solver = new Tree(_root, mode);
-      _solver.setMaxError(0.1f);
-      _solver.setDirection(true);
-      _solver.setSearchingAreaRadius(0.3f, true);
-      _solver.setOrientationWeight(0.5f);
+      _solver.setMaxError(0.01f);
+      //_solver.setDirection(true);
+      //_solver.setSearchingAreaRadius(0.3f, true);
+      //_solver.setOrientationWeight(0.5f);
 
       _solver.setTimesPerFrame(10);
-      _solver.setChainTimesPerFrame(20);
-      _solver.setChainMaxIterations(20);
       _solver.setMaxIterations(10);
+      _solver.setChainMaxIterations(3);
 
       //add task to scene
-      TimingTask task = new TimingTask() {
+
+      /*TimingTask task = new TimingTask() {
         @Override
         public void execute() {
           _solver.solve();
         }
       };
-      task.run(40);
+      task.run(40);*/
 
       _targets = new HashMap<>();
 
-      //Add a target per leaf in the structure
       for (Map.Entry<String, Joint> entry : _structure.entrySet()) {
         Node node = entry.getValue();
         if (node.children() == null || node.children().isEmpty()) {
@@ -243,6 +259,7 @@ public class Viewer extends PApplet {
           _targets.put(entry.getKey(), target);
         }
       }
+
     }
 
 
@@ -272,5 +289,32 @@ public class Viewer extends PApplet {
 
   }
 
+  float calculateHeight(BVHLoader parser){ //calculates the height of the skeleton
+    Vector min = new Vector(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE);
+    Vector max = Vector.multiply(min, -1);
+    for(Node n : parser.branch()){
+      Vector pos = parser.root().location(n);
+      if(max.x() < pos.x()) max.setX(pos.x());
+      if(max.y() < pos.y()) max.setY(pos.y());
+      if(max.z() < pos.z()) max.setZ(pos.z());
+      if(min.x() > pos.x()) min.setX(pos.x());
+      if(min.y() > pos.y()) min.setY(pos.y());
+      if(min.z() > pos.z()) min.setZ(pos.z());
+    }
+    float mX = max.x() - min.x();
+    float mY = max.y() - min.y();
+    float mZ = max.z() - min.z();
+    return Math.max(Math.max(mX, mY), mZ);
+  }
 
+
+  Vector prev;
+  public void rotate(Node node){
+    if(node == null || node.reference() == null) return;
+    Node parent = node.reference();
+    Vector screenDis = new Vector(mouseX - prev.x(), mouseY - prev.y());
+    Vector dis = scene.displacement(screenDis, parent);
+    Quaternion rot = new Quaternion(node.translation(), Vector.add(node.translation(), dis));
+    parent.rotate(rot);
+  }
 }
