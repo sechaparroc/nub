@@ -21,6 +21,7 @@ import nub.timing.TimingHandler;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * A node encapsulates a 2D or 3D coordinate system, represented by a {@link #position()}, an
@@ -68,9 +69,9 @@ import java.util.List;
  * {@code // Draw your object here, in the local node coordinate system.} <br>
  * {@code popMatrix();} <br>
  * <p>
- * Use {@link #view()} and {@link Graph#projection(Node, Graph.Type, float, float, float, float, boolean)}
+ * Use {@link #view()} and {@link Graph#projection(Node, Graph.Type, float, float, float, float)}
  * when rendering the scene from the node point-of-view. Note that these methods are used by
- * the graph when a node is set as its eye, see {@link Graph#preDraw()}.
+ * the graph when a node is set as its eye, see {@link Graph#render(Node)}.
  * <p>
  * To transform a point from one node to another use {@link #location(Vector, Node)} and
  * {@link #worldLocation(Vector)}. To transform a vector (such as a normal) use
@@ -85,11 +86,9 @@ import java.util.List;
  * when the inertial parameter is omitted its value is defaulted to 0.
  * <h2>Hierarchical traversals</h2>
  * Hierarchical traversals of the node hierarchy which automatically apply the local
- * node transformations described above may be achieved with {@link Graph#render()},
- * {@link Graph#render(Object)}, {@link Graph#render(Object, Matrix, Matrix)} and
- * {@link Graph#render(Object, Graph.Type, Node, int, int, float, float, boolean)}.
- * Customize the rendering traversal algorithm by overriding {@link #visit()} (see
- * also {@link #cull(boolean)} and {@link #bypass()}).
+ * node transformations described above may be achieved with {@link Graph#render()} and
+ * {@link Graph#render(Node)}. Customize the rendering traversal algorithm by
+ * overriding {@link #visit(Graph)} (see also {@link #cull} and {@link #bypass()}).
  * <h2>Constraints</h2>
  * One interesting feature of a node is that its displacements can be constrained.
  * When a {@link Constraint} is attached to a node, it filters the input of
@@ -103,12 +102,16 @@ import java.util.List;
  * {@link nub.core.constraint.WorldConstraint} and
  * {@link nub.core.constraint.EyeConstraint}) and new constraints can very
  * easily be implemented.
- * <h2>Shapes</h2>
- * A node shape can be set from a retained-mode rendering object, see {@link #setShape(processing.core.PShape)};
- * or from an immediate-mode rendering procedure, see {@link #graphics(processing.core.PGraphics)}.
- * Picking a node is done according to a {@link #pickingThreshold()}. When a node is tagged
- * it will be highlighted (scaled) according to a {@link #highlighting()} magnitude.
- * See also {@link #enableTagging(boolean)}.
+ * <h2>Visual hints</h2>
+ * The node space visual representation may be configured using the following hints:
+ * {@link #CAMERA}, {@link #AXES}, {@link #HUD}, {@link #FRUSTUM}, {@link #SHAPE},
+ * {@link #BULLSEYE}, and {@link #TORUS}.
+ * <p>
+ * See {@link #hint()}, {@link #configHint(int, Object...)} {@link #enableHint(int)},
+ * {@link #enableHint(int, Object...)}, {@link #disableHint(int)}, {@link #toggleHint(int)}
+ * and {@link #resetHint()}.
+ * <h2>Ray casting</h2>
+ * The ray-casting node {@link #pickingMode()} may be set with {@link #enablePickingMode(int)}.
  * <h2>Custom behavior</h2>
  * Implementing a custom behavior for node is a two step process:
  * <ul>
@@ -138,7 +141,13 @@ public class Node {
   protected long _lastUpdate;
 
   // Tagging & Precision
-  protected float _threshold;
+  // TODO I think this should be modeled as an enum with bullseye SPACE
+  // think bout hud_space
+  protected float _bullsEyeSize;
+  public enum BullsEyeShape {
+    SQUARE, CIRCLE
+  }
+  protected BullsEyeShape _bullsEyeShape;
 
   // ID
   protected static int _counter;
@@ -146,13 +155,46 @@ public class Node {
 
   // tree
   protected List<Node> _children;
-  protected boolean _culled;
-  protected boolean _tagging;
+  public boolean cull;
+  public boolean tagging;
 
-  // Rendering
-  // PShape is only available in Java
-  protected processing.core.PShape _shape;
+  // Visual hints
+  protected int _pickingMode;
+  protected int _mask;
+  public final static int CAMERA = 1 << 0;
+  public final static int AXES = Graph.AXES;
+  public final static int HUD = Graph.HUD;
+  public final static int FRUSTUM = Graph.FRUSTUM;
+  public final static int SHAPE = Graph.SHAPE;
+  public final static int BULLSEYE = 1 << 5;
+  public final static int TORUS = 1 << 6;
+  public final static int CONSTRAINT = 1 << 7;
+  public final static int BONE = 1 << 8;
   protected float _highlight;
+  // Frustum
+  protected int _frustumColor;
+  // 1st form
+  protected Graph _frustumGraph;
+  // 2nd form
+  protected Object _eyeBuffer;
+  protected Graph.Type _frustumtype;
+  protected float _zNear, _zFar;
+  // torus
+  protected int _torusColor;
+  protected int _torusFaces;
+  // TODO public because Scene._drawFrontBuffer
+  public int _bullsEyeStroke;
+  public float _axesLength;
+  public int _cameraStroke;
+  public float _cameraLength;
+  public Consumer<processing.core.PGraphics> _imrHUD;
+  public processing.core.PShape _rmrHUD;
+  // Rendering
+  // Immediate mode rendering
+  protected Consumer<processing.core.PGraphics> _imrShape;
+  // Retained mode rendering
+  // PShape is only available in Java
+  protected processing.core.PShape _rmrShape;
   protected long _bypass = -1;
 
   // Tasks
@@ -253,12 +295,14 @@ public class Node {
    * Creates a node with {@code reference} as {@link #reference()}, {@code constraint}
    * as {@link #constraint()}, having {@code translation}, {@code rotation} and {@code scaling} as
    * the {@link #translation()}, {@link #rotation()} and {@link #scaling()}, respectively.
-   * The {@link #pickingThreshold()} is set to {@code 0} and the {@link #highlighting()}
+   * The {@link #bullsEyeSize()} is set to {@code 0.2} and the {@link #highlight()} hint
    * magnitude to {@code 0.15}.
    */
   public Node(Node reference, Constraint constraint, Vector translation, Quaternion rotation, float scaling) {
     this(constraint, translation, rotation, scaling);
     setReference(reference);
+    // TODO deprecated
+    setShape(this::graphics);
   }
 
   /**
@@ -270,20 +314,38 @@ public class Node {
     setTranslation(translation);
     setRotation(rotation);
     setScaling(scaling);
+    enablePickingMode(CAMERA | AXES | HUD | FRUSTUM | SHAPE | BULLSEYE | TORUS | CONSTRAINT | BONE);
     _id = ++_counter;
     // unlikely but theoretically possible
     if (_id == 16777216)
       throw new RuntimeException("Maximum node instances reached. Exiting now!");
-    // TODO remove these two
-    //_lastUpdate = 0;
-    //_threshold = 0;
-    _tagging = true;
+    setBullsEyeSize(30);
+    _bullsEyeShape = BullsEyeShape.SQUARE;
+    tagging = true;
+    // hints
     _highlight = 0.15f;
-    _culled = false;
+    int min = 2, max = 20;
+    _torusFaces = Graph.random.nextInt(max - min + 1) + min;
+    min = 0;
+    max = 255;
+    float r = (float) Graph.random.nextInt(max - min + 1) + min;
+    float g = (float) Graph.random.nextInt(max - min + 1) + min;
+    float b = (float) Graph.random.nextInt(max - min + 1) + min;
+    _torusColor = Graph._color(r, g, b);
+    // cyan (color(0, 255, 255)) encoded as a processing int rgb color
+    _bullsEyeStroke = -16711681;
+    // yellow (with alpha: color(255, 255, 0, 125)) encoded as a processing int rgb color
+    _frustumColor = 2113928960;
+    // magenta (color(255, 0, 255)) encoded as a processing int rgb color
+    _cameraStroke = -65281;
     _children = new ArrayList<Node>();
   }
 
   // From here only Java constructors
+
+  public Node(Consumer<processing.core.PGraphics> shape) {
+    this(null, null, shape, new Vector(), new Quaternion(), 1);
+  }
 
   /**
    * Same as {@code this(null, null, shape, new Vector(), new Quaternion(), 1)}.
@@ -292,6 +354,10 @@ public class Node {
    */
   public Node(processing.core.PShape shape) {
     this(null, null, shape, new Vector(), new Quaternion(), 1);
+  }
+
+  public Node(Node reference, Consumer<processing.core.PGraphics> shape) {
+    this(reference, null, shape, new Vector(), new Quaternion(), 1);
   }
 
   /**
@@ -303,6 +369,10 @@ public class Node {
     this(reference, null, shape, new Vector(), new Quaternion(), 1);
   }
 
+  public Node(Constraint constraint, Consumer<processing.core.PGraphics> shape) {
+    this(null, constraint, shape, new Vector(), new Quaternion(), 1);
+  }
+
   /**
    * Same as {@code this(null, constraint, shape, new Vector(), new Quaternion(), 1)}.
    *
@@ -310,6 +380,10 @@ public class Node {
    */
   public Node(Constraint constraint, processing.core.PShape shape) {
     this(null, constraint, shape, new Vector(), new Quaternion(), 1);
+  }
+
+  public Node(Node reference, Constraint constraint, Consumer<processing.core.PGraphics> shape) {
+    this(reference, constraint, shape, new Vector(), new Quaternion(), 1);
   }
 
   /**
@@ -321,12 +395,17 @@ public class Node {
     this(reference, constraint, shape, new Vector(), new Quaternion(), 1);
   }
 
+  public Node(Node reference, Constraint constraint, Consumer<processing.core.PGraphics> shape, Vector translation, Quaternion rotation, float scaling) {
+    this(reference, constraint, translation, rotation, scaling);
+    setShape(shape);
+  }
+
   /**
    * Creates a node with {@code reference} as {@link #reference()}, {@code constraint}
-   * as {@link #constraint()}, {@code shape} as {@link #shape()}, having {@code translation},
+   * as {@link #constraint()}, {@code shape}, having {@code translation},
    * {@code rotation} and {@code scaling} as the {@link #translation()}, {@link #rotation()}
-   * and {@link #scaling()}, respectively. The {@link #pickingThreshold()} is set to
-   * {@code 0} and the {@link #highlighting()} magnitude to {@code 0.15}.
+   * and {@link #scaling()}, respectively. The {@link #bullsEyeSize()} is set to
+   * {@code 0} and the {@link #highlight()} hint to {@code 0.15}.
    */
   public Node(Node reference, Constraint constraint, processing.core.PShape shape, Vector translation, Quaternion rotation, float scaling) {
     this(reference, constraint, translation, rotation, scaling);
@@ -412,16 +491,16 @@ public class Node {
   /**
    * Performs a deep copy of this node and returns it. Only the {@link #position()},
    * {@link #orientation()} and {@link #magnitude()} of the node are copied.
-   * The new node {@link #pickingThreshold()} is set to {@code 0.2}.
    *
    * @see #detach()
    */
+  // TODO should hint be copied ?
   public Node get() {
     // Copying the shape (node.setShape(this.shape())) is incompatible with js
     // and it also would affect Interpolator addKeyFrame(eye)
     Node node = new Node();
     node.set(this);
-    node.setPickingThreshold(0.2f);
+    // TODO decide this and make consistent with Interpolator.get()
     return node;
   }
 
@@ -665,7 +744,7 @@ public class Node {
    * Used by {@link #_restoredTasks(Node)}.
    */
   protected void _registerTasks() {
-    if (!Graph.isTaskRegistered(_translationTask)) {
+    if (!Graph.TimingHandler.isTaskRegistered(_translationTask)) {
       _translationTask = new InertialTask() {
         @Override
         public void action() {
@@ -673,7 +752,7 @@ public class Node {
         }
       };
     }
-    if (!Graph.isTaskRegistered(_rotationTask)) {
+    if (!Graph.TimingHandler.isTaskRegistered(_rotationTask)) {
       _rotationTask = new InertialTask() {
         @Override
         public void action() {
@@ -681,7 +760,7 @@ public class Node {
         }
       };
     }
-    if (!Graph.isTaskRegistered(_orbitTask)) {
+    if (!Graph.TimingHandler.isTaskRegistered(_orbitTask)) {
       _orbitTask = new InertialTask() {
         @Override
         public void action() {
@@ -689,7 +768,7 @@ public class Node {
         }
       };
     }
-    if (!Graph.isTaskRegistered(_scalingTask)) {
+    if (!Graph.TimingHandler.isTaskRegistered(_scalingTask)) {
       _scalingTask = new InertialTask() {
         @Override
         public void action() {
@@ -797,7 +876,7 @@ public class Node {
    * Returns a random node attached to {@code graph}. The node is randomly positioned inside
    * the {@code graph} viewing volume which is defined by {@link Graph#center()} and {@link Graph#radius()}
    * (see {@link Vector#random()}). The {@link #orientation()} is set by {@link Quaternion#random()}. The
-   * {@link #magnitude()} is a random in [0,5...2]. The {@link #pickingThreshold()} is set to {@code 0.2}.
+   * {@link #magnitude()} is a random in [0,5...2].
    *
    * @see #random(Vector, float, boolean)
    * @see Vector#random()
@@ -806,7 +885,6 @@ public class Node {
    */
   public static Node random(Graph graph) {
     Node node = new Node();
-    node.setPickingThreshold(.2f);
     node.randomize(graph.center(), graph.radius(), graph.is3D());
     return node;
   }
@@ -816,7 +894,6 @@ public class Node {
    * by {@code center} and {@code radius} (see {@link Vector#random()}), which in 2D is a
    * circumference parallel to the x-y plane. The {@link #orientation()} is set by
    * {@link Quaternion#random()}. The {@link #magnitude()} is a random in [0,5...2].
-   * The {@link #pickingThreshold()} is set to {@code 0.2}.
    *
    * @see #random(Graph)
    * @see Vector#random()
@@ -825,7 +902,6 @@ public class Node {
    */
   public static Node random(Vector center, float radius, boolean is3D) {
     Node node = new Node();
-    node.setPickingThreshold(.2f);
     node.randomize(center, radius, is3D);
     return node;
   }
@@ -833,23 +909,36 @@ public class Node {
   // PRECISION
 
   /**
-   * Sets the {@link #pickingThreshold()}.
+   * Sets the {@link #bullsEyeSize()} of the {@link #BULLSEYE} {@link #hint()}.
    *
-   * @see #pickingThreshold()
-   * @see #setHighlighting(float)
+   * @see #bullsEyeSize()
    */
-  public void setPickingThreshold(float threshold) {
-    _threshold = threshold;
+  public void setBullsEyeSize(float size) {
+    if (size <= 0)
+      System.out.println("Warning: bulls eye size should be positive. Nothing done");
+    _bullsEyeSize = size;
+  }
+
+  public void setHighlight(float highlight) {
+    float val = Math.abs(highlight);
+    while (val > 1)
+      val /= 10;
+    if (val != highlight)
+      System.out.println("Warning: highlight should be in [0..1]. Setting it as " + val);
+    _highlight = val;
+  }
+
+  public float highlight() {
+    return _highlight;
   }
 
   /**
-   * Returns the node picking threshold. Set it with {@link #setPickingThreshold(float)}.
+   * Returns the node {@link #BULLSEYE} {@link #hint()} size. Set it with
+   * {@link #setBullsEyeSize(float)}.
    * <p>
    * Picking a node is done with ray casting against a screen-space shape defined according
-   * to a {@link #pickingThreshold()} as follows:
+   * to a {@link #bullsEyeSize()} as follows:
    * <ul>
-   * <li>The projected pixels of the node visual representation (see {@link #graphics(processing.core.PGraphics)}
-   * and {@link #setShape(processing.core.PShape)}). Set it with {@code threshold = 0}.</li>
    * <li>A node bounding box whose length is defined as percentage of the graph diameter
    * (see {@link Graph#radius()}). Set it with {@code threshold in [0..1]}.</li>
    * <li>A squared 'bullseye' of a fixed pixels length. Set it with {@code threshold > 1}.</li>
@@ -859,11 +948,10 @@ public class Node {
    * </ul>
    * Default picking precision is defined with {@code threshold = 0}.
    *
-   * @see #setPickingThreshold(float)
-   * @see #highlighting()
+   * @see #setBullsEyeSize(float)
    */
-  public float pickingThreshold() {
-    return _threshold;
+  public float bullsEyeSize() {
+    return _bullsEyeSize;
   }
 
   // CONSTRAINT
@@ -978,7 +1066,7 @@ public class Node {
    */
   public void translate(Vector vector, float inertia) {
     translate(vector);
-    if (!Graph.isTaskRegistered(_translationTask)) {
+    if (!Graph.TimingHandler.isTaskRegistered(_translationTask)) {
       System.out.println("Warning: inertia is disabled. Perhaps your node is detached. Use translate(vector) instead");
       return;
     }
@@ -1115,7 +1203,7 @@ public class Node {
    */
   public void rotate(Quaternion quaternion, float inertia) {
     rotate(quaternion);
-    if (!Graph.isTaskRegistered(_rotationTask)) {
+    if (!Graph.TimingHandler.isTaskRegistered(_rotationTask)) {
       System.out.println("Warning: inertia is disabled. Perhaps your node is detached. Use rotate(quaternion) instead");
       return;
     }
@@ -1190,7 +1278,7 @@ public class Node {
    */
   public void orbit(Quaternion quaternion, Vector center, float inertia) {
     orbit(quaternion, center);
-    if (!Graph.isTaskRegistered(_orbitTask)) {
+    if (!Graph.TimingHandler.isTaskRegistered(_orbitTask)) {
       System.out.println("Warning: inertia is disabled. Perhaps your node is detached. Use orbit(quaternion, center) instead");
       return;
     }
@@ -1357,7 +1445,7 @@ public class Node {
    */
   public void scale(float scaling, float inertia) {
     scale(scaling);
-    if (!Graph.isTaskRegistered(_scalingTask)) {
+    if (!Graph.TimingHandler.isTaskRegistered(_scalingTask)) {
       System.out.println("Warning: inertia is disabled. Perhaps your node is detached. Use scale(scaling) instead");
       return;
     }
@@ -1383,14 +1471,14 @@ public class Node {
    * Returns the magnitude of the node, defined in the world coordinate system.
    * <p>
    * Note that the magnitude is used to compute the node
-   * {@link Graph#projection(Node, Graph.Type, float, float, float, float, boolean)} which is useful to render a
+   * {@link Graph#projection(Node, Graph.Type, float, float, float, float)} which is useful to render a
    * scene from the node point-of-view.
    *
    * @see #orientation()
    * @see #position()
    * @see #setPosition(Vector)
    * @see #translation()
-   * @see Graph#projection(Node, Graph.Type, float, float, float, float, boolean)
+   * @see Graph#projection(Node, Graph.Type, float, float, float, float)
    */
   public float magnitude() {
     return reference() != null ? reference().magnitude() * scaling() : scaling();
@@ -1724,7 +1812,6 @@ public class Node {
    * transformation matrix (i.e., from the world to the Node coordinate system). These
    * two match when the {@link #reference()} is {@code null}.
    *
-   * @see Graph#applyTransformation(Node)
    * @see #set(Node)
    * @see #worldMatrix()
    * @see #view()
@@ -1766,7 +1853,6 @@ public class Node {
    * {@link #reference()}). These two match when the {@link #reference()} is
    * {@code null}.
    *
-   * @see Graph#applyWorldTransformation(Node)
    * @see #set(Node)
    * @see #matrix()
    * @see #view()
@@ -2276,53 +2362,6 @@ public class Node {
   // Attached nodes
 
   /**
-   * Returns {@code true} if tagging is enabled.
-   *
-   * @see #enableTagging(boolean)
-   * @see #enableTagging()
-   * @see #disableTagging()
-   */
-  public boolean isTaggingEnabled() {
-    return _tagging;
-  }
-
-  /**
-   * Same as {@code enableTagging(false)}.
-   *
-   * @see #isTaggingEnabled()
-   * @see #enableTagging()
-   * @see #enableTagging(boolean)
-   */
-  public void disableTagging() {
-    enableTagging(false);
-  }
-
-  /**
-   * Same as {@code enableTagging(true)}.
-   *
-   * @see #isTaggingEnabled()
-   * @see #enableTagging(boolean)
-   * @see #disableTagging()
-   */
-  public void enableTagging() {
-    enableTagging(true);
-  }
-
-  /**
-   * Enables tagging of the node according to {@code flag}. When tagging is disabled
-   * {@link Graph#tracks(Node, int, int)} returns {@code false} and the node cannot be
-   * tagged (i.e., {@link Graph#tag(String, Node)}, {@link Graph#updateTag(String, int, int)}
-   * and {@link Graph#tag(int, int)} never tag the node).
-   *
-   * @see #isTaggingEnabled()
-   * @see #enableTagging()
-   * @see #disableTagging()
-   */
-  public void enableTagging(boolean flag) {
-    _tagging = flag;
-  }
-
-  /**
    * Returns {@code true} if the {@code node} has been tagged by the {@code graph} at least once
    * and {@code false} otherwise.
    *
@@ -2346,7 +2385,7 @@ public class Node {
    * by derived classes.
    * <p>
    * Hierarchical culling, i.e., culling of the node and its children, should be decided here.
-   * Set the culling flag with {@link #cull(boolean)} according to your culling condition:
+   * Set the culling flag with {@link #cull} according to your culling condition:
    *
    * <pre>
    * {@code
@@ -2374,118 +2413,483 @@ public class Node {
    * }
    * </pre>
    *
-   * @see Graph#render()
-   * @see nub.processing.Scene#draw(Object, Node)
-   * @see #cull(boolean)
-   * @see #isCulled()
+   * @see Graph#render(Node)
    * @see #bypass()
    */
   public void visit() {
   }
 
   /**
-   * Same as {@code cull(true)}. Only meaningful if the node is attached to
-   * a {@code graph}.
+   * View-point adaptive {@link #visit()}, which now takes a {@code graph} param
+   * matching the calling instance in {@link Graph#render()}.
    *
-   * @see #cull(boolean)
-   * @see #isCulled()
+   * @see Graph#render(Node)
    * @see #bypass()
    */
-  public void cull() {
-    cull(true);
-  }
-
-  /**
-   * Enables or disables {@link #visit()} of this node and its children during
-   * {@link Graph#render()}. Culling should be decided within {@link #visit()}.
-   * Only meaningful if the node is attached to a {@code graph}.
-   *
-   * @see #isCulled()
-   * @see #bypass()
-   */
-  public void cull(boolean cull) {
-    _culled = cull;
-  }
-
-  /**
-   * Returns whether or not the node culled or not. Culled nodes (and their children)
-   * will not be visited by the {@link Graph#render()} algorithm.
-   *
-   * @see #cull(boolean)
-   * @see #bypass()
-   */
-  public boolean isCulled() {
-    return _culled;
+  public void visit(Graph graph) {
   }
 
   /**
    * Bypass rendering the node for the current frame. Set it before calling {@link Graph#render()}
    * or any rendering algorithm. Note that the node nor its children get culled.
-   *
-   * @see #cull(boolean)
    */
   public void bypass() {
     _bypass = TimingHandler.frameCount;
-  }
-
-  /**
-   * Sets the node {@link #highlighting()} which should be a value in  {@code [0..1]}.
-   * Default value is {@code 0.15}.
-   *
-   * @see #highlighting()
-   * @see #setPickingThreshold(float)
-   */
-  public void setHighlighting(float highlighting) {
-    _highlight = highlighting;
-  }
-
-  /**
-   * Returns the highlighting magnitude use to scale the node when it's tagged.
-   *
-   * @see #setHighlighting(float)
-   * @see #pickingThreshold()
-   */
-  public float highlighting() {
-    return _highlight;
   }
 
   // js go:
   // public void graphics(Object context) {}
 
   /**
-   * Override this method to set an immediate mode graphics procedure on the Processing
-   * {@code PGraphics}. Return {@code true} if succeeded and {@code false} otherwise.
+   * Calls {@link #resetIMRShape()} and {@link #resetRMRShape()}.
+   *
+   * @see #setShape(processing.core.PShape)
+   * @see #setShape(Consumer)
    */
-  public void graphics(processing.core.PGraphics pGraphics) {
+  public void resetShape() {
+    _rmrShape = null;
+    _imrShape = null;
+    disableHint(SHAPE);
   }
 
   /**
-   * Same as {@code setShape(null)}.
+   * Resets the retained-mode rendering shape.
+   *
+   * @see #setShape(Consumer)
+   */
+  public void resetRMRShape() {
+    _rmrShape = null;
+  }
+
+  /**
+   * Resets the immediate-mode rendering shape.
    *
    * @see #setShape(processing.core.PShape)
    */
-  public void resetShape() {
-    setShape(null);
+  public void resetIMRShape() {
+    _imrShape = null;
   }
 
   /**
-   * Sets the node retained mode shape.
+   * Sets the node retained mode rendering (rmr) {@link #SHAPE} hint
+   * (see {@link #hint()}). Use {@code enableHint(Node.SHAPE)},
+   * {@code disableHint(Node.SHAPE)} and {@code toggleHint(Node.SHAPE)}
+   * to (dis)enable the hint.
    *
-   * @see #graphics(processing.core.PGraphics)
+   * @see #setShape(Consumer)
    * @see #resetShape()
+   * @see #resetIMRShape()
+   * @see #resetRMRShape()
    */
   public void setShape(processing.core.PShape shape) {
-    _shape = shape;
+    _rmrShape = shape;
+    enableHint(SHAPE);
   }
 
   /**
-   * Returns the node retained mode shape. Maybe null.
+   * Sets the node immediate mode rendering (imr) {@link #SHAPE} procedure
+   * hint (see {@link #hint()}). Use {@code enableHint(Node.SHAPE)},
+   * {@code disableHint(Node.SHAPE)} and {@code toggleHint(Node.SHAPE)}
+   * to (dis)enable the hint.
    *
+   * @see #setShape(processing.core.PShape)
    * @see #resetShape()
-   * @see #shape()
-   * @see #graphics(processing.core.PGraphics)
+   * @see #resetIMRShape()
+   * @see #resetRMRShape()
    */
-  public processing.core.PShape shape() {
-    return _shape;
+  public void setShape(Consumer<processing.core.PGraphics> callback) {
+    _imrShape = callback;
+    enableHint(SHAPE);
+  }
+
+  /**
+   * Override this method to set an immediate mode graphics procedure on the Processing
+   * {@code PGraphics} or use {@link #setShape(Consumer)} instead.
+   *
+   * @deprecated use {@link #setShape(Consumer)} instead.
+   */
+  @Deprecated
+  public void graphics(processing.core.PGraphics pGraphics) {
+  }
+
+  protected void _updateHUD() {
+    if ((_rmrHUD == null && _imrHUD == null) || !isHintEnable(HUD)) {
+      Graph._hudSet.remove(this);
+    }
+    else {
+      Graph._hudSet.add(this);
+    }
+  }
+
+  /**
+   * Same as calling {@link #resetRMRHUD()} and {@link #resetIMRHUD()}.
+   */
+  public void resetHUD() {
+    _rmrHUD = null;
+    _imrHUD = null;
+    disableHint(HUD);
+    _updateHUD();
+  }
+
+  /**
+   * Same as {@code setRMRShape(null)}.
+   *
+   * @see #setShape(processing.core.PShape)
+   */
+  public void resetRMRHUD() {
+    _rmrHUD = null;
+    _updateHUD();
+  }
+
+  /**
+   * Same as {@code setIMRShape(null)}.
+   *
+   * @see #setShape(Consumer)
+   */
+  public void resetIMRHUD() {
+    _imrHUD = null;
+    _updateHUD();
+  }
+
+  /**
+   * Sets the node retained mode rendering (rmr) shape {@link #HUD} hint
+   * (see {@link #hint()}). The 2D {@code shape} screen coordinates are
+   * interpreted relative to the node {@link #position()} screen projection
+   * when the hint is rendered ({@link Graph#render(Node)}). Use
+   * {@code enableHint(Node.HUD)}, {@code disableHint(Node.HUD)} and
+   * {@code toggleHint(Node.HUD)} to (dis)enable the hint.
+   *
+   * @see #setHUD(Consumer)
+   * @see #resetHUD()
+   * @see #resetIMRHUD()
+   * @see #resetRMRHUD()
+   */
+  public void setHUD(processing.core.PShape shape) {
+    _rmrHUD = shape;
+    enableHint(HUD);
+    _updateHUD();
+  }
+
+  /**
+   * Sets the node immediate mode rendering (imr) drawing procedure
+   * {@link #HUD} hint (see {@link #hint()}). The 2D {@code shape} screen
+   * coordinates are interpreted relative to the node {@link #position()}
+   * screen projection when the hint is rendered ({@link Graph#render(Node)}).
+   * Use {@code enableHint(Node.HUD)}, {@code disableHint(Node.HUD)} and
+   * {@code toggleHint(Node.HUD)} to (dis)enable the hint.
+   *
+   * @see #setShape(processing.core.PShape)
+   * @see #resetHUD()
+   * @see #resetIMRHUD()
+   * @see #resetRMRHUD()
+   */
+  public void setHUD(Consumer<processing.core.PGraphics> callback) {
+    _imrHUD = callback;
+    enableHint(HUD);
+    _updateHUD();
+  }
+
+  public boolean isPickingModeEnable(int pickingMode) {
+    return ~(_pickingMode | ~pickingMode) == 0;
+  }
+
+  public int pickingMode() {
+    return this._pickingMode;
+  }
+
+  public void resetPickingMode() {
+    _pickingMode = 0;
+  }
+
+  public void disablePickingMode(int pickingMode) {
+    _pickingMode &= ~pickingMode;
+  }
+
+  public void enablePickingMode(int pickingMode) {
+    _pickingMode |= pickingMode;
+  }
+
+  public void togglePickingMode(int pickingMode) {
+    _pickingMode ^= pickingMode;
+  }
+
+  /**
+   * Returns whether or not all single visual hints encoded in the bitwise-or
+   * {@code hint} mask are enable or not.
+   *
+   * @see #hint()
+   * @see #enableHint(int)
+   * @see #configHint(int, Object...)
+   * @see #enableHint(int, Object...)
+   * @see #disableHint(int)
+   * @see #toggleHint(int)
+   * @see #resetHint()
+   */
+  public boolean isHintEnable(int hint) {
+    return ~(_mask | ~hint) == 0;
+  }
+
+  /**
+   * Returns the current visual hint mask. The mask is a bitwise-or of the following
+   * single visual hints available for the node:
+   * <p>
+   * <ol>
+   * <li>{@link #CAMERA} which displays a camera hint centered at the node screen
+   * projection.</li>
+   * <li>{@link #AXES} which displays an axes hint centered at the node
+   * {@link #position()} an oriented according to the node {@link #orientation()}.</li>
+   * <li>{@link #HUD} which displays the node Heads-Up-Display set with
+   * {@link #setHUD(processing.core.PShape)} or {@link #setHUD(Consumer)}.</li>
+   * <li>{@link #FRUSTUM} which displays a frustum visual representation which origin is
+   * located at the node {@link #position()}. The frustum may be set up from a given
+   * {@link Graph} or from low-level frustum plane params.</li>
+   * <li>{@link #SHAPE} which displays the node shape set with
+   * {@link #setShape(processing.core.PShape)} or {@link #setShape(Consumer)}.</li>
+   * <li>{@link #BULLSEYE} which displays a bullseye centered at the node
+   * {@link #position()} screen projection. Call {@link #setBullsEyeSize(float)}
+   * to set the size of the hint</li>
+   * <li>{@link #TORUS} which displays a torus solenoid.</li>
+   * </ol>
+   * Displaying the hint requires first to enabling it (see {@link #enableHint(int)}) and then
+   * calling a {@link Graph} rendering algorithm.
+   *
+   * @see #enableHint(int)
+   * @see #configHint(int, Object...)
+   * @see #enableHint(int, Object...)
+   * @see #disableHint(int)
+   * @see #toggleHint(int)
+   * @see #isHintEnable(int)
+   * @see #resetHint()
+   */
+  public int hint() {
+    return this._mask;
+  }
+
+  /**
+   * Resets the current {@link #hint()}, i.e., disables all single
+   * visual hints available for the node.
+   *
+   * @see #hint()
+   * @see #enableHint(int)
+   * @see #configHint(int, Object...)
+   * @see #enableHint(int, Object...)
+   * @see #disableHint(int)
+   * @see #toggleHint(int)
+   * @see #isHintEnable(int)
+   */
+  public void resetHint() {
+    _mask = 0;
+    _updateHUD();
+  }
+
+  /**
+   * Disables all the single visual hints encoded in the bitwise-or {@code hint} mask.
+   *
+   * @see #hint()
+   * @see #enableHint(int)
+   * @see #configHint(int, Object...)
+   * @see #enableHint(int, Object...)
+   * @see #resetHint()
+   * @see #toggleHint(int)
+   * @see #isHintEnable(int)
+   */
+  public void disableHint(int hint) {
+    _mask &= ~hint;
+    _updateHUD();
+  }
+
+  /**
+   * Calls {@link #enableHint(int)} followed by {@link #configHint(int, Object...)}.
+   *
+   * @see #hint()
+   * @see #enableHint(int)
+   * @see #configHint(int, Object...)
+   * @see #disableHint(int)
+   * @see #resetHint()
+   * @see #toggleHint(int)
+   * @see #isHintEnable(int)
+   */
+  public void enableHint(int hint, Object... params) {
+    enableHint(hint);
+    configHint(hint, params);
+  }
+
+  /**
+   * Enables all single visual hints encoded in the bitwise-or {@code hint} mask.
+   *
+   * @see #hint()
+   * @see #disableHint(int)
+   * @see #configHint(int, Object...)
+   * @see #enableHint(int, Object...)
+   * @see #resetHint()
+   * @see #toggleHint(int)
+   * @see #isHintEnable(int)
+   */
+  public void enableHint(int hint) {
+    _mask |= hint;
+    _updateHUD();
+  }
+
+  /**
+   * Toggles all single visual hints encoded in the bitwise-or {@code hint} mask.
+   *
+   * @see #hint()
+   * @see #disableHint(int)
+   * @see #configHint(int, Object...)
+   * @see #enableHint(int, Object...)
+   * @see #resetHint()
+   * @see #enableHint(int)
+   * @see #isHintEnable(int)
+   */
+  public void toggleHint(int hint) {
+    _mask ^= hint;
+    _updateHUD();
+  }
+
+  /**
+   * Configures the hint using varargs as follows:
+   * <p>
+   * <ol>
+   * <li>{@link #CAMERA} hint: {@code configHint(Node.CAMERA, cameraStroke)} or
+   * {@code configHint(Node.CAMERA, cameraStroke, cameraLength)}.</li>
+   * <li>{@link #AXES} hint: {@code configHint(Node.AXES, axesLength)}.</li>
+   * <li>{@link #FRUSTUM} hint: {@code configHint(Node.FRUSTUM, frustumColor)}
+   * or {@code configHint(Node.FRUSTUM, graph)} or
+   * {@code configHint(Node.FRUSTUM, frustumColor, graph)} or
+   * {@code configHint(Node.FRUSTUM, eyeBuffer, frustumType, zNear, zFar)} or
+   * {@code configHint(Node.FRUSTUM, frustumColor, eyeBuffer, frustumType, zNear, zFar)}.</li>
+   * <li>{@link #BULLSEYE} hint: {@code configHint(Node.BULLSEYE, bullseyeStroke)},
+   * {@code configHint(Node.BULLSEYE, bullseyeShape)}, or
+   * {@code configHint(Node.BULLSEYE, bullseyeStroke, bullseyeShape)}.</li>
+   * <li>{@link #TORUS} hint: configHint(Node.TORUS, torusStroke)}, or
+   * configHint(Node.TORUS, torusStroke, torusFaces)}.</li>
+   * </ol>
+   * Note that the {@code cameraStroke}, {@code splineStroke}, {@code bullseyeStroke},
+   * {@code torusStroke} and {@code frustumColor}, are color {@code int} vars;
+   * {@code cameraLength} and {@code exesLength}
+   * are world magnitude numerical values; {@code highlight} is a numerical value in
+   * {@code [0..1]} which represents the scale factor to be applied to the node when
+   * it gets tagged (see {@link Graph#tag(String, Node)}); {@code bullseyeShape}
+   * is either of type {@link BullsEyeShape#SQUARE} or {@link BullsEyeShape#CIRCLE};
+   * {@code graph} is of type {@link Graph}; and, {@code graph} may be of type
+   * {@link processing.core.PGraphics}.
+   *
+   * @see #hint()
+   * @see #enableHint(int)
+   * @see #enableHint(int, Object...)
+   * @see #disableHint(int)
+   * @see #toggleHint(int)
+   * @see #isHintEnable(int)
+   * @see #resetHint()
+   */
+  public void configHint(int hint, Object... params) {
+    switch (params.length) {
+      case 1:
+        if (hint == BULLSEYE && params[0] instanceof BullsEyeShape) {
+          _bullsEyeShape = (BullsEyeShape) params[0];
+          return;
+        }
+        if (hint == BULLSEYE && Graph.isNumInstance(params[0])) {
+          _bullsEyeStroke = Graph.castToInt(params[0]);
+          return;
+        }
+        if (hint == AXES && Graph.isNumInstance(params[0])) {
+          _axesLength = Graph.castToFloat(params[0]);
+          return;
+        }
+        if (hint == CAMERA && Graph.isNumInstance(params[0])) {
+          _cameraStroke = Graph.castToInt(params[0]);
+          return;
+        }
+        if (hint == FRUSTUM && Graph.isNumInstance(params[0])) {
+          _frustumColor = Graph.castToInt(params[0]);
+          return;
+        }
+        if (hint == FRUSTUM && params[0] instanceof Graph) {
+          _eyeBuffer = null;
+          _frustumGraph = (Graph) params[0];
+          return;
+        }
+        if (hint == TORUS && Graph.isNumInstance(params[0])) {
+          _torusColor = Graph.castToInt(params[0]);
+          return;
+        }
+        break;
+      case 2:
+        if (hint == BULLSEYE && params[0] instanceof BullsEyeShape && Graph.isNumInstance(params[1])) {
+          _bullsEyeShape = (BullsEyeShape) params[0];
+          _bullsEyeStroke = Graph.castToInt(params[1]);
+          return;
+        }
+        if (hint == BULLSEYE && Graph.isNumInstance(params[0]) && params[1] instanceof BullsEyeShape) {
+          _bullsEyeStroke = Graph.castToInt(params[0]);
+          _bullsEyeShape = (BullsEyeShape) params[1];
+          return;
+        }
+        if (hint == CAMERA) {
+          if (Graph.isNumInstance(params[0]) && Graph.isNumInstance(params[1])) {
+            _cameraStroke = Graph.castToInt(params[0]);
+            _cameraLength = Graph.castToFloat(params[1]);
+            return;
+          }
+        }
+        if (hint == FRUSTUM) {
+          if (Graph.isNumInstance(params[0]) && params[1] instanceof Graph) {
+            _frustumColor = Graph.castToInt(params[0]);
+            _frustumGraph = (Graph) params[1];
+            _eyeBuffer = null;
+            return;
+          }
+          if (params[0] instanceof Graph && Graph.isNumInstance(params[1])) {
+            _eyeBuffer = null;
+            _frustumGraph = (Graph) params[0];
+            _frustumColor = Graph.castToInt(params[1]);
+            return;
+          }
+        }
+        if (hint == TORUS) {
+          if (Graph.isNumInstance(params[0]) && Graph.isNumInstance(params[1])) {
+            _torusColor = Graph.castToInt(params[0]);
+            _torusFaces = Graph.castToInt(params[1]);
+            return;
+          }
+        }
+        break;
+      case 4:
+        if (hint == FRUSTUM) {
+          if (params[0] instanceof processing.core.PGraphics && params[1] instanceof Graph.Type && Graph.isNumInstance(params[2]) && Graph.isNumInstance(params[3])) {
+            _frustumGraph = null;
+            _eyeBuffer = params[0];
+            _frustumtype = (Graph.Type) params[1];
+            _zNear = Graph.castToFloat(params[2]);
+            _zFar = Graph.castToFloat(params[3]);
+            return;
+          }
+        }
+        break;
+      case 5:
+        if (hint == FRUSTUM) {
+          if (params[0] instanceof processing.core.PGraphics && params[1] instanceof Graph.Type && Graph.isNumInstance(params[2]) && Graph.isNumInstance(params[3]) && Graph.isNumInstance(params[4])) {
+            _frustumGraph = null;
+            _eyeBuffer = params[0];
+            _frustumtype = (Graph.Type) params[1];
+            _zNear = Graph.castToFloat(params[2]);
+            _zFar = Graph.castToFloat(params[3]);
+            _frustumColor = Graph.castToInt(params[4]);
+            return;
+          }
+          if (Graph.isNumInstance(params[0]) && params[1] instanceof processing.core.PGraphics && params[2] instanceof Graph.Type && Graph.isNumInstance(params[3]) && Graph.isNumInstance(params[4])) {
+            _frustumColor = Graph.castToInt(params[0]);
+            _frustumGraph = null;
+            _eyeBuffer = params[1];
+            _frustumtype = (Graph.Type) params[2];
+            _zNear = Graph.castToFloat(params[3]);
+            _zFar = Graph.castToFloat(params[4]);
+            return;
+          }
+        }
+        break;
+    }
+    System.out.println("Warning: some params in Node.configHint(hint, params) couldn't be parsed!");
   }
 }

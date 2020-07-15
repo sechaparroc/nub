@@ -21,7 +21,6 @@ public class PUP extends PApplet {
   @Override
   public void settings() {
     size(1800, 1400, P3D);
-    //noSmooth();
   }
 
   public void setup() {
@@ -31,10 +30,9 @@ public class PUP extends PApplet {
     models = new Node[100];
     for (int i = 0; i < models.length; i++) {
       models[i] = new Node(boxShape());
-      models[i].setPickingThreshold(0);
       scene.randomize(models[i]);
     }
-    visualHint = new Scene(this, P3D, w, h);
+    visualHint = new Scene(createGraphics(w, h, P3D));
     visualHint.setRadius(300);
   }
 
@@ -45,14 +43,7 @@ public class PUP extends PApplet {
     scene.drawAxes();
     scene.render();
     if (pup != null) {
-      scene.beginHUD();
-      visualHint.beginDraw();
-      visualHint.context().background(125, 80, 90);
-      visualHint.drawAxes();
-      visualHint.render();
-      visualHint.endDraw();
       visualHint.display(atX, atY);
-      scene.endHUD();
     }
   }
 
@@ -92,7 +83,7 @@ public class PUP extends PApplet {
       if (pup != null) {
         visualHint.setCenter(pup);
         visualHint.eye().setPosition(pup);
-        //visualHint.setViewDirection(scene.displacement(Vector.plusJ));
+        //hint.setViewDirection(scene.displacement(Vector.plusJ));
         visualHint.setViewDirection(scene.displacement(new Vector(0, 1, 0)));
         visualHint.setUpVector(scene.displacement(new Vector(0, 0, -1)));
         visualHint.fit();
@@ -127,7 +118,7 @@ public class PUP extends PApplet {
     if (key == ' ')
       scene.togglePerspective();
     if (key == 'f')
-      scene.flip();
+      Scene.leftHanded = !Scene.leftHanded;
   }
 
   public static void main(String[] args) {

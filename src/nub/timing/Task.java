@@ -27,8 +27,14 @@ package nub.timing;
  * <p>
  * Call {@link TimingHandler#unregisterTask(Task)} to cancel the task.
  */
-abstract public class Task {
+public class Task {
+  @FunctionalInterface
+  public interface Callback {
+    void execute();
+  }
+
   protected TimingHandler _timingHandler;
+  protected Callback _callback;
   protected boolean _active;
   protected boolean _recurrence;
   protected boolean _concurrence;
@@ -37,14 +43,56 @@ abstract public class Task {
   protected long _startTime;
 
   /**
-   * Constructs a sequential recurrent task with a {@link #period()} of 40ms
+   * Constructs a sequential recurrent task that will execute {@code callback}
+   * (see {@link #setCallback(Callback)}) with a {@link #period()} of 40ms
    * (i.e., a {@link #frequency()} of 25 Hz).
    */
+  public Task(TimingHandler timingHandler, Callback callback) {
+    _init(timingHandler);
+    setCallback(callback);
+  }
+
+  /**
+   * Constructs a sequential recurrent task with a {@link #period()} of 40ms
+   * (i.e., a {@link #frequency()} of 25 Hz). The task {@link #execute()} is
+   * set as its {@link #callback()} method.
+   */
   public Task(TimingHandler timingHandler) {
+    _init(timingHandler);
+    setCallback(this::execute);
+  }
+
+  /**
+   * Internally used by constructors.
+   */
+  protected void _init(TimingHandler timingHandler) {
     _timingHandler = timingHandler;
     _timingHandler.registerTask(this);
     _recurrence = true;
     _period = 40;
+  }
+
+  /**
+   * Sets the callback method which should be provided by third parties
+   * using this task.
+   * <p>
+   * The callback will be executed (see {@link #run(long)}) at a certain
+   * {@link #period()}. Do not implement drawing in your callback since
+   * it will not necessarily be executed every frame.
+   *
+   * @see #callback()
+   */
+  public void setCallback(Callback callback) {
+    _callback = callback;
+  }
+
+  /**
+   * Returns the task callback method.
+   *
+   * @see #setCallback(Callback)
+   */
+  public Callback callback() {
+    return _callback;
   }
 
   /**
@@ -54,7 +102,8 @@ abstract public class Task {
    * {@link #period()}. Do not implement this method for drawing
    * since it will not necessarily be executed every frame.
    */
-  abstract public void execute();
+  public void execute() {
+  }
 
   /**
    * Executes the callback method defined by the {@link #execute()}.
@@ -79,7 +128,8 @@ abstract public class Task {
         _counter++;
     }
     if (result) {
-      execute();
+      if (_callback != null)
+        _callback.execute();
       if (!_recurrence)
         _active = false;
     }

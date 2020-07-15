@@ -34,6 +34,7 @@ public class MatrixHandler {
   protected int _matrixStackDepth;
   protected float[][] _projectionStack = new float[STACK_DEPTH][16];
   protected int _projectionStackDepth;
+  protected static int _hudCalls;
 
   // 1. May be overridden
 
@@ -55,7 +56,7 @@ public class MatrixHandler {
    * implementing them in terms of that renderer.
    *
    * @see Graph#render()
-   * @see Graph#projection(Node, Graph.Type, float, float, float, float, boolean)
+   * @see Graph#projection(Node, Graph.Type, float, float, float, float)
    * @see Node#view()
    */
   public void bind(Matrix projection, Matrix view) {
@@ -252,7 +253,7 @@ public class MatrixHandler {
 
   // 2. WARNING don't override from here ever!
 
-  // heads up display
+  // HUD
 
   /**
    * Begins Heads Up Display (HUD).
@@ -267,6 +268,10 @@ public class MatrixHandler {
    * @see Matrix#hudView(int, int)
    */
   public void beginHUD(int width, int height) {
+    if (_hudCalls < 0)
+      throw new RuntimeException("There should be exactly one beginHUD() call followed by a "
+          + "endHUD() and they cannot be nested. Check your implementation!");
+    _hudCalls++;
     pushProjection();
     _bindProjection(Matrix.hudProjection(width, height));
     pushMatrix();
@@ -282,6 +287,10 @@ public class MatrixHandler {
    * @see #beginHUD(int, int)
    */
   public void endHUD() {
+    _hudCalls--;
+    if (_hudCalls < 0)
+      throw new RuntimeException("There should be exactly one beginHUD() call followed by a "
+          + "endHUD() and they cannot be nested. Check your implementation!");
     popProjection();
     popMatrix();
   }

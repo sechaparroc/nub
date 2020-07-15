@@ -11,9 +11,9 @@ public class SceneBuffers extends PApplet {
   Node[] shapes;
 
   //Choose one of P3D for a 3D scene or P2D for a 2D one.
-  String renderer = P2D;
-  int w = 1000;
-  int h = 1000;
+  String renderer = P3D;
+  int w = 700;
+  int h = 700;
 
   public void settings() {
     size(w, h, renderer);
@@ -21,24 +21,24 @@ public class SceneBuffers extends PApplet {
 
   public void setup() {
     rectMode(CENTER);
-    scene = new Scene(this, createGraphics(w, h / 2, renderer));
+    scene = new Scene(createGraphics(w, h / 2, renderer));
+    //scene = new Scene(this);
+    scene.enableHint(Scene.BACKGROUND, color(125));
     scene.setRadius(max(w, h));
 
     shapes = new Node[100];
     for (int i = 0; i < shapes.length; i++) {
       shapes[i] = new Node(caja());
       scene.randomize(shapes[i]);
-      shapes[i].setPickingThreshold(0);
+      //shapes[i].enableHint(Node.CAMERA);
+      shapes[i].enableHint(Node.AXES);
     }
     scene.fit(1);
+    scene.enableHint(Scene.AXES);
   }
 
   public void draw() {
     // 1. Fill in and display front-buffer
-    scene.beginDraw();
-    scene.context().background(10, 50, 25);
-    scene.render();
-    scene.endDraw();
     scene.display();
     // 2. Display back buffer
     scene.displayBackBuffer(0, h / 2);

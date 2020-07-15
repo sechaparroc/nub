@@ -8,7 +8,6 @@ import processing.core.PFont;
 import processing.core.PGraphics;
 import processing.core.PShape;
 import processing.event.MouseEvent;
-import processing.opengl.PGraphics2D;
 
 /**
  * Created by pierre on 11/15/16.
@@ -41,7 +40,7 @@ public class Interaction2D extends PApplet {
         pGraphics.rect(10, 10, 200, 200);
         pGraphics.stroke(255, 0, 0);
         /*
-        scene.drawSquaredBullsEye(this);
+        scene._drawSquaredBullsEye(this);
         scene.beginHUD(pGraphics);
         Vector position = scene.screenLocation(position());
         pGraphics.fill(isTracked() ? 0 : 255, isTracked() ? 255 : 0, isTracked() ? 0 : 255);
@@ -52,14 +51,13 @@ public class Interaction2D extends PApplet {
         pGraphics.popStyle();
       }
     };
+    shape1.enableHint(Node.BULLSEYE);
     //shape1.setRotation(Quaternion.random());
     shape1.translate(-375, 175, 0);
 
     shape2 = new Node(shape1);
     shape2.setShape(shape());
     shape2.translate(75, 475, 0);
-    if (g instanceof PGraphics2D)
-      shape2.setPickingThreshold(0);
 
     shape3 = new Node(shape2);
     shape3.setShape(createShape(RECT, 0, 0, 150, 150));
@@ -71,7 +69,6 @@ public class Interaction2D extends PApplet {
     scene.drawAxes();
     scene.render();
 
-    scene.drawSquaredBullsEye(shape1);
     scene.beginHUD();
     Vector position = scene.screenLocation(shape1.position());
     fill(shape1.isTagged(scene) ? 0 : 255, shape1.isTagged(scene) ? 255 : 0, shape1.isTagged(scene) ? 0 : 255);
@@ -87,7 +84,7 @@ public class Interaction2D extends PApplet {
 
   public void keyPressed() {
     if (key == 'f')
-      scene.flip();
+      Scene.leftHanded = !Scene.leftHanded;
     if (key == 's')
       scene.fit(1);
     if (key == 'f')

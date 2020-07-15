@@ -186,26 +186,16 @@ public class Interpolator {
   protected boolean _splineCacheIsValid;
   protected Vector _vector1, _vector2;
 
-  /**
-   * Convenience constructor that simply calls {@code this(graph, new Node())}.
-   * <p>
-   * Creates an anonymous {@link #node()} to be interpolated by this
-   * interpolator.
-   *
-   * @see #Interpolator(Node)
-   */
-  public Interpolator() {
-    this(new Node());
-  }
-
-  /**
-   * Convenience constructor that simply calls {@code this(graph.eye())}.
-   *
-   * @see #Interpolator(Node)
-   */
-  public Interpolator(Graph graph) {
-    this(graph.eye());
-  }
+  // Visual hint
+  protected int _mask;
+  public final static int CAMERA = Node.CAMERA;
+  public final static int AXES = Node.AXES;
+  public final static int SPLINE = 1 << 2;
+  protected float _axesLength;
+  protected int _cameraStroke;
+  protected float _cameraLength;
+  protected int _splineStroke;
+  protected int _steps;
 
   /**
    * Creates an interpolator, with {@code node} as associated {@link #node()}.
@@ -235,6 +225,12 @@ public class Interpolator {
     _splineCacheIsValid = false;
     _backwards = _list.listIterator();
     _forwards = _list.listIterator();
+    // hints
+    // green (color(0, 255, 0)) encoded as a processing int rgb color
+    _cameraStroke = -16711936;
+    // magenta (color(255, 0, 255)) encoded as a processing int rgb color
+    _splineStroke = -65281;
+    _steps = 3;
   }
 
   protected Interpolator(Interpolator other) {
@@ -264,6 +260,13 @@ public class Interpolator {
     this._splineCacheIsValid = false;
     this._backwards = _list.listIterator();
     this._forwards = _list.listIterator();
+    // TODO decide this and make consistent with Node.get()
+    // hints
+    this._cameraStroke = other._cameraStroke;
+    this._cameraLength = other._cameraLength;
+    this._splineStroke = other._splineStroke;
+    this._steps = other._steps;
+    this._axesLength = other._axesLength;
   }
 
   /**
@@ -284,8 +287,9 @@ public class Interpolator {
    * Sets the interpolator {@link #node()}.
    */
   public void setNode(Node node) {
-    if (node == _node)
-      return;
+    if (node == null) {
+      throw new RuntimeException("Interpolator node should be non-null!");
+    }
     _node = node;
   }
 
@@ -582,40 +586,8 @@ public class Interpolator {
   }
 
   /**
-   * Appends a copy of the current {@link #node()} one second after the previously added keyframe.
-   *
-   * @see #addKeyFrame(float)
-   * @see #addKeyFrame(Node)
-   * @see #addKeyFrame(Node, float)
-   * @see Node#set(Node)
-   */
-  public void addKeyFrame() {
-    addKeyFrame(_list.isEmpty() ? 0.0f : 1.0f);
-  }
-
-  /**
-   * Appends a copy of the current {@link #node()} {@code time} seconds after the
-   * previously added keyframe. The {@link Node#pickingThreshold()} is set to {@code 20}.
-   *
-   * @see #addKeyFrame()
-   * @see #addKeyFrame(Node)
-   * @see #addKeyFrame(Node, float)
-   */
-  public void addKeyFrame(float time) {
-    Node node = new Node();
-    node.setReference(node().reference());
-    node.setPosition(node());
-    node.setOrientation(node());
-    node.setMagnitude(node());
-    node.setPickingThreshold(20);
-    addKeyFrame(node, time);
-  }
-
-  /**
    * Appends a new keyframe one second after the previously added one.
    *
-   * @see #addKeyFrame(float)
-   * @see #addKeyFrame()
    * @see #addKeyFrame(Node, float)
    */
   public void addKeyFrame(Node node) {
@@ -631,9 +603,7 @@ public class Interpolator {
    * <p>
    * {@code null} node references are silently ignored.
    *
-   * @see #addKeyFrame(float)
    * @see #addKeyFrame(Node)
-   * @see #addKeyFrame()
    */
   public void addKeyFrame(Node node, float time) {
     if (_list.size() == 0) {
@@ -884,5 +854,260 @@ public class Interpolator {
       _pathIsValid = false;
       _splineCacheIsValid = false;
     }
+  }
+
+  /**
+   * Returns whether or not all single visual hints encoded in the bitwise-or
+   * {@code hint} mask are enable or not.
+   *
+   * @see #hint()
+   * @see #enableHint(int)
+   * @see #configHint(int, Object...)
+   * @see #enableHint(int, Object...)
+   * @see #disableHint(int)
+   * @see #toggleHint(int)
+   * @see #resetHint()
+   */
+  public boolean isHintEnable(int hint) {
+    return ~(_mask | ~hint) == 0;
+  }
+
+  /**
+   * Returns the current visual hint mask. The mask is a bitwise-or of the following
+   * single visual hints available the interpolator:
+   * <p>
+   * <ol>
+   * <li>{@link #CAMERA} which displays a camera hint for each interpolator key-frame
+   * centered at the screen projection of its {@link Node#position()}.</li>
+   * <li>{@link #AXES} which displays an axes hint for each key-frame centered at
+   * the screen projection of its {@link Node#position()}.</li>
+   * <li>{@link #SPLINE} which displays a Catmull-Rom spline having the key-frames
+   * as its control points.</li>
+   * </ol>
+   * Displaying the hint requires first to enabling it (see {@link #enableHint(int)}) and then
+   * calling either {@link Graph#render(Node)} or {@link Graph#render()}.
+   * Use {@link #configHint(int, Object...)} to configure the hint different visual aspects.
+   *
+   * @see #enableHint(int)
+   * @see #configHint(int, Object...)
+   * @see #enableHint(int, Object...)
+   * @see #disableHint(int)
+   * @see #toggleHint(int)
+   * @see #isHintEnable(int)
+   * @see #resetHint()
+   */
+  public int hint() {
+    return this._mask;
+  }
+
+  /**
+   * Resets the current {@link #hint()}, i.e., disables all single
+   * visual hints available for the node.
+   *
+   * @see #hint()
+   * @see #enableHint(int)
+   * @see #configHint(int, Object...)
+   * @see #enableHint(int, Object...)
+   * @see #disableHint(int)
+   * @see #toggleHint(int)
+   * @see #isHintEnable(int)
+   */
+  public void resetHint() {
+    _mask = 0;
+    Graph._interpolators.remove(this);
+  }
+
+  /**
+   * Disables all the single visual hints encoded in the bitwise-or {@code hint} mask.
+   *
+   * @see #hint()
+   * @see #enableHint(int)
+   * @see #configHint(int, Object...)
+   * @see #enableHint(int, Object...)
+   * @see #resetHint()
+   * @see #toggleHint(int)
+   * @see #isHintEnable(int)
+   */
+  public void disableHint(int hint) {
+    _mask &= ~hint;
+    if (_mask == 0)
+      Graph._interpolators.remove(this);
+  }
+
+  /**
+   * Calls {@link #enableHint(int)} followed by {@link #configHint(int, Object...)}.
+   *
+   * @see #hint()
+   * @see #enableHint(int)
+   * @see #configHint(int, Object...)
+   * @see #disableHint(int)
+   * @see #resetHint()
+   * @see #toggleHint(int)
+   * @see #isHintEnable(int)
+   */
+  public void enableHint(int hint, Object... params) {
+    enableHint(hint);
+    configHint(hint, params);
+  }
+
+  /**
+   * Enables all single visual hints encoded in the bitwise-or {@code hint} mask.
+   *
+   * @see #hint()
+   * @see #disableHint(int)
+   * @see #configHint(int, Object...)
+   * @see #enableHint(int, Object...)
+   * @see #resetHint()
+   * @see #toggleHint(int)
+   * @see #isHintEnable(int)
+   */
+  public void enableHint(int hint) {
+    _mask |= hint;
+    if (_mask != 0)
+      Graph._interpolators.add(this);
+  }
+
+  /**
+   * Toggles all single visual hints encoded in the bitwise-or {@code hint} mask.
+   *
+   * @see #hint()
+   * @see #disableHint(int)
+   * @see #configHint(int, Object...)
+   * @see #enableHint(int, Object...)
+   * @see #resetHint()
+   * @see #enableHint(int)
+   * @see #isHintEnable(int)
+   */
+  public void toggleHint(int hint) {
+    _mask ^= hint;
+    if (_mask != 0)
+      Graph._interpolators.add(this);
+  }
+
+  /**
+   * Configures the hint using varargs as follows:
+   * <p>
+   * <ol>
+   * <li>{@link #CAMERA} hint: {@code configHint(Interpolator.CAMERA, cameraStroke)}
+   * or {@code configHint(Interpolator.CAMERA, cameraStroke, cameraLength)}.</li>
+   * <li>{@link #AXES} hint: {@code configHint(Interpolator.AXES, axesLength)}.</li>
+   * <li>{@link #SPLINE} hint: {@code configHint(Interpolator.SPLINE, splineStroke)}.</li>
+   * </ol>
+   * Note that the {@code cameraStroke} and {@code splineStroke} are color {@code int}
+   * vars; and, {@code cameraLength} and {@code exesLength} are world magnitude
+   * numerical values.
+   *
+   * @see #hint()
+   * @see #enableHint(int)
+   * @see #enableHint(int, Object...)
+   * @see #disableHint(int)
+   * @see #toggleHint(int)
+   * @see #isHintEnable(int)
+   * @see #resetHint()
+   */
+  public void configHint(int hint, Object... params) {
+    switch (params.length) {
+      case 1:
+        if (Graph.isNumInstance(params[0])) {
+          if (hint == SPLINE) {
+            _splineStroke = Graph.castToInt(params[0]);
+            return;
+          }
+          if (hint == AXES) {
+            _axesLength = Graph.castToFloat(params[0]);
+            return;
+          }
+          if (hint == CAMERA) {
+            _cameraStroke = Graph.castToInt(params[0]);
+            return;
+          }
+        }
+        break;
+      case 2:
+        if (hint == CAMERA) {
+          if (Graph.isNumInstance(params[0]) && Graph.isNumInstance(params[1])) {
+            _cameraStroke = Graph.castToInt(params[0]);
+            _cameraLength = Graph.castToFloat(params[1]);
+            return;
+          }
+        }
+        break;
+    }
+    System.out.println("Warning: some params in Interpolator.configHint(hint, params) couldn't be parsed!");
+  }
+
+  /**
+   * Allows edition of the interpolator by enabling the {@link Node#BULLSEYE},
+   * {@link Node#AXES} and {@link Node#CAMERA} hints for each ot its key-frames.
+   * Note that {@link #keep()} does the opposite.
+   *
+   * @see #keep()
+   * @see Node#hint()
+   */
+  public void edit() {
+    for (Node node : keyFrames().values()) {
+      // TODO readd condition when Node.graphics is removed
+      //if (!node.isHintEnable(Node.SHAPE)) {
+        node.enableHint(Node.BULLSEYE);
+        if (!node.tagging) {
+          node.tagging = true;
+        }
+      //}
+      if (isHintEnable(Interpolator.AXES)) {
+        node.enableHint(Node.AXES);
+      }
+      if (isHintEnable(Interpolator.CAMERA)) {
+        node.enableHint(Node.CAMERA);
+      }
+    }
+  }
+
+  /**
+   * Disallows edition of the interpolator by disabling the {@link Node#BULLSEYE},
+   * {@link Node#AXES} and {@link Node#CAMERA} hints for each ot its key-frames.
+   * Note that {@link #edit()} does the opposite.
+   *
+   * @see #edit()
+   * @see Node#hint()
+   */
+  public void keep() {
+    for (Node node : keyFrames().values()) {
+      //if (!node.isHintEnable(Node.SHAPE)) {
+        node.disableHint(Node.BULLSEYE);
+        //if (node.isTaggingEnabled()) {
+          node.tagging = false;
+        //}
+      //}
+      if (!isHintEnable(Interpolator.AXES)) {
+        node.disableHint(Node.AXES);
+      }
+      if (!isHintEnable(Interpolator.CAMERA)) {
+        node.disableHint(Node.CAMERA);
+      }
+    }
+  }
+
+  /**
+   * Returns the number of steps between two consecutive key-frames
+   * to be drawn by the interpolator hint. Sets this value with {@link #setSteps(int)}.
+   *
+   * @see #hint()
+   */
+  public int steps() {
+    return _steps;
+  }
+
+  /**
+   * Sets the number of steps between two consecutive key-frames to be drawn
+   * by the interpolator hint.
+   *
+   * @see #steps()
+   * @see #hint()
+   */
+  public void setSteps(int steps) {
+    if (1 <= steps && steps <= 30)
+      _steps = steps;
+    else
+      System.out.println("Warning: spline steps should be in [1..30]. Nothing done!");
   }
 }

@@ -62,8 +62,6 @@ public class MouseDragInteraction extends PApplet {
       }
     };
     shape2.translate(275, 275, 0);
-    shape2.setPickingThreshold(0);
-
     randomVector = Vector.random();
     randomVector.setMagnitude(scene.radius() * 0.5f);
   }
@@ -81,7 +79,6 @@ public class MouseDragInteraction extends PApplet {
     if (key == 'd') {
       if (node == null) {
         node = shape1.detach();
-        node.setPickingThreshold(0);
         scene.randomize(node);
         node.setShape(shape());
         node.setReference(shape2);
@@ -99,7 +96,7 @@ public class MouseDragInteraction extends PApplet {
         node.resetReference();
     }
     if (key == 'i')
-      scene.flip();
+      Scene.leftHanded = !Scene.leftHanded;
     if (key == 's')
       scene.fit();
     if (key == 'f')
@@ -120,7 +117,7 @@ public class MouseDragInteraction extends PApplet {
     if (key == 'a')
       lookAround = !lookAround;
     if (key == 'r')
-      scene.flip();
+      Scene.leftHanded = !Scene.leftHanded;
     if (key == 'p')
       if (scene.type() == Graph.Type.PERSPECTIVE)
         scene.setType(Graph.Type.ORTHOGRAPHIC);

@@ -8,11 +8,13 @@ import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.event.MouseEvent;
 
+import java.util.function.Consumer;
+
 /**
  * This example introduces the three different interpolations offered
  * by the Graph.
  */
-public class Interpolation extends PApplet {
+public class Lambda extends PApplet {
   Scene scene;
   Interpolator interpolator, eyeInterpolator1, eyeInterpolator2;
   Node shape;
@@ -62,35 +64,31 @@ public class Interpolation extends PApplet {
     for (int i = 0; i < random(4, 10); i++)
       interpolator.addKeyFrame(scene.randomNode(), i % 2 == 1 ? 1 : 4);
     interpolator.run();
+
+    // key lines:
+    callback = (pg) -> {
+      pg.fill(0, 55, 0);
+      pg.rect(0, 0, 300, 300);
+    };
+  }
+
+  Consumer<PGraphics> callback;
+
+  public void hint(PGraphics pGraphics) {
+    graphics(callback, pGraphics);
+  }
+
+  public void graphics(Consumer<PGraphics> callback, PGraphics pGraphics) {
+    //println("Exec graphics...");
+    if (callback != null)
+      callback.accept(pGraphics);
   }
 
   public void draw() {
-    background(0);
+    background(125);
     scene.render();
-
-    pushStyle();
-    stroke(255);
-    // same as:scene.drawCatmullRom(interpolator, 5);
-    scene.drawCatmullRom(interpolator);
-    popStyle();
-    for (Node node : interpolator.keyFrames().values()) {
-      pushMatrix();
-      scene.applyTransformation(node);
-      scene.drawAxes(scene.mouseTracks(node) ? 40 : 20);
-      popMatrix();
-    }
-    if (showEyePath) {
-      pushStyle();
-      fill(255, 0, 0);
-      stroke(0, 255, 0);
-      // same as:
-      // scene.drawCatmullRom(eyeInterpolator1, 3);
-      // scene.drawCatmullRom(eyeInterpolator2, 3);
-      scene.drawCatmullRom(eyeInterpolator1);
-      scene.drawCatmullRom(eyeInterpolator2);
-      popStyle();
-    }
-    println(frameRate);
+    //graphics(callback, g);
+    hint(g);
   }
 
   public void mouseMoved() {
@@ -118,14 +116,14 @@ public class Interpolation extends PApplet {
       showEyePath = !showEyePath;
 
     if (key == '1')
-      eyeInterpolator1.addKeyFrame();
+      eyeInterpolator1.addKeyFrame(scene.eye().get());
     if (key == 'a')
       eyeInterpolator1.toggle();
     if (key == 'b')
       eyeInterpolator1.clear();
 
     if (key == '2')
-      eyeInterpolator2.addKeyFrame();
+      eyeInterpolator2.addKeyFrame(scene.eye().get());
     if (key == 'c')
       eyeInterpolator2.toggle();
     if (key == 'd')
@@ -145,16 +143,16 @@ public class Interpolation extends PApplet {
       scene.fit();
 
     if (key == 'x')
-      for (Task task : Scene.timingHandler().tasks())
+      for (Task task : Scene.TimingHandler.tasks())
         task.enableConcurrence();
     if (key == 'y')
-      for (Task task : Scene.timingHandler().tasks())
+      for (Task task : Scene.TimingHandler.tasks())
         task.disableConcurrence();
     if (key == 'p')
       println(Scene.nodes().size());
   }
 
   public static void main(String[] args) {
-    PApplet.main(new String[]{"intellij.Interpolation"});
+    PApplet.main(new String[]{"intellij.Lambda"});
   }
 }

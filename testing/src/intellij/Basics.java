@@ -36,10 +36,10 @@ public class Basics extends PApplet {
         else
           pg.rect(10, 10, 200, 200);
         pg.stroke(255, 255, 0);
-        scene.drawSquaredBullsEye(this);
         pg.popStyle();
       }
     };
+    node.enableHint(Node.BULLSEYE);
     node.setRotation(Quaternion.random());
     //shape = new Node(scene, shape());
     shape = new Node();
@@ -69,7 +69,7 @@ public class Basics extends PApplet {
     if (key == ' ')
       scene.updateMouseTag();
     if (key == 'f')
-      scene.flip();
+      Scene.leftHanded = !Scene.leftHanded;
   }
 
   public static void main(String[] args) {

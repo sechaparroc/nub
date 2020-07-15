@@ -283,7 +283,8 @@ public class NodeAPI1 extends PApplet {
   void drawArrow(Node node, Vector from, Vector to) {
     if (node != null) {
       pushMatrix();
-      scene.applyWorldTransformation(node);
+      // TODO fix me!
+      // scene.applyWorldTransformation(node);
       scene.drawArrow(from, to, 1);
       popMatrix();
     } else
@@ -313,7 +314,7 @@ public class NodeAPI1 extends PApplet {
           break;
       }
     if (key == 'v' || key == 'V')
-      scene.flip();
+      Scene.leftHanded = !Scene.leftHanded;
     if (key == '+')
       scene.eye().setScaling(scene.eye().scaling() * 1.1f);
     if (key == '-')
@@ -357,6 +358,7 @@ public class NodeAPI1 extends PApplet {
 
     public InteractiveNode(Scene graph, int color) {
       super();
+      enableHint(Node.BULLSEYE | Node.AXES);
       scene = graph;
       _c = color;
       pnt = new Vector(40, 30, 20);
@@ -364,20 +366,10 @@ public class NodeAPI1 extends PApplet {
 
     public InteractiveNode(Scene graph, Node node, int color) {
       super(node);
+      enableHint(Node.BULLSEYE | Node.AXES);
       scene = graph;
       _c = color;
       pnt = new Vector(40, 30, 20);
-    }
-
-    @Override
-    public void visit() {
-      pushStyle();
-      scene.drawAxes(40);
-      stroke(_c);
-      scene.drawSquaredBullsEye(this);
-      strokeWeight(10);
-      point(pnt.x(), pnt.y(), pnt.z());
-      popStyle();
     }
   }
 

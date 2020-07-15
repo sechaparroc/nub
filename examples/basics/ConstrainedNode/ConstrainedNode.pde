@@ -25,12 +25,10 @@ int activeConstraint;
 String renderer = P3D;
 
 void setup() {
-  size(800, 800, renderer);
+  size(700, 700, renderer);
   font = loadFont("FreeSans-16.vlw");
   textFont(font);
-
   scene = new Scene(this);
-
   constraints[0] = new LocalConstraint();
   // Note that an EyeConstraint(eye) would produce the same results:
   // An EyeConstraint is a LocalConstraint when applied to the eye
@@ -39,25 +37,16 @@ void setup() {
   transDir = 0;
   rotDir = 0;
   activeConstraint = 0;
-
-  node = new Node() {
-    // Note that within render() geometry is defined at the
-    // node local coordinate system.
-    @Override
-    public void graphics(PGraphics pg) {
-      Scene.drawAxes(pg, 40);
-      pg.fill(isTagged(scene) ? 255 : 0, 0, 255);
-      Scene.drawTorusSolenoid(pg);
-    }
-  };
+  node = new Node();
+  node.enableHint(Node.TORUS | Node.BULLSEYE | Node.AXES);
   scene.randomize(node);
   node.translate(new Vector(20, 20, 0));
   node.setConstraint(constraints[activeConstraint]);
+  scene.enableHint(Scene.GRID | Scene.AXES | Scene.BACKGROUND);
+  scene.configHint(Scene.GRID, Scene.GridType.LINES, color(0, 255, 0));
 }
 
 void draw() {
-  background(0);
-  scene.drawAxes();
   scene.render();
   fill(0, 255, 255);
   scene.beginHUD();

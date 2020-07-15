@@ -1,5 +1,6 @@
 package intellij;
 
+import nub.core.Graph;
 import nub.core.Node;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -10,10 +11,9 @@ import processing.event.MouseEvent;
 public class ViewFrustumCulling extends PApplet {
   OctreeNode root;
   Scene mainScene, secondaryScene, focus;
-  boolean bypass;
 
-  int w = 1000;
-  int h = 800;
+  int w = 700;
+  int h = 700;
   //octree
   float a = 220, b = 100, c = 280;
   int levels = 4;
@@ -24,7 +24,8 @@ public class ViewFrustumCulling extends PApplet {
 
   public void setup() {
     // main scene
-    mainScene = new Scene(this, P3D, w, h / 2);
+    mainScene = new Scene(createGraphics(w, h / 2, P3D));
+    mainScene.enableHint(Scene.BACKGROUND, color(255));
     mainScene.togglePerspective();
     mainScene.enableBoundaryEquations();
     mainScene.fit(1);
@@ -34,7 +35,11 @@ public class ViewFrustumCulling extends PApplet {
     buildOctree(root);
 
     // secondary scene
-    secondaryScene = new Scene(this, P3D, w, h / 2);
+    secondaryScene = new Scene(createGraphics(w, h / 2, P3D));
+    // cull only against main scene
+    secondaryScene.visit = false;
+    secondaryScene.enableHint(Node.FRUSTUM, mainScene, color(255, 0, 0, 125));
+    secondaryScene.enableHint(Scene.BACKGROUND, color(185));
     secondaryScene.togglePerspective();
     secondaryScene.setRadius(200);
     secondaryScene.fit();
@@ -47,27 +52,10 @@ public class ViewFrustumCulling extends PApplet {
   }
 
   public void draw() {
-    handleMouse();
-    background(255);
-    mainScene.beginDraw();
-    mainScene.context().background(255);
+    focus = mainScene.hasMouseFocus() ? mainScene : secondaryScene;
     // culling condition should be retested every frame
-    root.cull(false);
-    bypass = false;
-    mainScene.render();
-    mainScene.endDraw();
+    root.cull = false;
     mainScene.display();
-    bypass = true;
-    secondaryScene.beginDraw();
-    secondaryScene.context().background(185);
-    secondaryScene.render();
-    secondaryScene.context().pushStyle();
-    secondaryScene.context().strokeWeight(2);
-    secondaryScene.context().stroke(255, 0, 255);
-    secondaryScene.context().fill(255, 0, 255, 160);
-    secondaryScene.drawFrustum(mainScene);
-    secondaryScene.context().popStyle();
-    secondaryScene.endDraw();
     secondaryScene.display(0, h / 2);
   }
 
@@ -100,21 +88,20 @@ public class ViewFrustumCulling extends PApplet {
     if (key == ' ')
       focus.togglePerspective();
     if (key == 'f') {
-      mainScene.flip();
-      secondaryScene.flip();
+      Scene.leftHanded = !Scene.leftHanded;
     }
   }
 
   class OctreeNode extends Node {
     OctreeNode() {
-      disableTagging();
+      tagging = false;
     }
 
     OctreeNode(OctreeNode node, Vector vector) {
       super(node);
       scale(0.5f);
       translate(Vector.multiply(vector, scaling() / 2));
-      disableTagging();
+      tagging = false;
     }
 
     float level() {
@@ -131,16 +118,14 @@ public class ViewFrustumCulling extends PApplet {
     }
 
     // The visit() method is called just before the graphics(PGraphics) method
+    /*
     @Override
-    public void visit() {
-      // cull only against main scene
-      if (bypass)
-        return;
-      switch (mainScene.boxVisibility(worldLocation(new Vector(-a / 2, -b / 2, -c / 2)),
+    public void visit(Graph graph) {
+      switch (graph.boxVisibility(worldLocation(new Vector(-a / 2, -b / 2, -c / 2)),
           worldLocation(new Vector(a / 2, b / 2, c / 2)))) {
         case VISIBLE:
           for (Node node : children())
-            node.cull();
+            node.cull = true;
           break;
         case SEMIVISIBLE:
           if (!children().isEmpty()) {
@@ -148,11 +133,34 @@ public class ViewFrustumCulling extends PApplet {
             bypass();
             // ... but don't cull its children either
             for (Node node : children())
-              node.cull(false);
+              node.cull = false;
           }
           break;
         case INVISIBLE:
-          cull();
+          cull = true;
+          break;
+      }
+    }
+    // */
+    @Override
+    public void visit() {
+      switch (mainScene.boxVisibility(worldLocation(new Vector(-a / 2, -b / 2, -c / 2)),
+              worldLocation(new Vector(a / 2, b / 2, c / 2)))) {
+        case VISIBLE:
+          for (Node node : children())
+            node.cull = true;
+          break;
+        case SEMIVISIBLE:
+          if (!children().isEmpty()) {
+            // don't render the node...
+            bypass();
+            // ... but don't cull its children either
+            for (Node node : children())
+              node.cull = false;
+          }
+          break;
+        case INVISIBLE:
+          cull = true;
           break;
       }
     }

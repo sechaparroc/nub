@@ -23,7 +23,8 @@ public class Graph2 extends PApplet {
   public void setup() {
     graph = new Graph(g, width, height);
     GLSLMatrixHandler mh = new GLSLMatrixHandler();
-    graph.setMatrixHandler(mh);
+    // TODO how to handle this
+    //graph._setMatrixHandler(mh);
     graph.fit(1);
     nodes = new Node[50];
     for (int i = 0; i < nodes.length; i++) {
@@ -36,7 +37,7 @@ public class Graph2 extends PApplet {
           popStyle();
         }
       };
-      nodes[i].setPickingThreshold(.05f);
+      nodes[i].setBullsEyeSize(.05f);
       graph.randomize(nodes[i]);
     }
     //discard Processing matrices
@@ -45,7 +46,8 @@ public class Graph2 extends PApplet {
 
   public void draw() {
     background(0);
-    graph.preDraw();
+    // TODO needs testing
+    // graph.preDraw();
     pushStyle();
     fill(0, 255, 0);
     Scene.drawTorusSolenoid(g);

@@ -28,18 +28,30 @@ import java.util.TimerTask;
  * Do not use the task for drawing since it will not necessarily
  * run every frame.
  * <p>
- * Call {@link Scene#unregisterTask(Task)} to cancel the task.
+ * Call {@code Scene.TimingHandler.registerTask(Task)} to cancel the task.
  */
-public abstract class TimingTask extends Task {
+public class TimingTask extends Task {
   java.util.Timer _timer;
   java.util.TimerTask _timerTask;
 
   /**
-   * Constructs a sequential recurrent task with a {@link #period()} of 40ms
+   * Constructs a sequential recurrent task that will execute {@code callback}
+   * (see {@link #setCallback(Callback)}) with a {@link #period()} of 40ms
    * (i.e., a {@link #frequency()} of 25 Hz).
    */
+  public TimingTask(Callback callback) {
+    super(Graph.TimingHandler, callback);
+    if (!Graph._seeded)
+      enableConcurrence();
+  }
+
+  /**
+   * Constructs a sequential recurrent task with a {@link #period()} of 40ms
+   * (i.e., a {@link #frequency()} of 25 Hz). The task {@link #execute()} is
+   * set as its {@link #callback()} method.
+   */
   public TimingTask() {
-    super(Graph.timingHandler());
+    super(Graph.TimingHandler);
     if (!Graph._seeded)
       enableConcurrence();
   }
@@ -50,8 +62,10 @@ public abstract class TimingTask extends Task {
       stop();
       _timer = new Timer();
       _timerTask = new TimerTask() {
+        @Override
         public void run() {
-          execute();
+          if (_callback != null)
+            _callback.execute();
         }
       };
       if (isRecurrent()) {
