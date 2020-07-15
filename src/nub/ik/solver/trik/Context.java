@@ -486,4 +486,24 @@ public class Context {
     }
     return copy;
   }
+
+  public static List<NodeState> saveState(List<? extends NodeInformation> chain){
+    List<NodeState> state = new ArrayList<NodeState>();
+    for(NodeInformation  nodeInformation : chain){
+      state.add(new NodeState(nodeInformation));
+    }
+    return state;
+  }
+
+  public static void restoreState(List<NodeState> state){
+    for(NodeState nodeState : state){
+      Node node = nodeState._nodeInformation.node();
+      Constraint constraint = node.constraint();
+      node.setConstraint(null);
+      node.setRotation(nodeState._rotation.get());
+      node.setTranslation(nodeState._translation.get());
+      node.setConstraint(constraint);
+      nodeState._nodeInformation.setCache(nodeState._position.get(), nodeState._orientation.get());
+    }
+  }
 }
