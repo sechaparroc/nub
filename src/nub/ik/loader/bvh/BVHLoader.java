@@ -441,8 +441,6 @@ public class BVHLoader {
         if (node.children() == null || node.children().isEmpty()) {
             return;
         }
-        if(node.translation().magnitude() < 10) System.out.println("Low trans : " + node.translation().magnitude());
-
 
         float minTwist = 0, maxTwist = 0;
         float upAngle = 0, downAngle = 0, leftAngle = 0, rightAngle = 0;
