@@ -3,7 +3,7 @@ class Box extends Node {
   int c;
 
   Box(color c) {
-    setPickingThreshold(25);
+    setBullsEyeSize(25);
     setSize();
     setColor(c);
     randomize(new Vector(), 200, g.is3D());
@@ -35,7 +35,7 @@ class Box extends Node {
     w = CajasOrientadas.this.random(10, 40);
     h = CajasOrientadas.this.random(10, 40);
     d = CajasOrientadas.this.random(10, 40);
-    setPickingThreshold(max(w, h, d));
+    setBullsEyeSize(max(w, h, d));
   }
 
   void setSize(float myW, float myH, float myD) {

@@ -22,24 +22,24 @@ public class AnimationPanel extends Node {
 
   public AnimationPanel(Scene scene, Skeleton skeleton) {
     super();
-    enableTagging(false);
-    _gray1 = scene.pApplet().color(82, 82, 82);
-    _gray2 = scene.pApplet().color(65, 65, 65);
-    _gray3 = scene.pApplet().color(49, 49, 49);
-    _gray4 = scene.pApplet().color(179, 179, 179);
-    _red = scene.pApplet().color(202, 62, 71);
-    _blue1 = scene.pApplet().color(23, 34, 59);
-    _blue2 = scene.pApplet().color(38, 56, 89);
-    _green1 = scene.pApplet().color(0, 129, 138);
-    _yellow = scene.pApplet().color(249, 210, 118);
-    _white = scene.pApplet().color(240, 236, 226);
-    _green2 = scene.pApplet().color(33, 152, 151);
+    tagging = false;
+    _gray1 = scene.pApplet.color(82, 82, 82);
+    _gray2 = scene.pApplet.color(65, 65, 65);
+    _gray3 = scene.pApplet.color(49, 49, 49);
+    _gray4 = scene.pApplet.color(179, 179, 179);
+    _red = scene.pApplet.color(202, 62, 71);
+    _blue1 = scene.pApplet.color(23, 34, 59);
+    _blue2 = scene.pApplet.color(38, 56, 89);
+    _green1 = scene.pApplet.color(0, 129, 138);
+    _yellow = scene.pApplet.color(249, 210, 118);
+    _white = scene.pApplet.color(240, 236, 226);
+    _green2 = scene.pApplet.color(33, 152, 151);
 
     _colorSlider = _blue1;
     _colorEmpty = _gray1;
     _colorSliderHighlight = _green1;
     _colorText = _white;
-    _font36 = scene.pApplet().createFont("Arial", 48, true);//loadFont("FreeSans-36.vlw");
+    _font36 = scene.pApplet.createFont("Arial", 48, true);//loadFont("FreeSans-36.vlw");
 
     //set panel dimension
     float rh = scene.radius(), rw = rh * scene.aspectRatio();

@@ -48,7 +48,7 @@ public class ConePolygon extends PApplet {
     scene.setType(Graph.Type.ORTHOGRAPHIC);
     scene.setRadius(numJoints * boneLength);
     scene.fit(1);
-    scene.setRightHanded();
+    scene.leftHanded = false;
 
     //1. Create Targets
     targets = Util.createTargets(numSolvers, scene, targetRadius);

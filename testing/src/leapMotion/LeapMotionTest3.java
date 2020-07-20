@@ -42,7 +42,7 @@ public class LeapMotionTest3 extends PApplet {
         Node[] shapes = new Node[50];
         for (int i = 0; i < shapes.length; i++) {
             shapes[i] = new Node(scene, shape());
-            shapes[i].setPickingThreshold(0);
+            shapes[i].setBullsEyeSize(0);
             scene.randomize(shapes[i]);
             shapes[i].setRotation(new Quaternion());
         }

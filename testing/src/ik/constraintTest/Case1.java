@@ -49,12 +49,12 @@ public class Case1 extends PApplet {
     scene.setType(Graph.Type.ORTHOGRAPHIC);
     scene.setRadius(numJoints * boneLength * 2.5f);
     scene.fit(1);
-    scene.setRightHanded();
+    scene.leftHanded = false;
 
-    auxiliar = new Scene(this, P3D, width, height);
+    auxiliar = new Scene(createGraphics(width, height, P3D));
     auxiliar.setType(Graph.Type.ORTHOGRAPHIC);
     auxiliar.setRadius(numJoints * boneLength * 2.5f);
-    auxiliar.setRightHanded();
+    auxiliar.leftHanded = false;
     auxiliar.fit();
 
     PShape redBall = createShape(SPHERE, targetRadius);
@@ -64,7 +64,7 @@ public class Case1 extends PApplet {
     //create targets
     for (int i = 0; i < numSolvers; i++) {
       Node target = new Node(redBall);
-      target.setPickingThreshold(0);
+      target.setBullsEyeSize(0);
       targets.add(target);
     }
 
@@ -156,12 +156,6 @@ public class Case1 extends PApplet {
     }
 
     if (displayAuxiliar) {
-      auxiliar.beginDraw();
-      auxiliar.context().lights();
-      auxiliar.context().background(0);
-      auxiliar.drawAxes();
-      auxiliar.render();
-      auxiliar.endDraw();
       auxiliar.display(0,0);
     }
     scene.endHUD();

@@ -44,11 +44,11 @@ public class GaitGenerator extends PApplet {
     scene.fit();
 
     ref = new Node();
-    ref.setPickingThreshold(0.0001f);
+    ref.setBullsEyeSize(0.0001f);
     for (int k = 0; k < 15; k++) {
       PShape body = createShape(BOX, 90, boneLength, 5.2f * boneLength);
       body.setStroke(false);
-      body.setTexture(scene.pApplet().loadImage(scene.pApplet().sketchPath() + "/testing/data/textures/spider.jpg"));
+      body.setTexture(scene.pApplet.loadImage(scene.pApplet.sketchPath() + "/testing/data/textures/spider.jpg"));
       body.setShininess(10.0f);
 
       body.setFill(color(random(255), random(255), random(255)));
@@ -129,7 +129,7 @@ public class GaitGenerator extends PApplet {
     TimingTask task = new TimingTask() {
       @Override
       public void execute() {
-        updateTarget(Scene.timingHandler().frameCount * 8, o, target, mirror, inv, d);
+        updateTarget(Scene.TimingHandler.frameCount * 8, o, target, mirror, inv, d);
       }
     };
     task.run(100);

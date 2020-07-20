@@ -101,7 +101,7 @@ public class SimpleTRIKTest extends PApplet {
     Node endEffector = createJoint(scene, skeleton.get(4), new Vector(0, length), jointRadius, true);
     skeleton.add(endEffector);
     //As targets and effectors lie on the same spot, is preferable to disable End Effectors tracking
-    endEffector.enableTagging(false);
+    endEffector.tagging = false;
     skeleton.get(0).translate(translation);
     return skeleton;
   }
@@ -180,7 +180,7 @@ public class SimpleTRIKTest extends PApplet {
       }
     };
     //Exact picking precision
-    target.setPickingThreshold(0);
+    target.setBullsEyeSize(0);
     return target;
   }
 
@@ -192,7 +192,7 @@ public class SimpleTRIKTest extends PApplet {
     Joint joint = new Joint(radius);
     joint.setReference(node);
     //Exact picking precision
-    joint.setPickingThreshold(0);
+    joint.setBullsEyeSize(0);
     joint.setTranslation(translation);
     if (!drawLine) joint.setRoot(true);
     return joint;

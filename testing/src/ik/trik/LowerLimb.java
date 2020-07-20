@@ -74,7 +74,7 @@ public class LowerLimb extends PApplet {
     lights();
     scene.render();
     stroke(255);
-    scene.drawCatmullRom(pathInterpolator, 1);
+    pathInterpolator.enableHint(Interpolator.SPLINE);
   }
 
   public Node createTarget(float radius) {

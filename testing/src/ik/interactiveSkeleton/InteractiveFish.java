@@ -45,7 +45,7 @@ public class InteractiveFish extends PApplet {
     //1. Create and set the scene
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRightHanded();
+    scene.leftHanded = false;
     scene.setRadius(200);
     scene.fit(1);
     //2. Define the Skeleton
@@ -102,7 +102,7 @@ public class InteractiveFish extends PApplet {
     redBall.setStroke(false);
     redBall.setFill(color(255, 0, 0));
     Node target = new Node(redBall);
-    target.setPickingThreshold(0);
+    target.setBullsEyeSize(0);
     return target;
   }
 
@@ -114,8 +114,7 @@ public class InteractiveFish extends PApplet {
     //Render mesh with respect to the node
     skinning.render(scene, reference);
     if (showSkeleton) scene.render();
-
-    scene.drawCatmullRom(targetInterpolator);
+    targetInterpolator.enableHint(Interpolator.SPLINE, color(255,255, 0));
   }
 
   public List<Node> fishSkeleton(Node reference) {

@@ -31,16 +31,16 @@ public class DrawingHinge extends PApplet {
 
   public void setup() {
     font = createFont("Zapfino", 38);
-    constraintScene = new Scene(this, P3D, w / 2, h);
+    constraintScene = new Scene(createGraphics( w / 2, h, P3D));
     constraintScene.setType(Graph.Type.ORTHOGRAPHIC);
     constraintScene.fit(1);
     constraintRoot = new Node();
-    constraintRoot.enableTagging(false);
+    constraintRoot.tagging = false;
 
-    thetaScene = new Scene(this, P2D, w / 2, h); //w / 2, 0
+    thetaScene = new Scene(createGraphics( w / 2, h, P2D)); //w / 2, 0
     thetaScene.fit(1);
     thetaRoot = new Node();
-    thetaRoot.enableTagging(false);
+    thetaRoot.tagging = false;
 
     //Create a Joint
     Joint.constraintFactor = 0.9f;
@@ -73,7 +73,7 @@ public class DrawingHinge extends PApplet {
     handleMouse();
     drawScene(constraintScene, constraintRoot, "Constraint View", 0,0);
     drawScene(thetaScene, thetaRoot, "Hinge Control", w / 2 , 0);
-    thetaScene.drawBullsEye(control);
+    //thetaScene.drawBullsEye(control);
     updateCostraint((Hinge) j0.constraint(), control);
     if (mode == 0) {
       j0.rotate(new Quaternion(new Vector(0, 0, 1), radians(1)));
@@ -96,10 +96,8 @@ public class DrawingHinge extends PApplet {
   }
 
   public void drawScene(Scene scene, Node root, String title, int x, int y) {
-    scene.beginDraw();
     scene.context().background(0);
     scene.context().lights();
-    scene.render(root);
     scene.beginHUD();
     scene.context().noLights();
     scene.context().pushStyle();
@@ -113,7 +111,6 @@ public class DrawingHinge extends PApplet {
     scene.context().rect(0, 0, constraintScene.context().width, constraintScene.context().height);
     scene.context().popStyle();
     scene.endHUD();
-    scene.endDraw();
     scene.display(x, y);
   }
 
@@ -133,8 +130,8 @@ public class DrawingHinge extends PApplet {
       super();
       _scene = scene;
       _color = color;
-      setPickingThreshold(0);
-      setHighlighting(0);
+      setBullsEyeSize(0);
+      setHighlight(0);
     }
 
     public float maxAngle() {
@@ -192,7 +189,7 @@ public class DrawingHinge extends PApplet {
       }
 
       if (pg == _scene.context()) {
-        _scene.beginHUD(pg);
+        _scene.beginHUD();
         Vector min_position = _scene.screenLocation(new Vector(_scene.radius() * 0.7f * (float) Math.cos(-_min), _scene.radius() * 0.7f * (float) Math.sin(-_min)), this);
         Vector max_position = _scene.screenLocation(new Vector(_scene.radius() * 0.7f * (float) Math.cos(_max), _scene.radius() * 0.7f * (float) Math.sin(_max)), this);
         pg.fill(255);
@@ -200,7 +197,7 @@ public class DrawingHinge extends PApplet {
         pg.textFont(font, 16);
         pg.text("\u03B8 " + _min_name, min_position.x() + 5, min_position.y());
         pg.text("\u03B8 " + _max_name, max_position.x() + 5, max_position.y());
-        _scene.endHUD(pg);
+        _scene.endHUD();
         pg.popStyle();
       }
     }
@@ -283,7 +280,7 @@ public class DrawingHinge extends PApplet {
       _scene = scene;
       _color = color;
       _radius = radius;
-      setPickingThreshold(-_radius * 2);
+      setBullsEyeSize(-_radius * 2);
     }
 
     public Joint(Scene scene, int color) {
@@ -291,11 +288,11 @@ public class DrawingHinge extends PApplet {
     }
 
     public Joint(Scene scene) {
-      this(scene, scene.pApplet().color(scene.pApplet().random(0, 255), scene.pApplet().random(0, 255), scene.pApplet().random(0, 255)));
+      this(scene, scene.pApplet.color(scene.pApplet.random(0, 255), scene.pApplet.random(0, 255), scene.pApplet.random(0, 255)));
     }
 
     public Joint(Scene scene, float radius) {
-      this(scene, scene.pApplet().color(scene.pApplet().random(0, 255), scene.pApplet().random(0, 255), scene.pApplet().random(0, 255)), radius);
+      this(scene, scene.pApplet.color(scene.pApplet.random(0, 255), scene.pApplet.random(0, 255), scene.pApplet.random(0, 255)), radius);
     }
 
 
@@ -328,7 +325,7 @@ public class DrawingHinge extends PApplet {
 
       pg.stroke(255);
       //pg.strokeWeight(2);
-      if (markers) _scene.drawBullsEye(this);
+      //if (markers) _scene.drawBullsEye(this);
 
       pg.popStyle();
     }
@@ -357,12 +354,12 @@ public class DrawingHinge extends PApplet {
       if (constraint() instanceof Hinge) {
         float radius = boneLength * factor;
         Hinge constraint = (Hinge) constraint();
-        reference.rotate(constraint.orientation());
-        reference.rotate(new Quaternion(new Vector(1, 0, 0), new Vector(0, 1, 0)));
-        _scene.applyTransformation(pGraphics, reference);
-
+        Quaternion referenceRotation = rotation().inverse();
+        referenceRotation.compose(constraint.orientation());
+        referenceRotation.compose(new Quaternion(new Vector(1, 0, 0), new Vector(0, 1, 0)));
+        referenceRotation.normalize();
+        pGraphics.rotate(referenceRotation.angle(), (referenceRotation).axis()._vector[0], (referenceRotation).axis()._vector[1], (referenceRotation).axis()._vector[2]);
         _scene.drawArc(pGraphics, radius, -constraint.minAngle(), constraint.maxAngle(), 30);
-
         //Draw axis
         pGraphics.pushStyle();
         pGraphics.fill(255, 154, 31);
@@ -370,7 +367,6 @@ public class DrawingHinge extends PApplet {
         pGraphics.fill(31, 132, 255);
         _scene.drawArrow(new Vector(), new Vector(0, 0, radius / 2), 1f);
         pGraphics.popStyle();
-
 
         //Write names
 
@@ -412,7 +408,7 @@ public class DrawingHinge extends PApplet {
 
     public void setRadius(float radius) {
       _radius = radius;
-      setPickingThreshold(-_radius * 2);
+      setBullsEyeSize(-_radius * 2);
     }
 
     public void setRoot(boolean isRoot) {

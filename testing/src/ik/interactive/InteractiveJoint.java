@@ -64,7 +64,7 @@ public class InteractiveJoint extends Joint {
 
   public void addChild(Scene focus, Vector mouse, Skeleton skeleton) {
     InteractiveJoint joint = new InteractiveJoint(this.radius());
-    joint.setPickingThreshold(this.pickingThreshold());
+    joint.setBullsEyeSize(this.bullsEyeSize());
     if (skeleton != null) {
       skeleton.addJoint("J" + skeleton.joints().size(), joint);
     }
@@ -92,7 +92,7 @@ public class InteractiveJoint extends Joint {
       dz = 0;
     }
     dx = scene.isEye(node) ? -dx : dx;
-    dy = scene.isRightHanded() ^ scene.isEye(node) ? -dy : dy;
+    dy = !scene.leftHanded ^ scene.isEye(node) ? -dy : dy;
     dz = scene.isEye(node) ? dz : -dz;
     // Scale to fit the screen relative vector displacement
     if (scene.type() == Graph.Type.PERSPECTIVE) {

@@ -47,7 +47,7 @@ public class ConeBall extends PApplet {
     scene.setType(Graph.Type.ORTHOGRAPHIC);
     scene.setRadius(numJoints * boneLength * 1.2f);
     scene.fit(1);
-    scene.setRightHanded();
+    scene.leftHanded = false;
 
     //1. Create Targets
     targets = Util.createTargets(numSolvers, scene, targetRadius);

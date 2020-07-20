@@ -69,8 +69,8 @@ public class RegisterIK extends PApplet {
     skeleton[6] = createJoint(scene, skeleton[4], new Vector(length, length), jointRadius, true);
 
     //As targets and effectors lie on the same spot, is preferable to disable End Effectors tracking
-    skeleton[5].enableTagging(false);
-    skeleton[6].enableTagging(false);
+    skeleton[5].tagging = false;
+    skeleton[6].tagging = false;
 
     //2. Lets create two Targets (a bit bigger than a Joint structure)
     Node leftTarget = createTarget(scene, jointRadius * 1.1f);
@@ -137,7 +137,7 @@ public class RegisterIK extends PApplet {
 
     Node target = new Node(redBall);
     //Exact picking precision
-    target.setPickingThreshold(0);
+    target.setBullsEyeSize(0);
     return target;
   }
 
@@ -169,7 +169,7 @@ public class RegisterIK extends PApplet {
     };
     joint.setReference(node);
     //Exact picking precision
-    joint.setPickingThreshold(0);
+    joint.setBullsEyeSize(0);
     joint.setTranslation(translation);
     return joint;
   }

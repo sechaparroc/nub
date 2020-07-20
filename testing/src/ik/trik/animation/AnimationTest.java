@@ -29,9 +29,12 @@ public class AnimationTest extends PApplet {
 
   public void setup() {
     //Kinematic scene
-    mainScene = new Scene(this, P3D, width, height);
+    mainScene = new Scene(createGraphics(width, height, P3D));
     mainScene.fit(0);
-    mainScene.setRightHanded();
+    mainScene.leftHanded = false;
+    mainScene.enableHint(Scene.BACKGROUND | Scene.AXES);
+
+
     skeleton = new Skeleton(mainScene, jsonPath);
     skeleton.enableIK();
     skeleton.addTargets();
@@ -39,13 +42,13 @@ public class AnimationTest extends PApplet {
     //Relate the shape with a skinning method (CPU or GPU)
     skinning = new GPULinearBlendSkinning(skeleton, shapePath, texturePath, mainScene.radius());
     //Set the control scene
-    controlScene = new Scene(this, P2D, width, (int) (height * 0.3)); //0, (int) (height * 0.7f)
+    controlScene = new Scene(createGraphics(width, (int) (height * 0.3), P2D)); //0, (int) (height * 0.7f)
     controlScene.setRadius(height * 0.3f / 2.f);
     controlScene.fit();
     //Setting the panel
     panel = new AnimationPanel(controlScene, skeleton);
     //set eye constraint
-    controlScene.eye().enableTagging(false);
+    controlScene.eye().tagging = false;
     controlScene.eye().setConstraint(new Constraint() {
       @Override
       public Vector constrainTranslation(Vector translation, Node node) {
@@ -61,18 +64,11 @@ public class AnimationTest extends PApplet {
 
 
   public void draw() {
-    mainScene.beginDraw();
     mainScene.context().lights();
-    mainScene.context().background(0);
-    mainScene.drawAxes();
     skinning.render(mainScene);
-    if (showSkeleton) mainScene.render(skeleton.reference());
-    mainScene.endDraw();
+    if (showSkeleton) mainScene.display(0,0);
     mainScene.display();
-    controlScene.beginDraw();
     controlScene.context().background(150);
-    controlScene.render(panel);
-    controlScene.endDraw();
     controlScene.display(0, (int) (height * 0.7f));
   }
 

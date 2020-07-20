@@ -34,12 +34,12 @@ public class Target extends Node {
     _redBall = scene.is3D() ? scene.context().createShape(PConstants.SPHERE, radius * 2f) :
         scene.context().createShape(PConstants.ELLIPSE, 0, 0, radius * 4f, radius * 4f);
     _redBall.setStroke(false);
-    _redBall.setFill(scene.pApplet().color(255, 0, 0));
+    _redBall.setFill(scene.pApplet.color(255, 0, 0));
     _radius = radius;
 
     _interpolator = new Interpolator(this);
     //setShape(_redBall);
-    setPickingThreshold(0);
+    setBullsEyeSize(0);
 
     Target t = this;
     TimingTask task = new TimingTask() {
@@ -72,7 +72,7 @@ public class Target extends Node {
   }
 
   public void drawPath() {
-    _scene.drawCatmullRom(_interpolator, 5);
+    _interpolator.configHint(Interpolator.SPLINE, _scene.context().color(255, 255, 0));
   }
 
   @Override
@@ -80,10 +80,10 @@ public class Target extends Node {
     String command = (String) gesture[0];
     if (command.matches("KeepSelected")) {
       if (!_selectedTargets.contains(this)) {
-        _redBall.setFill(_scene.pApplet().color(0, 255, 0));
+        _redBall.setFill(_scene.pApplet.color(0, 255, 0));
         _selectedTargets.add(this);
       } else {
-        _redBall.setFill(_scene.pApplet().color(255, 0, 0));
+        _redBall.setFill(_scene.pApplet.color(255, 0, 0));
         _selectedTargets.remove(this);
       }
     } else if (command.matches("Add")) {
@@ -100,7 +100,7 @@ public class Target extends Node {
       _desiredTranslation = null;
     } else if (command.matches("AddCurve")) {
       FitCurve fitCurve = (FitCurve) gesture[1];
-      fitCurve.getCatmullRomCurve(_scene, _scene.screenLocation(this.position()).z());
+      fitCurve.getCatmullRomCurve(_scene, this, _scene.screenLocation(this.position()).z());
       _interpolator = fitCurve._interpolator;
       _interpolator.setNode(this);
       _interpolator.setSpeed(5f);
@@ -157,7 +157,7 @@ public class Target extends Node {
       dz = 0;
     }
     dx = _scene.isEye(node) ? -dx : dx;
-    dy = _scene.isRightHanded() ^ _scene.isEye(node) ? -dy : dy;
+    dy = !Scene.leftHanded ^ _scene.isEye(node) ? -dy : dy;
     dz = _scene.isEye(node) ? dz : -dz;
     // Scale to fit the screen relative vector displacement
     if (_scene.type() == Graph.Type.PERSPECTIVE) {

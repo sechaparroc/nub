@@ -70,7 +70,7 @@ public class SimpleBuilder extends PApplet {
     model = createShapeTri(loadShape(shapePath), texturePath, 100);
     //Scale scene
     float size = max(model.getHeight(), model.getWidth());
-    scene.setRightHanded();
+    scene.leftHanded = false;
     scene.setRadius(size);
     scene.fit();
     //Create the Skeleton and add an Interactive Joint at the center of the scene
@@ -79,7 +79,7 @@ public class SimpleBuilder extends PApplet {
     radius = scene.radius() * 0.01f;
     InteractiveJoint initial = new InteractiveJoint(radius);
     initial.setRoot(true);
-    initial.setPickingThreshold(-0.01f);
+    initial.setBullsEyeSize(-0.01f);
     //Add the joint to the skeleton
     skeleton.addJoint("J0", initial);
     textSize(18);
@@ -163,7 +163,7 @@ public class SimpleBuilder extends PApplet {
       lastCommand = "Adding Joint on the middle of the scene";
       InteractiveJoint initial = new InteractiveJoint(radius);
       initial.setRoot(true);
-      initial.setPickingThreshold(-0.01f);
+      initial.setBullsEyeSize(-0.01f);
     } else if (key == 'P' || key == 'p') {
       lastCommand = "Skeleton information saved on : " + sketchPath() + jsonPath;
       skeleton.save(sketchPath() + jsonPath);
@@ -173,7 +173,7 @@ public class SimpleBuilder extends PApplet {
       if (scene.node() != null) {
         lastCommand = "Setting Joint translation to (0,0,0)";
         scene.node().setTranslation(new Vector());
-        scene.node().enableTagging(false);
+        scene.node().tagging = false;
       }
     }
   }

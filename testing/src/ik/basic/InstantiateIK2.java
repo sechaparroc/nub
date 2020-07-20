@@ -168,7 +168,7 @@ public class InstantiateIK2 extends PApplet {
     Node endEffector = createJoint(scene, skeleton.get(4), new Vector(0, length), jointRadius, true);
     skeleton.add(endEffector);
     //As targets and effectors lie on the same spot, is preferable to disable End Effectors tracking
-    endEffector.enableTagging(false);
+    endEffector.tagging = false;
 
     return skeleton;
   }
@@ -187,7 +187,7 @@ public class InstantiateIK2 extends PApplet {
 
     Node target = new Node(redBall);
     //Exact picking precision
-    target.setPickingThreshold(0);
+    target.setBullsEyeSize(0);
     return target;
   }
 
@@ -219,7 +219,7 @@ public class InstantiateIK2 extends PApplet {
     };
     joint.setReference(node);
     //Exact picking precision
-    joint.setPickingThreshold(0);
+    joint.setBullsEyeSize(0);
     joint.setTranslation(translation);
     return joint;
   }

@@ -45,18 +45,18 @@ public class InteractiveSpider extends PApplet {
     public Spider(Scene scene, float bodyWidth, float bodyHeight, float bodyLength, int legs) {
       this.scene = scene;
       pshape = scene.context().createShape(BOX, bodyWidth, bodyHeight, bodyLength);
-      float r = scene.pApplet().random(0, 255);
-      float g = scene.pApplet().random(0, 255);
-      float b = scene.pApplet().random(0, 255);
-      pshape.setFill(scene.pApplet().color(r, g, b));
+      float r = scene.pApplet.random(0, 255);
+      float g = scene.pApplet.random(0, 255);
+      float b = scene.pApplet.random(0, 255);
+      pshape.setFill(scene.pApplet.color(r, g, b));
       pshape.setStroke(false);
-      pshape.setTexture(scene.pApplet().loadImage(scene.pApplet().sketchPath() + "/testing/data/textures/spider.jpg"));
+      pshape.setTexture(scene.pApplet.loadImage(scene.pApplet.sketchPath() + "/testing/data/textures/spider.jpg"));
       pshape.setShininess(10.0f);
 
       float targetRadius = bodyWidth / 10.f;
 
       shape = new Node(pshape);
-      shape.setPickingThreshold(0);
+      shape.setBullsEyeSize(0);
       //create targets
       Node[] targets = new Node[legs];
       interpolator = new Interpolator[legs];
@@ -72,13 +72,13 @@ public class InteractiveSpider extends PApplet {
       shape.setPosition(newPos);
 
       shape.rotate(new Quaternion(new Vector(0, 1, 0), PI / 2));
-      float x = scene.pApplet().random(-scene.radius(), scene.radius());
-      float z = scene.pApplet().random(-scene.radius(), scene.radius());
+      float x = scene.pApplet.random(-scene.radius(), scene.radius());
+      float z = scene.pApplet.random(-scene.radius(), scene.radius());
 
       shape.translation().setX(x);
       shape.translation().setZ(z);
 
-      shape.rotate(new Quaternion(new Vector(0, 1, 0), scene.pApplet().random(-PI, PI)));
+      shape.rotate(new Quaternion(new Vector(0, 1, 0), scene.pApplet.random(-PI, PI)));
 
       LocalConstraint constraint = new LocalConstraint();
       constraint.setTranslationConstraintType(LocalConstraint.Type.PLANE);

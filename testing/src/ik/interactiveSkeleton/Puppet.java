@@ -51,7 +51,7 @@ public class Puppet extends PApplet {
 
     for (String key : keys) {
       Node target = new Node(redBall);
-      target.setPickingThreshold(0);
+      target.setBullsEyeSize(0);
       targets.put(key, target);
     }
 

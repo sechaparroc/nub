@@ -32,7 +32,7 @@ public class Rex extends PApplet {
     //1. Create and set the scene
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRightHanded();
+    scene.leftHanded = false;
     scene.fit(1);
     //2. Load the Skeleton (this file was generated using SimpleBuilder example)
     skeleton = new Skeleton(scene, jsonPath);

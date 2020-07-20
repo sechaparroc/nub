@@ -171,7 +171,7 @@ public void mousePressed(){
       _radius = radius;
       _reference = new Node();
       _reference.setTranslation(offset);
-      _reference.enableTagging(false);
+      _reference.tagging = false;
       _createSkeleton(loader, red, green, blue, radius);
       _createSolver(mode);
     }
@@ -250,7 +250,7 @@ public void mousePressed(){
       for (Map.Entry<String, Joint> entry : _structure.entrySet()) {
         Node node = entry.getValue();
         if (node.children() == null || node.children().isEmpty()) {
-          node.enableTagging(false);
+          node.tagging = false;
           Node target = Util.createTarget(scene, _radius);
           target.setReference(_reference);
           target.setPosition(node.position().get());

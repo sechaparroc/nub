@@ -38,21 +38,21 @@ public class DrawingConstraint extends PApplet {
 
   public void setup() {
     font = createFont("Zapfino", 38);
-    constraintScene = new Scene(this, P3D, w / 3, h);
+    constraintScene = new Scene(createGraphics(w / 3, h, P3D));
     constraintScene.setType(Graph.Type.ORTHOGRAPHIC);
     constraintScene.fit(1);
     constraintRoot = new Node();
-    constraintRoot.enableTagging(false);
+    constraintRoot.tagging = false;
 
-    thetaScene = new Scene(this, P2D, w / 3, h); //w / 3, 0
+    thetaScene = new Scene(createGraphics(w / 3, h,  P2D)); //w / 3, 0
     thetaScene.fit(1);
     thetaRoot = new Node();
-    thetaRoot.enableTagging(false);
+    thetaRoot.tagging = false;
 
-    baseScene = new Scene(this, P2D, w / 3, h); //2 * w / 3, 0
+    baseScene = new Scene(createGraphics(w / 3, h, P2D)); //2 * w / 3, 0
     baseScene.fit(1);
     baseRoot = new Node();
-    baseRoot.enableTagging(false);
+    baseRoot.tagging = false;
 
     //Create a Joint
     Joint.constraintFactor = 0.9f;
@@ -67,7 +67,7 @@ public class DrawingConstraint extends PApplet {
     v.normalize();
     v.multiply(constraintScene.radius());
     j1.translate(v);
-    j1.enableTagging(false);
+    j1.tagging = false;
 
     //Add constraint to joint j0
     BallAndSocket constraint = new BallAndSocket(radians(5), radians(34), radians(5), radians(84));
@@ -140,7 +140,6 @@ public class DrawingConstraint extends PApplet {
   }
 
   public void drawScene(Scene scene, Node root, String title, int x, int y) {
-    scene.beginDraw();
     scene.context().background(0);
     scene.context().lights();
     scene.render(root);
@@ -157,7 +156,6 @@ public class DrawingConstraint extends PApplet {
     scene.context().rect(0, 0, constraintScene.context().width, constraintScene.context().height);
     scene.context().popStyle();
     scene.endHUD();
-    scene.endDraw();
     scene.display(x, y);
   }
 
@@ -176,8 +174,8 @@ public class DrawingConstraint extends PApplet {
       super();
       _scene = scene;
       _color = color;
-      setPickingThreshold(0);
-      setHighlighting(0);
+      setBullsEyeSize(0);
+      setHighlight(0);
       _max = _scene.radius() * 0.8f;
       _max_tan = tan(radians(70));
       _height = _max / _max_tan;
@@ -255,7 +253,7 @@ public class DrawingConstraint extends PApplet {
         pg.fill(pg.color(255));
       }
 
-      _scene.beginHUD(pg);
+      _scene.beginHUD();
       Vector l = _scene.screenLocation(this.worldLocation(new Vector(-_left, 0)));
       Vector r = _scene.screenLocation(this.worldLocation(new Vector(_right, 0)));
       Vector u = _scene.screenLocation(this.worldLocation(new Vector(0, _up)));
@@ -272,7 +270,7 @@ public class DrawingConstraint extends PApplet {
       pg.textAlign(CENTER, BOTTOM);
       pg.text("Down", d.x(), d.y());
 
-      _scene.endHUD(pg);
+      _scene.endHUD();
       pg.popStyle();
     }
 
@@ -384,8 +382,8 @@ public class DrawingConstraint extends PApplet {
       super();
       _scene = scene;
       _color = color;
-      setPickingThreshold(0);
-      setHighlighting(0);
+      setBullsEyeSize(0);
+      setHighlight(0);
     }
 
     public float maxAngle() {
@@ -442,7 +440,7 @@ public class DrawingConstraint extends PApplet {
         pg.fill(pg.color(255));
       }
 
-      _scene.beginHUD(pg);
+      _scene.beginHUD();
       Vector min_position = _scene.screenLocation(new Vector(_scene.radius() * 0.7f * (float) Math.cos(-_min), _scene.radius() * 0.7f * (float) Math.sin(-_min)), this);
       Vector max_position = _scene.screenLocation(new Vector(_scene.radius() * 0.7f * (float) Math.cos(_max), _scene.radius() * 0.7f * (float) Math.sin(_max)), this);
 
@@ -451,7 +449,7 @@ public class DrawingConstraint extends PApplet {
       pg.textFont(font, 16);
       pg.text("\u03B8 " + _min_name, min_position.x() + 5, min_position.y());
       pg.text("\u03B8 " + _max_name, max_position.x() + 5, max_position.y());
-      _scene.endHUD(pg);
+      _scene.endHUD();
       pg.popStyle();
     }
 
@@ -533,7 +531,7 @@ public class DrawingConstraint extends PApplet {
       _scene = scene;
       _color = color;
       _radius = radius;
-      setPickingThreshold(-_radius * 2);
+      setBullsEyeSize(-_radius * 2);
     }
 
     public Joint(Scene scene, int color) {
@@ -541,11 +539,11 @@ public class DrawingConstraint extends PApplet {
     }
 
     public Joint(Scene scene) {
-      this(scene, scene.pApplet().color(scene.pApplet().random(0, 255), scene.pApplet().random(0, 255), scene.pApplet().random(0, 255)));
+      this(scene, scene.pApplet.color(scene.pApplet.random(0, 255), scene.pApplet.random(0, 255), scene.pApplet.random(0, 255)));
     }
 
     public Joint(Scene scene, float radius) {
-      this(scene, scene.pApplet().color(scene.pApplet().random(0, 255), scene.pApplet().random(0, 255), scene.pApplet().random(0, 255)), radius);
+      this(scene, scene.pApplet.color(scene.pApplet.random(0, 255), scene.pApplet.random(0, 255), scene.pApplet.random(0, 255)), radius);
     }
 
 
@@ -599,14 +597,12 @@ public class DrawingConstraint extends PApplet {
       pGraphics.noStroke();
 
       pGraphics.fill(62, 203, 55, 150);
-      Node reference = Node.detach(new Vector(), new Quaternion(), 1f);
-      reference.setTranslation(new Vector());
-      reference.setRotation(rotation().inverse());
+      Quaternion referenceRotation = rotation().inverse();
 
       if (constraint() instanceof BallAndSocket) {
         BallAndSocket constraint = (BallAndSocket) constraint();
-        reference.rotate(((BallAndSocket) constraint()).orientation());
-        scene.applyTransformation(pGraphics, reference);
+        referenceRotation.compose(((BallAndSocket) constraint()).orientation());
+        pGraphics.rotate(referenceRotation.angle(), (referenceRotation).axis()._vector[0], (referenceRotation).axis()._vector[1], (referenceRotation).axis()._vector[2]);
         float width = boneLength * factor;
         float max = Math.max(Math.max(Math.max(constraint.up(), constraint.down()), constraint.left()), constraint.right());
         //Max value will define max radius length
@@ -670,7 +666,7 @@ public class DrawingConstraint extends PApplet {
 
     public void setRadius(float radius) {
       _radius = radius;
-      setPickingThreshold(-_radius * 2);
+      setBullsEyeSize(-_radius * 2);
     }
 
     public void setRoot(boolean isRoot) {

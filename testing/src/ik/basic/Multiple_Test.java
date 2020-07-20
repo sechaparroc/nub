@@ -50,7 +50,7 @@ public class Multiple_Test extends PApplet {
   public void generateEFF(Scene scene, Node root) {
     if (root == null) ;
     if (root.children() == null || root.children().isEmpty()) {
-      root.enableTagging(false);
+      root.tagging = false;
       Target target = new Target(scene, 6);
       target.setPosition(root.position().get());
       scene.addIKTarget(root, target);
@@ -76,7 +76,7 @@ public class Multiple_Test extends PApplet {
 
     Node target = new Node(redBall);
     //Exact picking precision
-    target.setPickingThreshold(0);
+    target.setBullsEyeSize(0);
     return target;
   }
 

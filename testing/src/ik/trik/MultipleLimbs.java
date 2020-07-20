@@ -88,7 +88,7 @@ public class MultipleLimbs extends PApplet {
     solver.setMaxError(20);
     for (Node node : Scene.branch(root)) {
       if (node.children() == null || node.children().isEmpty()) {
-        node.enableTagging(false);
+        node.tagging = false;
         //Add as target
         Node target = Util.createTarget(scene, radius * 1.2f);
         target.setPosition(node.position());

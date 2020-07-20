@@ -1,6 +1,7 @@
 package ik.interactive;
 
 import nub.core.Graph;
+import nub.core.Interpolator;
 import nub.core.Node;
 import nub.core.constraint.BallAndSocket;
 import nub.core.constraint.Constraint;
@@ -69,7 +70,6 @@ public class SkeletonBuilder extends PApplet {
     new InteractiveJoint(radius).setRoot(true);
     // = new OptionPanel(this, 0.7f * width, 0, (int)(0.3f * width), h );
     //scene.fit(1);
-    views = createViews();
   }
 
   public void draw() {
@@ -90,7 +90,7 @@ public class SkeletonBuilder extends PApplet {
     //scene.drawAxes();
     scene.render();
     for (Target target : targets) {
-      if (showPath) scene.drawCatmullRom(target._interpolator, 5);
+      if (showPath) target._interpolator.enableHint(Interpolator.SPLINE);
       if (showLast) {
         pushStyle();
         colorMode(HSB);
@@ -160,7 +160,7 @@ public class SkeletonBuilder extends PApplet {
 
     if (fitCurve != null)
       if (fitCurve._interpolator != null)
-        scene.drawCatmullRom(fitCurve._interpolator, 5);
+        fitCurve._interpolator.enableHint(Interpolator.SPLINE);
 
     scene.beginHUD();
     if (fitCurve != null) fitCurve.drawCurves(scene.context());
@@ -273,7 +273,7 @@ public class SkeletonBuilder extends PApplet {
       else {
         if (fitCurve != null) {
           fitCurve.setStarted(false);
-          fitCurve.getCatmullRomCurve(scene, 0);
+          fitCurve.getCatmullRomCurve(scene, focus.node(), 0);
           //fitCurve._interpolator.run();
           focus.node().interact("AddCurve", fitCurve);
         }
@@ -467,7 +467,7 @@ public class SkeletonBuilder extends PApplet {
     ArrayList<Node> endEffectors = new ArrayList<Node>();
     findEndEffectors(focus.node(), endEffectors);
     for (Node endEffector : endEffectors) {
-      endEffector.setPickingThreshold(0.00001f);
+      endEffector.tagging = false;
       Target target = new Target(scene, ((Joint) scene.node()).radius(), endEffector);
       target.setReference(((Joint) scene.node()).reference());
       //scene.addIKTarget(endEffector, target);
@@ -485,55 +485,6 @@ public class SkeletonBuilder extends PApplet {
     for (Node child : root.children()) {
       printTree(child, sep + "\t");
     }
-  }
-
-  public Scene[] createViews() {
-    //create an auxiliary view per Orthogonal Plane
-    //Disable rotation
-    Constraint constraint = new Constraint() {
-      @Override
-      public Vector constrainTranslation(Vector translation, Node frame) {
-        return translation;
-      }
-
-      @Override
-      public Quaternion constrainRotation(Quaternion rotation, Node frame) {
-        return new Quaternion();
-      }
-    };
-
-    Scene[] views = new Scene[3];
-    Node eyeXY = Node.detach(new Vector(), new Quaternion(), 1f);
-    eyeXY.scale(2f);
-    eyeXY.setPosition(scene.eye().position());
-    eyeXY.setOrientation(scene.eye().orientation());
-    eyeXY.setConstraint(constraint);
-    views[0] = new Scene(this, P3D, w / 3, h / 3); //0, 2 * h / 3
-    views[0].setRadius(scene.radius() * 4);
-    views[0].setEye(eyeXY);
-    views[0].setType(Graph.Type.ORTHOGRAPHIC);
-    //create an auxiliary view to look at the XY Plane
-    Node eyeXZ = Node.detach(new Vector(), new Quaternion(), 1f);
-    eyeXZ.scale(2f);
-    eyeXZ.setPosition(0, scene.radius(), 0);
-    eyeXZ.setOrientation(new Quaternion(new Vector(1, 0, 0), -HALF_PI));
-    eyeXZ.setConstraint(constraint);
-    views[1] = new Scene(this, P3D, w / 3, h / 3); // w / 3, 2 * h / 3
-    views[1].setRadius(scene.radius() * 4);
-    views[1].setEye(eyeXZ);
-    views[1].setType(Graph.Type.ORTHOGRAPHIC);
-    //create an auxiliary view to look at the XY Plane
-    Node eyeYZ = Node.detach(new Vector(), new Quaternion(), 1f);
-    //eyeYZ.setMagnitude(0.5f);
-    eyeYZ.scale(2f);
-    eyeYZ.setPosition(scene.radius(), 0, 0);
-    eyeYZ.setOrientation(new Quaternion(new Vector(0, 1, 0), HALF_PI));
-    eyeYZ.setConstraint(constraint);
-    views[2] = new Scene(this, P3D, w / 3, h / 3); // 2 * w / 3, 2 * h / 3
-    views[2].setEye(eyeYZ);
-    views[2].setRadius(scene.radius() * 4);
-    views[2].setType(Graph.Type.ORTHOGRAPHIC);
-    return views;
   }
 }
 

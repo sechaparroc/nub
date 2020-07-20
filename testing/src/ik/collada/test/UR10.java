@@ -97,7 +97,7 @@ public class UR10 extends PApplet {
     node_10.setConstraint(hinge_10);
 
     //Cull unnecesary nodes
-    model.skeleton().get("node2").cull();
+    model.skeleton().get("node2").cull = true;
 
     //Adding solver
     List<Node> branch = Node.path(model.skeleton().get("node1"), model.skeleton().get("node2"));
@@ -143,7 +143,7 @@ public class UR10 extends PApplet {
     scene.beginHUD();
     for (String s : model.skeleton().keySet()) {
       Node n = model.skeleton().get(s);
-      if (n.isCulled() || !n.isTaggingEnabled() || debug) continue;
+      if (n.cull || !n.tagging || debug) continue;
       Vector sc = scene.screenLocation(new Vector(), n);
       text(s, sc.x(), sc.y());
     }

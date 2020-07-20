@@ -27,7 +27,7 @@ public class Slider {
     _height = height;
     float min = Math.min(_scene.height(), _scene.width());
     float[] size = new float[]{_scene.radius() * 2.f * _scene.width() / min, _scene.radius() * 2.f * _scene.height() / min};
-    _text_width = (float) Math.ceil(_scene.pApplet().textWidth(_name + " ") * 2 * size[0] / _scene.width());
+    _text_width = (float) Math.ceil(_scene.pApplet.textWidth(_name + " ") * 2 * size[0] / _scene.width());
     _bar_width = _width - _text_width;
     _detail = 20;
     createSlider();
@@ -76,7 +76,7 @@ public class Slider {
     };
 
     _bar.setPosition(_position);
-    _bar.setPickingThreshold(0.0001f);
+    _bar.setBullsEyeSize(0.0001f);
     _pointer = new Node(_bar) {
       @Override
       public void graphics(PGraphics pGraphics) {
@@ -96,7 +96,7 @@ public class Slider {
     };
     Vector v = new Vector(_text_width + detail / 2.f, -0.8f * _height / 2.f);
     _pointer.setTranslation(v);
-    _pointer.setPickingThreshold(0.25f);
+    _pointer.setBullsEyeSize(0.25f);
     //_pointer.setPrecisionThreshold(detail);
 
     _offset = _text_width + detail / 2.f;

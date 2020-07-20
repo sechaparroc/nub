@@ -76,7 +76,7 @@ public class InstantiateIK extends PApplet {
     endEffector = skeleton.get(skeleton.size() - 2);
 
     //As targets and effectors lie on the same spot, is preferable to disable End Effectors tracking
-    endEffector.enableTagging(false);
+    endEffector.tagging = false;
 
     //2. Lets create a Target (a bit bigger than a Joint in the structure)
     Node target = createTarget(scene, jointRadius * 1.5f);
@@ -148,7 +148,7 @@ public class InstantiateIK extends PApplet {
 
     Node target = new Node(redBall);
     //Exact picking precision
-    target.setPickingThreshold(0);
+    target.setBullsEyeSize(0);
     return target;
   }
 
@@ -180,7 +180,7 @@ public class InstantiateIK extends PApplet {
     };
     joint.setReference(node);
     //Exact picking precision
-    joint.setPickingThreshold(0);
+    joint.setBullsEyeSize(0);
     joint.setTranslation(translation);
     return joint;
   }

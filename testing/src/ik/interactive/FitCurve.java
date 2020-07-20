@@ -304,8 +304,8 @@ public class FitCurve {
   /*From Cubic Bezier to Catmull Rom*/
   protected Interpolator _interpolator;
 
-  public void getCatmullRomCurve(Scene scene, float depth) {
-    _interpolator = new Interpolator(scene);
+  public void getCatmullRomCurve(Scene scene, Node node, float depth) {
+    _interpolator = new Interpolator(node);
     for (int i = 0; i < _curves.size(); i++) {
       Bezier curve = _curves.get(i);
       Vector v = curve.evaluate(0);

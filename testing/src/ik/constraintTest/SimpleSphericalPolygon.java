@@ -29,7 +29,7 @@ public class SimpleSphericalPolygon extends PApplet{
         scene.setType(Graph.Type.ORTHOGRAPHIC);
         scene.setRadius(200);
         scene.fit(1);
-        scene.setRightHanded();
+        scene.leftHanded = false;
         //Create a simple structure
         j1 = new Joint();
         j1.rotate(Quaternion.random());

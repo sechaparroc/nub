@@ -40,7 +40,7 @@ public class SimpleInterpolation extends PApplet {
     public void setup(){
         scene = new Scene(this);
         scene.setType(Graph.Type.ORTHOGRAPHIC);
-        scene.setRightHanded();
+        scene.leftHanded = false;
         scene.fit(1);
         //Load Skeleton
         skeleton = new Skeleton(scene, skeletonPath);

@@ -53,7 +53,7 @@ public class KeyPoint extends Node {
     });
     //dummy conversion from pix to units
     float pixels = 1.f * _timeLine._panel._scene.height() / _timeLine._panel._height;
-    setPickingThreshold(-_radius * pixels); //as pixels and graph units corresponds
+    setBullsEyeSize(-_radius * pixels); //as pixels and graph units corresponds
   }
 
   @Override

@@ -92,7 +92,7 @@ public class MultipleTRIKTest extends PApplet {
     Node endEffector = createJoint(scene, skeleton.get(i), new Vector(0, length), jointRadius, true);
     skeleton.add(endEffector);
     //As targets and effectors lie on the same spot, is preferable to disable End Effectors tracking
-    endEffector.enableTagging(false);
+    endEffector.tagging = false;
     skeleton.get(0).translate(translation);
     return skeleton;
   }
@@ -155,7 +155,7 @@ public class MultipleTRIKTest extends PApplet {
       }
     };
     //Exact picking precision
-    target.setPickingThreshold(0);
+    target.setBullsEyeSize(0);
     return target;
   }
 
@@ -167,7 +167,7 @@ public class MultipleTRIKTest extends PApplet {
     Joint joint = new Joint(radius);
     joint.setReference(node);
     //Exact picking precision
-    joint.setPickingThreshold(0);
+    joint.setBullsEyeSize(0);
     joint.setTranslation(translation);
     if (!drawLine) joint.setRoot(true);
     return joint;

@@ -19,7 +19,7 @@ public class TimeLine extends Node {
     _stamps = n;
     _points = new KeyPoint[_stamps];
     translate(new Vector(_panel._width * 0.1f, _panel._height * 0.5f));
-    enableTagging(false);
+    tagging = false;
     generateKeyPoints();
     _current = _points[0];
   }

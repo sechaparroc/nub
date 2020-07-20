@@ -81,9 +81,9 @@ void keyPressed() {
     adaptive = !adaptive;
     for (Node node : cajas)
       if (adaptive)
-        node.setPickingThreshold(0.2);
+        node.setBullsEyeSize(0.2);
       else
-        node.setPickingThreshold(25);
+        node.setBullsEyeSize(25);
   }
   if (key == 'a')
     drawAxes = !drawAxes;

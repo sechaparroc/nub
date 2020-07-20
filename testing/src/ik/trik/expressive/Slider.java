@@ -17,8 +17,8 @@ public class Slider extends Node {
     _idx = i;
     _panel = panel;
     _value = value;
-    setPickingThreshold(0);
-    setHighlighting(0);
+    setBullsEyeSize(0);
+    setHighlight(0);
     translate(t);
     updateEndPoint();
   }
@@ -90,7 +90,7 @@ public class Slider extends Node {
       dz = 0;
     }
     dx = graph.isEye(node) ? -dx : dx;
-    dy = graph.isRightHanded() ^ graph.isEye(node) ? -dy : dy;
+    dy = !graph.leftHanded ^ graph.isEye(node) ? -dy : dy;
     dz = graph.isEye(node) ? dz : -dz;
     // Scale to fit the screen relative vector displacement
     if (graph.type() == Graph.Type.PERSPECTIVE) {

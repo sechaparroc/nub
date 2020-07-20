@@ -223,7 +223,7 @@ public class Util {
         pg.shape(shape);
       }
     };
-    node.setPickingThreshold(0);
+    node.setBullsEyeSize(0);
     return node;
   }
 
@@ -240,7 +240,7 @@ public class Util {
 
     for (int i = 0; i < num; i++) {
       Node target = createTarget(scene, redBall, targetRadius);
-      target.setPickingThreshold(targetRadius * 2);
+      target.setBullsEyeSize(targetRadius * 2);
       targets.add(target);
     }
     return targets;

@@ -43,17 +43,17 @@ public class LeapMotionTest2 extends PApplet {
             if(i == i)break;
             shapes[i] = new Node(scene, shape());
             shapes[i].setPosition( (i*1.f/shapes.length)*scene.radius()*2 - scene.radius(),0,0);
-            shapes[i].setPickingThreshold(0);
+            shapes[i].setBullsEyeSize(0);
             scene.setTrackedNode("LEAP"+i, shapes[i]);
         }
         smooth();
         setupLeapMotion();
         index = new Node(scene, shape());
         index.setTranslation(10,10,10);
-        index.setPickingThreshold(0);
+        index.setBullsEyeSize(0);
         index_w = new Node(scene, shape());
         index_w.setTranslation(-10,-10,-10);
-        index_w.setPickingThreshold(0);
+        index_w.setBullsEyeSize(0);
     }
 
     PShape shape() {

@@ -35,7 +35,7 @@ public class ExpressiveTest extends PApplet {
     mainScene = new Scene(this);
     mainScene.setRadius(numJoints * 1f * boneLength);
     mainScene.fit(1);
-    mainScene.setRightHanded();
+    mainScene.leftHanded = false;
 
     //create target
     Node target = Util.createTarget(mainScene, targetRadius);
@@ -73,7 +73,7 @@ public class ExpressiveTest extends PApplet {
 
 
     //Set the delegation scene
-    delegationScene = new Scene(this, P2D, width, (int) (height * 0.3)); // 0, (int) (height * 0.7f)
+    delegationScene = new Scene(createGraphics(width, (int) (height * 0.3), P2D)); // 0, (int) (height * 0.7f)
     delegationScene.setRadius(height * 0.3f / 2.f);
     delegationScene.fit();
     //Setting the panel
@@ -97,8 +97,8 @@ public class ExpressiveTest extends PApplet {
   public void draw() {
     handleMouse();
     lights();
-    root.cull(false);
-    panel.cull(true);
+    root.cull = false;
+    panel.cull = true;
     mainScene.context().background(0);
     mainScene.drawAxes();
     mainScene.render();
@@ -110,15 +110,9 @@ public class ExpressiveTest extends PApplet {
 
 
     noLights();
-    root.cull(true);
-    panel.cull(false);
-    mainScene.beginHUD();
-    delegationScene.beginDraw();
-    delegationScene.context().background(0);
-    delegationScene.render();
-    delegationScene.endDraw();
+    root.cull = true;
+    panel.cull = false;
     delegationScene.display(0, (int) (height * 0.7f));
-    mainScene.endHUD();
   }
 
   public void handleMouse() {

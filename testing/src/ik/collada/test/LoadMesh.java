@@ -57,7 +57,7 @@ public class LoadMesh extends PApplet {
 
     for (int i = 0; i < effectors.length; i++) {
       Node target = new Target(scene, ((Joint) model.root()).radius() * 0.6f);
-      target.setPickingThreshold(0);
+      target.setBullsEyeSize(0);
       targets.add(target);
     }
 
@@ -227,7 +227,7 @@ public class LoadMesh extends PApplet {
     }
     if (key == ' ') {
       if (scene.node() != null)
-        scene.node().enableTagging(false);
+        scene.node().tagging = false;
     }
   }
 

@@ -59,7 +59,7 @@ public class KeyFrame extends Node {
       dz = 0;
     }
     dx = scene.isEye(node) ? -dx : dx;
-    dy = scene.isRightHanded() ^ scene.isEye(node) ? -dy : dy;
+    dy = !scene.leftHanded ^ scene.isEye(node) ? -dy : dy;
     dz = scene.isEye(node) ? dz : -dz;
     // Scale to fit the screen relative vector displacement
     if (scene.type() == Graph.Type.PERSPECTIVE) {

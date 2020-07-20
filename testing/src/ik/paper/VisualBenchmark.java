@@ -65,7 +65,7 @@ public class VisualBenchmark extends PApplet {
         if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
         scene.setRadius(numJoints * 1f * boneLength);
         scene.fit(1);
-        scene.setRightHanded();
+        scene.leftHanded = false;
 
         int numSolvers = solversType.length;
         //1. Create Targets

@@ -100,7 +100,7 @@ public class LoadMesh2 extends PApplet {
     scene.beginHUD();
     for (String s : model.skeleton().keySet()) {
       Node n = model.skeleton().get(s);
-      if (n.isCulled() || !n.isTaggingEnabled()) continue;
+      if (n.cull || !n.tagging) continue;
       Vector sc = scene.screenLocation(new Vector(), n);
       text(s, sc.x(), sc.y());
     }

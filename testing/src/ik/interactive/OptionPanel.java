@@ -17,8 +17,8 @@ public class OptionPanel {
   protected List<Slider> _frameSliders = new ArrayList<>();
 
   public OptionPanel(PApplet pApplet, float x, float y, int width, int height) {
-    _scene = new Scene(pApplet, pApplet.createGraphics(width, height, PConstants.P2D)); //(int) x, (int) y
-    _scene.pApplet().textSize(_scene.height() / 50.f);
+    _scene = new Scene(pApplet.createGraphics(width, height, PConstants.P2D)); //(int) x, (int) y
+    _scene.pApplet.textSize(_scene.height() / 50.f);
     setupPanel();
   }
 
@@ -71,13 +71,13 @@ public class OptionPanel {
 
   public void updateFrameOptions() {
     if (_frame == null) {
-      for (Slider s : _frameSliders) s._bar.cull(true);
+      for (Slider s : _frameSliders) s._bar.cull = true;
     } else {
       Vector[] axes = new Vector[]{_frame.displacement(new Vector(1, 0, 0)),
           _frame.displacement(new Vector(0, 1, 0)),
           _frame.displacement(new Vector(0, 0, 1))};
       for (int i = 0; i < 3; i++) {
-        _frameSliders.get(i)._bar.cull(false);
+        _frameSliders.get(i)._bar.cull = false;
         _frameSliders.get(i).setValue(_twist(_frame.orientation(), axes[i]).angle());
       }
     }

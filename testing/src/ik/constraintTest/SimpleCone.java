@@ -28,7 +28,7 @@ public class SimpleCone extends PApplet {
     scene.setType(Graph.Type.ORTHOGRAPHIC);
     scene.setRadius(200);
     scene.fit(1);
-    scene.setRightHanded();
+    scene.leftHanded = false;
 
     PShape redBall = createShape(SPHERE, radius);
     redBall.setStroke(false);

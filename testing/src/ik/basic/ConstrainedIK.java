@@ -72,7 +72,7 @@ public class ConstrainedIK extends PApplet {
     skeleton.add(node3);
     skeleton.add(node4);
     //As targets and effectors lie on the same spot, is preferable to disable End Effectors tracking
-    node4.enableTagging(false);
+    node4.tagging = false;
 
     //---------------------------------------------------
     //Apply constraints
@@ -226,7 +226,7 @@ public class ConstrainedIK extends PApplet {
 
     Node target = new Node(redBall);
     //Exact picking precision
-    target.setPickingThreshold(0);
+    target.setBullsEyeSize(0);
     return target;
   }
 
@@ -265,7 +265,7 @@ public class ConstrainedIK extends PApplet {
     };
     joint.setReference(node);
     //Exact picking precision
-    joint.setPickingThreshold(0);
+    joint.setBullsEyeSize(0);
     joint.setTranslation(translation);
     return joint;
   }

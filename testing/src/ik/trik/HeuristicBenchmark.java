@@ -64,7 +64,7 @@ public class HeuristicBenchmark extends PApplet {
     if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
     scene.setRadius(numJoints * 1f * boneLength);
     scene.fit(1);
-    scene.setRightHanded();
+    scene.leftHanded = false;
 
     int numSolvers = solversType.length;
     //1. Create Targets
@@ -122,9 +122,9 @@ public class HeuristicBenchmark extends PApplet {
       task.run(40);
     }
 
-    interpolator = new Interpolator(scene);
+    interpolator = new Interpolator(targets.get(0));
     //define the interpolator task
-    task = new Task(scene.timingHandler()) { //TODO : Make this task work
+    task = new Task(scene.TimingHandler) { //TODO : Make this task work
       @Override
       public void execute() {
         Vector pos = targets.get(0).position().get();
@@ -158,7 +158,7 @@ public class HeuristicBenchmark extends PApplet {
     scene.endHUD();
     fill(255);
     stroke(255);
-    if (showPath) scene.drawCatmullRom(interpolator, 1);
+    if (showPath) interpolator.enableHint(Interpolator.SPLINE);
 
     for (Solver s : solvers) {
       if (s instanceof SimpleTRIK) {

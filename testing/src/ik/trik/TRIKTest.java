@@ -128,7 +128,7 @@ public class TRIKTest extends PApplet {
             }
         };
         //Exact picking precision
-        target.setPickingThreshold(0);
+        target.setBullsEyeSize(0);
         return target;
     }
 
@@ -140,7 +140,7 @@ public class TRIKTest extends PApplet {
         Joint joint = new Joint(radius);
         joint.setReference(node);
         //Exact picking precision
-        joint.setPickingThreshold(0);
+        joint.setBullsEyeSize(0);
         joint.setTranslation(translation);
         if (!drawLine) joint.setRoot(true);
         return joint;

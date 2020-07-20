@@ -33,7 +33,7 @@ public class UnconstrainedVsConstrained extends PApplet {
   public void setup() {
     //Setting the scene
     scene = new Scene(this);
-    scene.setLeftHanded();
+    scene.leftHanded = false;
     if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
     scene.setRadius(length * 2);
     scene.fit(1);
@@ -49,7 +49,7 @@ public class UnconstrainedVsConstrained extends PApplet {
     Node endEffector = createJoint(scene, skeleton.get(1), new Vector(length / sqrt(2), -length / sqrt(2)), jointRadius, true);
     skeleton.add(endEffector);
     //As targets and effectors lie on the same spot, is preferable to disable End Effectors tracking
-    endEffector.enableTagging(false);
+    endEffector.tagging = false;
     //2. Lets create a Target (a bit bigger than a Joint in the structure)
     target = createTarget(scene, jointRadius * 1.5f);
     //Locate the Target on same spot of the end effectors
@@ -145,7 +145,7 @@ public class UnconstrainedVsConstrained extends PApplet {
 
     Node target = new Node(redBall);
     //Exact picking precision
-    target.setPickingThreshold(0);
+    target.setBullsEyeSize(0);
     return target;
   }
 
@@ -187,7 +187,7 @@ public class UnconstrainedVsConstrained extends PApplet {
     };
     joint.setReference(node);
     //Exact picking precision
-    joint.setPickingThreshold(0);
+    joint.setBullsEyeSize(0);
     joint.setTranslation(translation);
     return joint;
   }

@@ -88,7 +88,7 @@ public class BenchmarkUR10 extends PApplet {
       node_10.setConstraint(hinge_10);
 
       //Cull unnecesary nodes
-      model.skeleton().get("node2").cull();
+      model.skeleton().get("node2").cull = true;
       model.skeleton().get("node1").reference().translate(new Vector(i * scene.radius() * 2, i * scene.radius() * 2, 0));
 
       //Adding solver
@@ -153,7 +153,7 @@ public class BenchmarkUR10 extends PApplet {
     scene.beginHUD();
     for (String s : models[0].skeleton().keySet()) {
       Node n = models[0].skeleton().get(s);
-      if (n.isCulled() || !n.isTaggingEnabled()) continue;
+      if (n.cull || !n.tagging) continue;
       Vector sc = scene.screenLocation(new Vector(), n);
       text(s, sc.x(), sc.y());
     }
