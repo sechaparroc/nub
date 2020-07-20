@@ -27,7 +27,7 @@ public class CPULinearBlendSkinning implements Skinning {
   protected Map<Node, Integer> _ids;
   protected List<Vertex> _vertices;
   protected PGraphics _pg;
-  protected Node _reference;
+  protected Node _reference, _renderMesh;
 
   protected class Vertex {
     protected int[] _joints;
@@ -78,11 +78,13 @@ public class CPULinearBlendSkinning implements Skinning {
   public CPULinearBlendSkinning(Skeleton skeleton, String shape, String texture, float factor) {
     this(skeleton.BFS(), skeleton.scene().context(), shape, texture, factor);
     _reference = skeleton.reference();
+    _renderMesh.setReference(_reference);
   }
 
   public CPULinearBlendSkinning(Skeleton skeleton, String shape, String texture, float factor, boolean quad) {
     this(skeleton.BFS(), skeleton.scene().context(), shape, texture, factor, quad);
     _reference = skeleton.reference();
+    _renderMesh.setReference(_reference);
   }
 
   public CPULinearBlendSkinning(List<Node> skeleton, PGraphics pg, String shape, String texture, float factor, boolean quad) {
@@ -107,6 +109,11 @@ public class CPULinearBlendSkinning implements Skinning {
     _shapes.add(createShape(pg, pg.loadShape(shape), texture, factor, quad));
     _pg = pg;
     initParams();
+
+    _renderMesh = new Node();
+    _renderMesh.tagging = false;
+    _renderMesh.setShape(this::render);
+    _renderMesh.cull = true;
   }
 
   public List<PShape> shapes() {
@@ -207,8 +214,10 @@ public class CPULinearBlendSkinning implements Skinning {
 
   @Override
   public void render(Scene scene, Node reference) {
-    if (reference != null) scene.applyWorldTransformation(reference);
-    render(scene.context());
+    //Only draw the mesh when this method is explicitly called
+    _renderMesh.cull = false;
+    scene.render(_renderMesh);
+    _renderMesh.cull = true;
   }
 
   /*

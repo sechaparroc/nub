@@ -33,7 +33,7 @@ public class GPULinearBlendSkinning implements Skinning {
   protected Map<Node, Integer> _ids;
   protected final String _fragmentPath = "frag.glsl";
   protected final String _vertexPath = "skinning.glsl";
-  protected Node _reference;
+  protected Node _reference, _renderMesh;
 
   public GPULinearBlendSkinning(List<Node> skeleton, PGraphics pg, PShape shape) {
     this._shapes = new ArrayList<>();
@@ -58,11 +58,17 @@ public class GPULinearBlendSkinning implements Skinning {
     _shapes.add(shape);
     _pg = pg;
     initParams();
+
+    _renderMesh = new Node();
+    _renderMesh.tagging = false;
+    _renderMesh.setShape(this::render);
+    _renderMesh.cull = true;
   }
 
   public GPULinearBlendSkinning(Skeleton skeleton, PShape shape) {
     this(skeleton.BFS(), skeleton.scene().context(), shape);
     _reference = skeleton.reference();
+    _renderMesh.setReference(_reference);
   }
 
   public GPULinearBlendSkinning(List<Node> skeleton, PGraphics pg, String shape, String texture, float factor) {
@@ -72,11 +78,13 @@ public class GPULinearBlendSkinning implements Skinning {
   public GPULinearBlendSkinning(Skeleton skeleton, String shape, String texture, float factor) {
     this(skeleton, shape, texture, factor, false);
     _reference = skeleton.reference();
+    _renderMesh.setReference(_reference);
   }
 
   public GPULinearBlendSkinning(Skeleton skeleton, String shape, String texture, float factor, boolean quad) {
     this(skeleton.BFS(), skeleton.scene().context(), shape, texture, factor, quad);
     _reference = skeleton.reference();
+    _renderMesh.setReference(_reference);
   }
 
   public GPULinearBlendSkinning(List<Node> skeleton, PGraphics pg, String shape, String texture, float factor, boolean quad) {
@@ -100,6 +108,11 @@ public class GPULinearBlendSkinning implements Skinning {
     _shader = pApplet.loadShader(_fragmentPath, _vertexPath);
     _shapes.add(createShape(pg, pg.loadShape(shape), texture, factor, quad));
     initParams();
+
+    _renderMesh = new Node();
+    _renderMesh.tagging = false;
+    _renderMesh.setShape(this::render);
+    _renderMesh.cull = true;
   }
 
 
@@ -261,8 +274,10 @@ public class GPULinearBlendSkinning implements Skinning {
 
   @Override
   public void render(Scene scene, Node reference) {
-    if (reference != null) scene.applyWorldTransformation(reference);
-    render(scene.context());
+    //Only draw the mesh when this method is explicitly called
+    _renderMesh.cull = false;
+    scene.render(_renderMesh);
+    _renderMesh.cull = true;
   }
 
   //Adapted from http://www.cutsquash.com/2015/04/better-obj-model-loading-in-processing/
