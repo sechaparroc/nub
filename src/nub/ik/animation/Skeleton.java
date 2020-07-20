@@ -64,7 +64,7 @@ public class Skeleton {
     _constraints = new HashMap<Node, Constraint>();
     _solvers = new HashMap<Node, Solver>();
     _reference = new Node(); //dummy node to contain all generated Joints
-    _reference.enableTagging(false);
+    _reference.tagging = false;
     _scene = scene;
     _targetRadius = 0.06f * scene.radius();
   }
@@ -250,7 +250,6 @@ public class Skeleton {
     target.setReference(_reference);
     target.setPosition(endEffector.position().get());
     target.setOrientation(endEffector.orientation().get());
-    target.setPickingThreshold(0f);
 
     _scene.addIKTarget(endEffector, target);
     return target;
@@ -712,7 +711,7 @@ public class Skeleton {
     //2. Save Targets
     _saveTargets(jsonTargets);
     jsonObject.setJSONArray("Targets", jsonTargets);
-    _scene.pApplet().saveJSONObject(jsonObject, filename);
+    Scene.pApplet.saveJSONObject(jsonObject, filename);
   }
 
   /**
@@ -720,13 +719,13 @@ public class Skeleton {
    * @param filename  Path from which the .json will be loaded.
    */
   protected void _load(String filename) {
-    JSONObject jsonObject = _scene.pApplet().loadJSONObject(filename);
+    JSONObject jsonObject = Scene.pApplet.loadJSONObject(filename);
     _loadJoints(jsonObject.getJSONArray("Joints"));
     enableIK();
     _loadTargets(jsonObject.getJSONArray("Targets"));
   }
 
   public void cull(boolean cull) {
-    _reference.cull(cull);
+    _reference.cull = cull;
   }
 }
