@@ -4996,7 +4996,7 @@ public class Graph {
     else solver = new TreeSolver(node);
     _solvers.add(solver);
     //Add task
-    Task task = new Task(_timingHandler) {
+    Task task = new Task(TimingHandler) {
       @Override
       public void execute() {
         solver.solve();
@@ -5023,7 +5023,7 @@ public class Graph {
       }
     }
     //Remove task
-    unregisterTask(_solverTasks.get(toRemove));
+    TimingHandler.unregisterTask(_solverTasks.get(toRemove));
     return _solvers.remove(toRemove);
   }
 
@@ -5071,7 +5071,7 @@ public class Graph {
   public static void executeSolver(Solver solver, long period) {
     if (!_solverTasks.containsKey(solver)) {
       //Add task
-      Task task = new Task(_timingHandler) {
+      Task task = new Task(TimingHandler) {
         @Override
         public void execute() {
           solver.solve();
@@ -5087,6 +5087,4 @@ public class Graph {
   public static void stopSolver(Solver solver) {
     _solverTasks.get(solver).stop();
   }
-
-
 }
