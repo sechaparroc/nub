@@ -448,7 +448,7 @@ public class Combined extends Heuristic {
 
       Vector t = scene.screenLocation(pair.getValue());
       pg.noStroke();
-      pg.fill(scene.pApplet().noise(1000 + 10 * i) * 255, scene.pApplet().noise(80 + 10 * i) * 255, scene.pApplet().noise(235 + 10 * i) * 255);
+      pg.fill(Scene.pApplet.noise(1000 + 10 * i) * 255, Scene.pApplet.noise(80 + 10 * i) * 255, Scene.pApplet.noise(235 + 10 * i) * 255);
       if (Vector.distance(pair.getKey(), pair.getValue()) > 1) {
         scene.drawArrow(pair.getKey(), pair.getValue(), 1.5f);
       }
@@ -466,18 +466,17 @@ public class Combined extends Heuristic {
   public void drawPositionContourMap(Scene scene) {
     PGraphics pg = scene.context();
     //Draw as much contours as the number of bones of the structure
+    pg.pushStyle();
+    pg.noStroke();
+    pg.noLights();
+    pg.pushMatrix();
+    pg.translate(_context.worldTarget().position()._vector[0], _context.worldTarget().position()._vector[1], _context.worldTarget().position()._vector[2]);
     for (int i = 1; i < 5; i++) {
       float r = _context.searchingAreaRadius() * i;
-      pg.pushStyle();
-      pg.noStroke();
-      pg.noLights();
-
-      pg.pushMatrix();
-      scene.applyWorldTransformation(_context.worldTarget());
       pg.fill(255, 0, 0, PApplet.map(i, 5, 1, 100, 30));
       pg.sphere(r);
-      pg.popMatrix();
-      pg.popStyle();
     }
+    pg.popMatrix();
+    pg.popStyle();
   }
 }
