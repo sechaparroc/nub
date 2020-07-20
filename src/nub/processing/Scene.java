@@ -3359,7 +3359,7 @@ public class Scene extends Graph {
    */
   public static void drawConstraint(PGraphics pGraphics, Node node, float factor) {
     if (node == null) return;
-    if (node.isCulled()) return;
+    if (node.cull) return;
     if (node.constraint() == null) return;
     float boneLength = 0;
     if (!node.children().isEmpty()) {
@@ -3375,14 +3375,12 @@ public class Scene extends Graph {
     pGraphics.noStroke();
 
     pGraphics.fill(62, 203, 55, 150);
-    Node reference = Node.detach(new Vector(), new Quaternion(), 1f);
-    reference.setTranslation(new Vector());
-    reference.setRotation(node.rotation().inverse());
+    Quaternion referenceRotation = node.rotation().inverse();
 
     if (node.constraint() instanceof BallAndSocket) {
       BallAndSocket constraint = (BallAndSocket) node.constraint();
-      reference.rotate(((BallAndSocket) node.constraint()).orientation());
-      applyTransformation(pGraphics, reference);
+      referenceRotation.compose(((BallAndSocket) node.constraint()).orientation());
+      pGraphics.rotate(referenceRotation.angle(), (referenceRotation).axis()._vector[0], (referenceRotation).axis()._vector[1], (referenceRotation).axis()._vector[2]);
       float width = boneLength * factor;
       float max = Math.max(Math.max(Math.max(constraint.up(), constraint.down()), constraint.left()), constraint.right());
       //Max value will define max radius length
@@ -3396,8 +3394,8 @@ public class Scene extends Graph {
       float right_r = (float) Math.abs((height * Math.tan(constraint.right())));
       drawCone(pGraphics, 20, 0, 0, height, left_r, up_r, right_r, down_r);
     } else if (node.constraint() instanceof PlanarPolygon) {
-      reference.rotate(((PlanarPolygon) node.constraint()).orientation());
-      applyTransformation(pGraphics, reference);
+      referenceRotation.compose(((PlanarPolygon) node.constraint()).orientation());
+      pGraphics.rotate(referenceRotation.angle(), (referenceRotation).axis()._vector[0], (referenceRotation).axis()._vector[1], (referenceRotation).axis()._vector[2]);
       float w_d = boneLength * factor;
       float w_c = (float) Math.abs((Math.tan(((PlanarPolygon) node.constraint()).angle())));
       float height = w_d / w_c;
@@ -3405,21 +3403,20 @@ public class Scene extends Graph {
       //drawAxes(pGraphics,height*1.2f);
       drawCone(pGraphics, height, height, ((PlanarPolygon) node.constraint()).vertices());
     } else if (node.constraint() instanceof SphericalPolygon) {
-      reference.rotate(((SphericalPolygon) node.constraint()).orientation());
-      applyTransformation(pGraphics, reference);
+      referenceRotation.compose(((SphericalPolygon) node.constraint()).orientation());
+      pGraphics.rotate(referenceRotation.angle(), (referenceRotation).axis()._vector[0], (referenceRotation).axis()._vector[1], (referenceRotation).axis()._vector[2]);
       //drawAxes(pGraphics,5);
       drawCone(pGraphics, ((SphericalPolygon) node.constraint()).vertices(), boneLength * factor);
     } else if (node.constraint() instanceof Hinge) {
       //TODO: Only works well if child lies on Axis Plane
       Hinge constraint = (Hinge) node.constraint();
-      reference.rotate(constraint.orientation());
-      reference.rotate(new Quaternion(new Vector(1, 0, 0), new Vector(0, 1, 0)));
-      applyTransformation(pGraphics, reference);
+      referenceRotation.compose(constraint.orientation());
+      referenceRotation.compose(new Quaternion(new Vector(1, 0, 0), new Vector(0, 1, 0)));
+      referenceRotation.normalize();
+      pGraphics.rotate(referenceRotation.angle(), (referenceRotation).axis()._vector[0], (referenceRotation).axis()._vector[1], (referenceRotation).axis()._vector[2]);
       drawArc(pGraphics, boneLength * factor, -constraint.minAngle(), constraint.maxAngle(), 10);
     }
     pGraphics.popMatrix();
     pGraphics.popStyle();
   }
-
-
 }
