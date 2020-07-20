@@ -40,7 +40,6 @@ public class Joint extends Node {
     _g = green;
     _b = blue;
     _radius = radius;
-    setPickingThreshold(0);
   }
 
   public Joint(int red, int green, int blue) {
@@ -87,9 +86,9 @@ public class Joint extends Node {
           //align Y axis with bone
           pg.noStroke();
           Quaternion q = new Quaternion(new Vector(0, 0, 1), v);
-          _auxNode.setPosition(Vector.multiply(v, _radius / m));
-          _auxNode.setOrientation(q);
-          Scene.applyTransformation(pg, _auxNode);
+          Vector pos = Vector.multiply(v, _radius / m);
+          pg.translate(pos.x(), pos.y(), pos.z());
+          pg.rotate(q.angle(), q.axis()._vector[0], q.axis()._vector[1], q.axis()._vector[2]);
           Scene.drawCylinder(pg, _radius * 0.5f, m - 2 * _radius);
           pg.popMatrix();
         } else {
@@ -124,7 +123,7 @@ public class Joint extends Node {
 
   public void setRadius(float radius) {
     _radius = radius;
-    setPickingThreshold(-_radius * 2);
+    setBullsEyeSize(-_radius * 2);
   }
 
   public void setName(String name) {
