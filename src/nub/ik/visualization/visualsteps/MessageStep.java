@@ -86,6 +86,6 @@ public class MessageStep extends VisualStep {
   protected void _defineAttributes() {
     _attributes.put("location", "BOTTOM"); //Choose among the following modes: TOP, BOTTOM, CUSTOM
     _attributes.put("textSize", 24);
-    _attributes.put("color", _scene.pApplet().color(255));
+    _attributes.put("color", _scene.context().color(255));
   }
 }

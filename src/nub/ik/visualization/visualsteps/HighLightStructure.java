@@ -76,6 +76,6 @@ public class HighLightStructure extends VisualStep {
   @Override
   protected void _defineAttributes() {
     //Do nothing
-    _attributes.put("highlight", _scene.pApplet().color(255));
+    _attributes.put("highlight", Scene.pApplet.color(255));
   }
 }

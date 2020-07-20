@@ -95,7 +95,11 @@ public class FollowTrajectoryStep extends VisualStep {
     PGraphics pg = _scene.context();
     pg.pushStyle();
     pg.pushMatrix();
-    if (_reference != null) _scene.applyWorldTransformation(_reference);
+    if (_reference != null){
+      pg.translate(_reference.position()._vector[0], _reference.position()._vector[1], _reference.position()._vector[2]);
+      pg.rotate(_reference.orientation().angle(), (_reference.orientation()).axis()._vector[0], (_reference.orientation()).axis()._vector[1], (_reference.orientation()).axis()._vector[2]);
+      pg.scale(_reference.magnitude(), _reference.magnitude(), _reference.magnitude());
+    }
     pg.hint(PConstants.DISABLE_DEPTH_TEST);
     if (_scene.is3D()) {
       pg.noStroke();
@@ -122,10 +126,10 @@ public class FollowTrajectoryStep extends VisualStep {
   protected void _defineAttributes() {
     _attributes.put("mode", "V1_TO_V"); //Choose among the following modes: V1_TO_V2, V_TO_V2, V1_TO_V
     _attributes.put("radius", _scene.radius() * 0.02f);
-    _attributes.put("line_color", _scene.pApplet().color(255, 0, 0));
-    _attributes.put("v1_color", _scene.pApplet().color(0, 0, 255));
-    _attributes.put("v2_color", _scene.pApplet().color(0, 0, 255));
-    _attributes.put("v_color", _scene.pApplet().color(0, 0, 255));
+    _attributes.put("line_color", Scene.pApplet.color(255, 0, 0));
+    _attributes.put("v1_color", Scene.pApplet.color(0, 0, 255));
+    _attributes.put("v2_color", Scene.pApplet.color(0, 0, 255));
+    _attributes.put("v_color", Scene.pApplet.color(0, 0, 255));
   }
 
   public static void drawSegment2D(PGraphics pg, Vector v1, Vector v2, float radius, int cline, int cv1, int cv2) {

@@ -95,8 +95,10 @@ public class TranslateNode extends VisualStep {
     PGraphics pg = _scene.context();
     pg.pushStyle();
     pg.hint(PConstants.DISABLE_DEPTH_TEST);
-    pg.pushMatrix();
-    _scene.applyWorldTransformation(_node);
+    //Apply the transformation of the node to context scene
+    pg.translate(_node.position()._vector[0], _node.position()._vector[1], _node.position()._vector[2]);
+    pg.rotate(_node.orientation().angle(), (_node.orientation()).axis()._vector[0], (_node.orientation()).axis()._vector[1], (_node.orientation()).axis()._vector[2]);
+    pg.scale(_node.magnitude(), _node.magnitude(), _node.magnitude());
     pg.noStroke();
     if (!_completed) pg.fill((int) _attributes.get("color"));
     else pg.fill((int) _attributes.get("color"), 150);
@@ -109,7 +111,7 @@ public class TranslateNode extends VisualStep {
   @Override
   protected void _defineAttributes() {
     _attributes.put("highlight", true);
-    _attributes.put("color", _scene.pApplet().color(0, 0, 255));
+    _attributes.put("color", Scene.pApplet.color(0, 0, 255));
     _attributes.put("radius", _scene.radius() * 0.02f);
   }
 }
