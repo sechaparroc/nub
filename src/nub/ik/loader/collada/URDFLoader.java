@@ -40,7 +40,7 @@ public class URDFLoader {
       if (joint instanceof Joint) {
         ((Joint) joint).setRadius(scene.radius() * 0.03f);
       }
-      joint.setPickingThreshold(-0.03f);
+      joint.setBullsEyeSize(-0.03f);
     }
 
     return model;
