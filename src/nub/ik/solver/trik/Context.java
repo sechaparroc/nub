@@ -465,7 +465,7 @@ public class Context {
         ref = new Node();
         ref.setPosition(reference.position().get());
         ref.setOrientation(reference.orientation().get());
-        ref.enableTagging(false);
+        ref.tagging = false;
       }
     }
 
