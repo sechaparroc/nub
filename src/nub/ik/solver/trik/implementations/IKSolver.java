@@ -11,15 +11,13 @@ import nub.primitives.Vector;
 import java.util.List;
 
 public class IKSolver extends Solver {
-    public static boolean debugERROR = false;
-
+    public static boolean log = false;
     public enum HeuristicMode{
         CCD, BACK_AND_FORTH_CCD,
         TRIANGULATION, BACK_AND_FORTH_TRIANGULATION,
         TRIK, BACK_AND_FORTH_TRIK,
-        COMBINED, COMBINED_EXPRESSIVE,
+        COMBINED, COMBINED_EXPRESSIVE, COMBINED_TRIK
     }
-
     protected boolean _swapOrder = false; //swap the order of traversal at each iteration
     protected boolean _enableDeadLockResolution = false;
     protected Context _context;
@@ -39,12 +37,10 @@ public class IKSolver extends Solver {
     public IKSolver(List<? extends Node> chain, Node target, HeuristicMode mode, boolean debug) {
         super();
         this._context = new Context(chain, target, debug);
-        _context.setTopToBottom(false);
         _context.setSolver(this);
         _setHeuristicMode(mode);
         _twistHeuristic = new Twist(_context);
         _enableTwist = false;
-        enableSmooth(false);
         _context.setSingleStep(false);
     }
 
@@ -82,6 +78,7 @@ public class IKSolver extends Solver {
             }
             case TRIK: {
                 _heuristic = new TRIK(_context);
+                break;
             }
             case BACK_AND_FORTH_TRIK: {
                 _heuristic = new BackAndForth(_context, BackAndForth.Mode.TRIK);
@@ -89,14 +86,18 @@ public class IKSolver extends Solver {
             }
             case COMBINED: {
                 _heuristic = new Combined(_context);
-                _context.enableDelegation(false);
-                context().setDelegationFactor(1f);
                 break;
             }
             case COMBINED_EXPRESSIVE: {
                 _heuristic = new Combined(_context);
+                //expressive parameters
                 context().enableDelegation(true);
-                context().setDelegationFactor(0.1f);
+                context().setClamping(0.4f);
+                context().setMaxAngle((float)Math.toRadians(40));
+                break;
+            }
+            case COMBINED_TRIK: {
+                _heuristic = new CombinedTRIK(_context);
                 break;
             }
         }
@@ -122,16 +123,6 @@ public class IKSolver extends Solver {
     public HeuristicMode mode() {
         return _heuristicMode;
     }
-
-    public boolean enableSmooth() {
-        return _heuristic.enableSmooth();
-    }
-
-    public void enableSmooth(boolean smooth) {
-        _heuristic.enableSmooth(smooth);
-        _twistHeuristic.enableSmooth(smooth);
-    }
-
 
     protected boolean _iterateStepByStep() {
         System.out.println("On step " + _stepCounter);
@@ -161,7 +152,7 @@ public class IKSolver extends Solver {
 
     @Override
     protected boolean _iterate() {
-        if(IKSolver.debugERROR) showInfo("Begin iterate " + "iteration " + _iterations, _context);
+        if(IKSolver.log) showInfo("Begin iterate " + "iteration " + _iterations, _context);
         if (_context.target() == null) return true;
         if (_context.singleStep()) return _iterateStepByStep();
         _current = 10e10f; //Keep the current error
@@ -198,7 +189,7 @@ public class IKSolver extends Solver {
                 context().resetDeadlockCounter();
             }
 
-            if (context().deadlockCounter() == 5) { //apply random perturbation
+            if (context().deadlockCounter() == context().lockTimesCriteria()) { //apply random perturbation
                 for (int i = 0; i < _context.endEffectorId(); i++) {
                     NodeInformation j_i = _context.usableChainInformation().get(i);
                     Quaternion q = Quaternion.random();
