@@ -32,7 +32,7 @@ public class BackAndForth extends Heuristic {
     public void applyActions(int i) {
         switch (_mode){
             case TRIANGULATION:{
-                Triangulation.applyTriangulation(this, i, true);
+                Triangulation.applyTriangulation(this, i, true, _context.applyDelegation());
                 break;
             }
             case TRIK:{
@@ -40,18 +40,22 @@ public class BackAndForth extends Heuristic {
                 break;
             }
             case CCD:{
-                CCD.applyCCD(this, i);
+                CCD.applyCCD(this, i, _context.applyDelegation());
             }
         }
-        if(i >= _context.endEffectorId() - 1) return;
+        if(i >= _context.endEffectorId() - 1){
+            CCD.applyOrientationalCCD(this, i);
+            return;
+        }
         //Apply CCD Back and Forth k times
         NodeInformation j_i1 = _context.usableChainInformation().get(i + 1);
         for (int t = 0; t < _times; t++) {
             j_i1.updateCacheUsingReference();
-            CCD.applyCCD(this, i + 1);
-            CCD.applyCCD(this, i);
+            CCD.applyCCD(this, i + 1, _context.applyDelegation());
+            CCD.applyCCD(this, i, _context.applyDelegation());
         }
         j_i1.updateCacheUsingReference();
+        CCD.applyOrientationalCCD(this, i + 1);
     }
 
     @Override
