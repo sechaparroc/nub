@@ -25,7 +25,7 @@ public class CCD extends Heuristic {
 
   @Override
   public void applyActions(int i) {
-    applyCCD(this, i);
+    applyCCD(this, i, _context.applyDelegation());
     applyOrientationalCCD(this, i);
   }
 
@@ -54,26 +54,33 @@ public class CCD extends Heuristic {
     return delta;
   }
 
-  public static void applyCCD(Heuristic heuristic, int i){
+  public static void applyCCD(Heuristic heuristic, int i, boolean applyDelegation){
+    applyCCD(heuristic, i, applyDelegation ? heuristic._context.clamping(i) : 1);
+  }
+
+  public static void applyCCD(Heuristic heuristic, int i, float clamping){
     Context context = heuristic._context;
     NodeInformation j_i = context.usableChainInformation().get(i);
     NodeInformation endEffector = context.endEffectorInformation();
     Vector eff_wrt_j_i = j_i.locationWithCache(endEffector.positionCache());
     Vector target_wrt_j_i = j_i.locationWithCache(context.worldTarget().position());
     Quaternion delta = findCCD(j_i, eff_wrt_j_i, target_wrt_j_i, true);
-    if (heuristic._smooth) delta = Util.clampRotation(delta, heuristic._smoothAngle);
     delta = Util.constraintRotation(j_i, delta);
+    if (clamping < 1) {
+      delta = Util.clampRotation(delta, context.maxAngleAtJoint(i), clamping);
+    }
     j_i.rotateAndUpdateCache(delta, false, endEffector); //Apply local rotation
   }
+
 
   public static void applyOrientationalCCD(Heuristic heuristic, int i){
     Context context = heuristic._context;
     NodeInformation j_i = context.usableChainInformation().get(i);
     if (context.direction()) {
-      float maxAngle = Util.findMaxDirectionalAngle(j_i, context.endEffectorInformation(), context.searchingAreaRadius());
+      float maxAngle = Util.findMaxDirectionalAngle(j_i, context.endEffectorInformation(), context.worldTarget(), context.searchingAreaRadius());
       Quaternion deltaDirection = findOrientationalCCD(j_i, context.usableChainInformation().get(context.endEffectorId()), context.worldTarget());
-      deltaDirection = Util.clampRotation(deltaDirection, maxAngle);
       deltaDirection = Util.constraintRotation(j_i, deltaDirection);
+      deltaDirection = Util.clampRotation(deltaDirection, maxAngle);
       j_i.rotateAndUpdateCache(deltaDirection, false, context.endEffectorInformation());
     }
   }
