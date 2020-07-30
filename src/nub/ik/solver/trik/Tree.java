@@ -191,6 +191,7 @@ public class Tree extends Solver {
       target.setPosition(solver.context().chain().get(solver.context().endEffectorId()).worldLocation(targetTranslation));
       solver.setTarget(target);
 
+      solver.context().setDirection(false);
       //Apply best rotation
       float minError = _applyBestRotation(treeNode, effs, targets);
       //Apply IK
@@ -210,9 +211,9 @@ public class Tree extends Solver {
               minError = err;
             } else {
               Context.restoreState(bestState);
-              solver.reset();
               //reduce the distance to the target
               targetTranslation.multiply(0.5f);
+              solver.reset();
               solver.target().setPosition(solver.context().chain().get(solver.context().endEffectorId()).worldLocation(targetTranslation));
             }
           }
