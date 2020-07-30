@@ -18,20 +18,9 @@ public abstract class Heuristic {
    */
 
   protected Context _context; //Contains the basic information a heuristic requires
-  protected boolean _smooth = false; //smooth tries to reduce the movement done by each joint, such that the distance from initial one is reduced
-  protected float _smoothAngle = (float) Math.toRadians(20);
 
   public Heuristic(Context context) {
     _context = context;
-  }
-
-
-  public boolean enableSmooth() {
-    return _smooth;
-  }
-
-  public void enableSmooth(boolean smooth) {
-    _smooth = smooth;
   }
 
   public abstract void prepare(); //This method is executed at the beginning of each iteration
