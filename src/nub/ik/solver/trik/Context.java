@@ -30,11 +30,15 @@ public class Context {
   protected List<Node> _usableChain; //a copy of the kinematic chain.
 
 
+  //Expressive Parameters tries to reduce the movement done by each joint, such that the distance from initial one is reduced
   protected boolean _enableDelegation = false;
-  protected float[] _delegationAtJoint;
-  protected float _delegationFactor = 5f; //current joint will work at least "delegation factor" times the remaining ones
+  protected float _clamping;
+  protected float[] _maxAngleAtJoint;
+  protected float _delegationIterationsRatio = 1; //How many of the max number of iterations must consider the expressive parameters
+  protected Quaternion[] _initialRotations;
 
-  protected int _deadlockCounter = 0;
+
+  protected int _deadlockCounter = 0, _lockTimesCriteria = 5;
 
   //This structures allows to find the world position /orientation of a Node using the sufficient operations
   protected List<NodeInformation> _chainInformation, _usableChainInformation; //Keep position / orientation information
@@ -42,14 +46,12 @@ public class Context {
 
   protected boolean _direction = false;
   //Important parameters for orientation solution
-  protected float _searchingAreaRadius = 0.5f;
+  protected float _searchingAreaRadius = 1;
+
   protected boolean _radiusRelativeToBoneAverage = true;
-  protected float _orientationWeight = 0.2f;
+  protected float _orientationWeight = 0.5f;
 
-  protected boolean _topToBottom = true;
-  protected boolean _enableWeight, _explore;
-  protected int _lockTimes = 0, _lockTimesCriteria = 4;
-
+  protected boolean _topToBottom = false;
 
   //Error attributes
   protected float _maxLength = 0, _avgLength = 0;
@@ -57,8 +59,6 @@ public class Context {
 
   protected boolean _is2D = false;
   protected boolean _debug = false;
-  protected float _weightRatio = 3f, _weightRatioNear = 1.2f; //how many times is position more important than orientation
-  protected float _weightThreshold = 0.1f; //change error measurement when the chain is near the target
   protected int _last = -1;
   protected int _endEffectorId;
 
@@ -100,6 +100,14 @@ public class Context {
     return _deadlockCounter;
   }
 
+  public int lockTimesCriteria(){
+    return _lockTimesCriteria;
+  }
+
+  public void setLockTimesCriteria(int times){
+    _lockTimesCriteria = times;
+  }
+
   public void incrementDeadlockCounter() {
     _deadlockCounter++;
   }
@@ -133,7 +141,11 @@ public class Context {
     this._worldTarget = target == null ? Node.detach(new Vector(), new Quaternion(), 1) : Node.detach(_target.position(), _target.orientation(), 1);
     this._last = _chain.size() - 1;
     _endEffectorId = _last;
-    _delegationAtJoint = new float[chain.size() - 1];
+    _maxAngleAtJoint = new float[chain.size()];
+    for(int i = 0; i < chain.size(); i++){
+      _maxAngleAtJoint[i] = Float.MAX_VALUE; //By default no clamping is performed
+    }
+    _initialRotations = new Quaternion[chain().size()];
     update();
   }
 
@@ -192,10 +204,6 @@ public class Context {
     _debug = debug;
   }
 
-  public boolean enableWeight() {
-    return _enableWeight;
-  }
-
   public boolean singleStep() { //TODO : REMOVE!
     return _singleStep;
   }
@@ -206,10 +214,6 @@ public class Context {
 
   public NodeInformation endEffectorInformation() {
     return _usableChainInformation.get(_endEffectorId);
-  }
-
-  public float weightRatio() {
-    return _weightRatio;
   }
 
   public Node previousTarget() {
@@ -285,35 +289,43 @@ public class Context {
     }
   }
 
-  public int _currentIteration() {
-    return _solver.iteration();
+  public int currentIteration() {
+    return !_singleStep ? _solver.iteration() :  _solver.iteration() / chain().size();
   }
 
-  public float delegationAtJoint(int i) {
-    return _delegationAtJoint[i];
+  public boolean applyDelegation(){
+    return _enableDelegation && currentIteration() < _delegationIterationsRatio * solver().maxIterations();
   }
 
-  public void setDelegationAtJoint(int i, float value) {
-    _delegationAtJoint[i] = value;
+  public float clamping(int i){
+    float k = (1f - _clamping) * (1f * currentIteration() + 1f) / delegationIterations();
+    //Clamping based on distance
+    return Math.min(_clamping + k, 1);
   }
 
-  //TODO : Define various default ways for delegation distribution
-  public void setKDistributionDelegation(float k) {//work done by current joint is k times greater than done by remaining ones
-    for (int i = 0; i < chain().size() - 1; i++) {
-      int n = chain().size() - 1 - i;
-      int idx = i;
-      //idx = _topToBottom ? i : chain().size() - 2 - i;
-      //_delegationAtJoint[idx] = k / (k + n - 1);
-      _delegationAtJoint[idx] = 0.4f;
+  public int delegationIterations(){
+    return (int) (_delegationIterationsRatio * solver().maxIterations());
+  }
+
+  public void setClamping(float clamping) {
+    _clamping = clamping;
+  }
+
+  public float maxAngleAtJoint(int i) {
+    return _maxAngleAtJoint[i];
+  }
+
+  public void setMaxAngleAtJoint(int i, float value) {
+    _maxAngleAtJoint[i] = value;
+  }
+
+  public void setMaxAngle(float max){
+    for (int i = 0; i < _maxAngleAtJoint.length; i++){
+      _maxAngleAtJoint[i] = max;
     }
   }
 
 
-  public void setDelegationFactor(float k) {
-    //_enableDelegation = true;
-    _delegationFactor = k;
-    setKDistributionDelegation(_delegationFactor);
-  }
 
   public void enableDelegation(boolean enableDelegation) {
     _enableDelegation = enableDelegation;
@@ -326,27 +338,7 @@ public class Context {
   public void setTopToBottom(boolean topToBottom) {
     if (_topToBottom != topToBottom) {
       _topToBottom = topToBottom;
-      //swap delegation per joint
-      //_swapDelegationPerJoint();
     }
-  }
-
-  public void _swapDelegationPerJoint() {
-    System.out.println("swap!!");
-    int last = _delegationAtJoint.length - 1;
-    for (int i = 0; i <= last; i++) {
-      System.out.print(_delegationAtJoint[i] + " , ");
-    }
-    System.out.println();
-    for (int i = 0; i <= last / 2; i++) {
-      float aux = _delegationAtJoint[i];
-      _delegationAtJoint[i] = _delegationAtJoint[last - i];
-      _delegationAtJoint[last - i] = aux;
-    }
-    for (int i = 0; i <= last; i++) {
-      System.out.print(_delegationAtJoint[i] + " , ");
-    }
-    System.out.println();
   }
 
 
@@ -399,8 +391,7 @@ public class Context {
     if (_direction) {
       float orientationError = orientationError(effRotation, targetRotation, false);
       float weighted_error = error / radius;
-      float c_k = (float) Math.floor(weighted_error);
-      error = c_k + _orientationWeight * orientationError + (1 - _orientationWeight) * (weighted_error - c_k);
+      error = weighted_error * (1 - _orientationWeight) + _orientationWeight * orientationError;
     }
     return error;
   }
@@ -451,7 +442,6 @@ public class Context {
     return _detachedCopy(chain, reference, copy_constraints);
   }
 
-  /*TODO: remove this! (debug purposes)*/
   public static List<Node> _attachedCopy(List<? extends Node> chain, Node reference) {
     return _attachedCopy(chain, reference, true);
   }
