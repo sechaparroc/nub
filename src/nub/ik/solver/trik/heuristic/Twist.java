@@ -24,8 +24,8 @@ public class Twist extends Heuristic {
     NodeInformation j_i1 = _context.usableChainInformation().get(i + 1);
     NodeInformation endEffector = _context.endEffectorInformation();
     Quaternion rotation;
-    if (_smooth)
-      rotation = _findTwist(j_i, j_i1, endEffector, _context.worldTarget(), _smoothAngle, _smoothAngle, _context.direction());
+    if (_context.applyDelegation())
+      rotation = _findTwist(j_i, j_i1, endEffector, _context.worldTarget(), _context.maxAngleAtJoint(i), _context.maxAngleAtJoint(i), _context.direction());
     else
       rotation = _findTwist(j_i, j_i1, endEffector, _context.worldTarget(), _maxTwistCCD, _maxTwistDirection, _context.direction());
     j_i.rotateAndUpdateCache(rotation, true, endEffector); //Apply twist rotation
