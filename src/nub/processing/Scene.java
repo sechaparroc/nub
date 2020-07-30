@@ -973,6 +973,9 @@ public class Scene extends Graph {
       _drawBullsEye(node);
       pg.popStyle();
     }
+    if (node.isHintEnable(Node.CONSTRAINT)){
+      drawConstraint(pg, node, node._constraintFactor, node._constraintColor);
+    }
   }
 
   @Override
@@ -999,6 +1002,11 @@ public class Scene extends Graph {
         drawFrustum(pg, (PGraphics) _eyeBuffer(node), node, _frustumType(node), _zNear(node), _zFar(node));
       }
     }
+
+    if (node.isHintEnable(Node.CONSTRAINT)){
+      drawConstraint(pg, node, node._constraintFactor, node._constraintColor);
+    }
+
     pg.pushStyle();
     pg.strokeWeight(5);
     if (node.isHintEnable(Node.AXES) && node.isPickingModeEnable(Node.AXES)) {
@@ -3348,7 +3356,11 @@ public class Scene extends Graph {
    * @see nub.core.constraint.Constraint
    */
   public static void drawConstraint(PGraphics pGraphics, Node node) {
-      drawConstraint(pGraphics, node, 0.5f);
+      drawConstraint(pGraphics, node, 0.5f, -1778319616);
+  }
+
+  public static void drawConstraint(PGraphics pGraphics, Node node, float factor) {
+    drawConstraint(pGraphics, node, factor, -1778319616);
   }
 
   /**
@@ -3357,7 +3369,7 @@ public class Scene extends Graph {
    * @see Node#constraint()
    * @see nub.core.constraint.Constraint
    */
-  public static void drawConstraint(PGraphics pGraphics, Node node, float factor) {
+  public static void drawConstraint(PGraphics pGraphics, Node node, float factor, int color) {
     if (node == null) return;
     if (node.cull) return;
     if (node.constraint() == null) return;
@@ -3374,7 +3386,7 @@ public class Scene extends Graph {
     pGraphics.pushStyle();
     pGraphics.noStroke();
 
-    pGraphics.fill(62, 203, 55, 150);
+    pGraphics.fill(color);
     Quaternion referenceRotation = node.rotation().inverse();
 
     if (node.constraint() instanceof BallAndSocket) {
