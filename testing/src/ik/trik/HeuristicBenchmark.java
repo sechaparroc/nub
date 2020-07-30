@@ -7,7 +7,6 @@ import nub.core.Node;
 import nub.ik.solver.Solver;
 import nub.ik.solver.trik.heuristic.Combined;
 import nub.ik.solver.trik.implementations.IKSolver;
-import nub.ik.solver.trik.implementations.SimpleTRIK;
 import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -30,7 +29,7 @@ public class HeuristicBenchmark extends PApplet {
   float boneLength = 50; //Define length of segments (bones)
 
   //Benchmark Parameters
-  Util.ConstraintType constraintType = Util.ConstraintType.HINGE; //Choose what kind of constraints apply to chain
+  Util.ConstraintType constraintType = Util.ConstraintType.NONE; //Choose what kind of constraints apply to chain
   Random random = new Random();
   ArrayList<Solver> solvers; //Will store Solvers
   int randRotation = -1; //Set seed to generate initial random rotations, otherwise set to -1
@@ -41,7 +40,7 @@ public class HeuristicBenchmark extends PApplet {
 
   //Util.SolverType solversType [] = {Util.SolverType.CCD, Util.SolverType.CCD_TRIK, Util.SolverType.BACK_AND_FORTH_TRIK, Util.SolverType.FINAL_TRIK, Util.SolverType.EXPRESSIVE_FINAL_TRIK, Util.SolverType.FABRIK};
 
-  Util.SolverType solversType[] = {Util.SolverType.EXPRESSIVE_FINAL_TRIK, Util.SolverType.FABRIK, Util.SolverType.FINAL_TRIK, Util.SolverType.CCD_TRIK, Util.SolverType.TRIK_V2, Util.SolverType.TRIK_V4};
+  Util.SolverType solversType[] = {Util.SolverType.COMBINED_EXPRESSIVE, Util.SolverType.FABRIK, Util.SolverType.COMBINED_HEURISTIC, Util.SolverType.CCD_HEURISTIC, Util.SolverType.TRIK_HEURISTIC, Util.SolverType.BACK_AND_FORTH_CCD_HEURISTIC};
   //Util.SolverType solversType [] = {Util.SolverType.FINAL_TRIK, Util.SolverType.FORWARD_TRIANGULATION_TRIK};
   ArrayList<ArrayList<Node>> structures = new ArrayList<>(); //Keep Structures
   ArrayList<Node> idleSkeleton;
@@ -102,7 +101,7 @@ public class HeuristicBenchmark extends PApplet {
       solvers.get(i).setTimesPerFrame(3);
       solvers.get(i).setMaxIterations(200);
 
-      if (solversType[i] == Util.SolverType.CCD) {
+      if (solversType[i] == Util.SolverType.CCD_HEURISTIC) {
         solvers.get(i).setMaxError(-10f);
         solvers.get(i).setMinDistance(-10f);
         solvers.get(i).setTimesPerFrame(50);
@@ -159,17 +158,6 @@ public class HeuristicBenchmark extends PApplet {
     fill(255);
     stroke(255);
     if (showPath) interpolator.enableHint(Interpolator.SPLINE);
-
-    for (Solver s : solvers) {
-      if (s instanceof SimpleTRIK) {
-        if (((SimpleTRIK) s).mainHeuristic() instanceof Combined) {
-          Combined hig = (Combined) ((SimpleTRIK) s).mainHeuristic();
-          hig.drawVectors(scene);
-          if (showContours) hig.drawPositionContourMap(scene);
-        }
-      }
-    }
-
   }
 
   public Node generateRandomReachablePosition(List<? extends Node> chain, boolean is3D) {
@@ -247,8 +235,8 @@ public class HeuristicBenchmark extends PApplet {
 
     if (key == 'm' || key == 'M') {
       for (Solver s : solvers) {
-        if (s instanceof SimpleTRIK)
-          ((SimpleTRIK) s).context().setSingleStep(!((SimpleTRIK) s).context().singleStep());
+        if (s instanceof IKSolver)
+          ((IKSolver) s).context().setSingleStep(!((IKSolver) s).context().singleStep());
         if (s instanceof IKSolver)
           ((IKSolver) s).context().setSingleStep(!((IKSolver) s).context().singleStep());
       }
@@ -256,8 +244,8 @@ public class HeuristicBenchmark extends PApplet {
 
     if (key == 'n' || key == 'N') {
       for (Solver s : solvers) {
-        if (s instanceof SimpleTRIK)
-          ((SimpleTRIK) s).enableSmooth(!((SimpleTRIK) s).enableSmooth());
+        if (s instanceof IKSolver)
+          ((IKSolver) s).context().enableDelegation(!((IKSolver) s).context().enableDelegation());
       }
     }
 
@@ -267,8 +255,8 @@ public class HeuristicBenchmark extends PApplet {
 
     if (key == '0') {
       for (Solver s : solvers) {
-        if (s instanceof SimpleTRIK)
-          ((SimpleTRIK) s).context().setDirection(!((SimpleTRIK) s).context().direction());
+        if (s instanceof IKSolver)
+          ((IKSolver) s).context().setDirection(!((IKSolver) s).context().direction());
       }
 
     }

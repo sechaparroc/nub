@@ -29,7 +29,7 @@ public class ContinuousTrajectoryExample {
   static float maxError = 0.1f;
 
   static Util.ConstraintType constraintTypes[] = {Util.ConstraintType.HINGE_ALIGNED}; //Choose what kind of constraints apply to chain
-  static Util.SolverType solversType[] = {Util.SolverType.CCD_TRIK, Util.SolverType.FORWARD_TRIANGULATION_TRIK, Util.SolverType.FINAL_TRIK, Util.SolverType.EXPRESSIVE_FINAL_TRIK, Util.SolverType.FABRIK};
+  static Util.SolverType solversType[] = {Util.SolverType.CCD_HEURISTIC, Util.SolverType.TRIANGULATION_HEURISTIC, Util.SolverType.COMBINED_HEURISTIC, Util.SolverType.COMBINED_EXPRESSIVE, Util.SolverType.FABRIK};
   static List<Vector> targetPositions;
   static float[] lissajousPath = {1, 3, 3, boneLength * numJoints * 0.2f};
   static boolean enableLissajous = true;

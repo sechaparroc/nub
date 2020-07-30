@@ -2,7 +2,7 @@ package ik.basic;
 
 import nub.core.Graph;
 import nub.core.Node;
-import nub.ik.solver.trik.implementations.SimpleTRIK;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import nub.processing.TimingTask;
@@ -76,7 +76,7 @@ public class InstantiateIK2 extends PApplet {
     //3. Relate the structure with a Solver. In this example we instantiate a solver
 
     //A Chain solver constructor receives an ArrayList containing the Skeleton structure
-    SimpleTRIK solver1 = new SimpleTRIK(skeleton1, SimpleTRIK.HeuristicMode.COMBINED);
+    IKSolver solver1 = new IKSolver(skeleton1, IKSolver.HeuristicMode.COMBINED);
 
     //Optionally you could modify the following parameters of the Solver:
     //Maximum distance between end effector and target, If is below maxError, then we stop executing IK solver (Default value is 0.01)
@@ -90,7 +90,7 @@ public class InstantiateIK2 extends PApplet {
 
     //A CCD solver is another quite known solver, it is only allowed for chain structures
     //A CCD solver constructor receives an ArrayList containing the Skeleton structure
-    SimpleTRIK solver2 = new SimpleTRIK(skeleton2, SimpleTRIK.HeuristicMode.CCD);
+    IKSolver solver2 = new IKSolver(skeleton2, IKSolver.HeuristicMode.CCD);
 
     //Optionally you could modify the following parameters of the Solver:
     //Maximum distance between end effector and target, If is below maxError, then we stop executing IK solver (Default value is 0.01)

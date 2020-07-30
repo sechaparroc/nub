@@ -7,10 +7,9 @@ import nub.core.constraint.BallAndSocket;
 import nub.core.constraint.Hinge;
 import nub.ik.loader.bvh.BVHLoader;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.CCDSolver;
 import nub.ik.solver.geometric.ChainSolver;
-import nub.ik.solver.trik.implementations.SimpleTRIK;
 import nub.ik.animation.Joint;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -37,7 +36,7 @@ public class Viewer extends PApplet {
 
   Node root, rootIK;
 
-  CCDSolver ccd_solver;
+  IKSolver ccd_solver;
   ChainSolver chain_solver;
   Solver solver;
 
@@ -203,7 +202,7 @@ public class Viewer extends PApplet {
 
       //BioIk chain = new BioIk(fr, 10, 4);
       //ChainSolver chain = new ChainSolver((ArrayList) fr);
-      SimpleTRIK chain = new SimpleTRIK((ArrayList) fr, SimpleTRIK.HeuristicMode.COMBINED_EXPRESSIVE);
+      IKSolver chain = new IKSolver((ArrayList) fr, IKSolver.HeuristicMode.COMBINED_EXPRESSIVE);
       //SimpleTRIK chain = new TRIK((ArrayList) fr);
       //chain.setLookAhead(3);
       //chain.enableWeight(true);

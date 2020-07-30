@@ -4,7 +4,7 @@ import ik.basic.Util;
 import nub.core.Node;
 import nub.core.constraint.Constraint;
 import nub.ik.solver.trik.heuristic.Combined;
-import nub.ik.solver.trik.implementations.SimpleTRIK;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -15,14 +15,14 @@ import processing.event.MouseEvent;
 import java.util.List;
 
 public class ExpressiveTest extends PApplet {
-  int numJoints = 28;
+  int numJoints = 20;
   float boneLength = 50;
   float targetRadius = 10;
 
-  SimpleTRIK solver;
+  IKSolver solver;
   Scene delegationScene, mainScene, focus;
   DelegationPanel panel;
-  Node root;
+  Node IKReference;
   boolean solve = true, enableTask = false;
 
 
@@ -37,21 +37,25 @@ public class ExpressiveTest extends PApplet {
     mainScene.fit(1);
     mainScene.leftHanded = false;
 
+    IKReference = new Node();
+    IKReference.tagging = false;
+
     //create target
     Node target = Util.createTarget(mainScene, targetRadius);
     List<Node> structure = Util.generateAttachedChain(numJoints, targetRadius * 0.7f, boneLength, new Vector(), 0, 255, 0);
-    root = structure.get(0);
+    structure.get(0).setReference(IKReference);
+    target.setReference(IKReference);
+
 
     //Util.generateConstraints(structure, Util.ConstraintType.CONE_CIRCLE, 0, true);
 
-    //solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.FINAL);
-    solver = new SimpleTRIK(structure, SimpleTRIK.HeuristicMode.COMBINED_EXPRESSIVE);
+    solver = new IKSolver(structure, IKSolver.HeuristicMode.COMBINED_EXPRESSIVE, true);
+    //solver.context().delegationIterationsRatio(1);
     solver.setTarget(structure.get(numJoints - 1), target);
-    //solver.enableSmooth(true);
-    //solver.context().setSingleStep(!solve);
-    solver.setTimesPerFrame(1);
-    solver.setMaxIterations(200);
-    solver.setMaxError(0.1f);
+    //solver.context().setSingleStep(true);
+    solver.setTimesPerFrame(20);
+    solver.setMaxIterations(20);
+    solver.setMaxError(0.5f);
 
     //Move the target to any position
     target.setPosition(structure.get(numJoints - 1).position());
@@ -97,22 +101,14 @@ public class ExpressiveTest extends PApplet {
   public void draw() {
     handleMouse();
     lights();
-    root.cull = false;
-    panel.cull = true;
     mainScene.context().background(0);
     mainScene.drawAxes();
-    mainScene.render();
+    mainScene.render(IKReference);
 
-    if (solver.mainHeuristic() instanceof Combined) {
-      Combined hig = (Combined) (solver.mainHeuristic());
-      hig.drawVectors(mainScene);
-    }
 
 
     noLights();
-    root.cull = true;
-    panel.cull = false;
-    delegationScene.display(0, (int) (height * 0.7f));
+    delegationScene.display(panel, 0, (int) (height * 0.7f));
   }
 
   public void handleMouse() {

@@ -8,10 +8,9 @@ import nub.core.constraint.Hinge;
 import nub.ik.loader.collada.URDFLoader;
 import nub.ik.loader.collada.data.Model;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.CCDSolver;
 import nub.ik.solver.geometric.ChainSolver;
-import nub.ik.solver.geometric.oldtrik.TRIK;
 import nub.ik.animation.Joint;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -104,13 +103,11 @@ public class BenchmarkUR10 extends PApplet {
           break;
         }
         case "CCD": {
-          solver = new CCDSolver(branch);
+          solver = new IKSolver(branch, IKSolver.HeuristicMode.CCD);
           break;
         }
         case "TRIK": {
-          solver = new TRIK(branch);
-          ((TRIK) solver).setLookAhead(2);
-          ((TRIK) solver).enableWeight(true);
+          solver = new IKSolver(branch, IKSolver.HeuristicMode.COMBINED_EXPRESSIVE);
           break;
         }
         default: {

@@ -6,7 +6,7 @@ import nub.core.Node;
 import nub.core.constraint.SphericalPolygon;
 import nub.ik.animation.Joint;
 import nub.ik.solver.Solver;
-import nub.ik.solver.trik.implementations.SimpleTRIK;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -56,7 +56,7 @@ public class SimpleSphericalPolygon extends PApplet{
         List<Node> skeleton = new ArrayList<Node>();
         skeleton.add(j1);
         skeleton.add(j2);
-        solver = new SimpleTRIK(skeleton, SimpleTRIK.HeuristicMode.COMBINED);
+        solver = new IKSolver(skeleton, IKSolver.HeuristicMode.COMBINED);
         Node target = Util.createTarget(scene, scene.radius() * 0.07f);
         target.set(j2);
         solver.setTarget(j2, target);

@@ -5,10 +5,8 @@ import nub.core.Node;
 import nub.core.constraint.BallAndSocket;
 import nub.core.constraint.Hinge;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.CCDSolver;
 import nub.ik.solver.geometric.ChainSolver;
-import nub.ik.solver.geometric.oldtrik.TRIK;
-import nub.ik.solver.trik.implementations.SimpleTRIK;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.ik.animation.Joint;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -23,13 +21,13 @@ import java.util.HashMap;
 import java.util.List;
 
 public class NaiveLocomotion extends PApplet {
-  public enum IKMode {FABRIK, CCD, TRIK, SIMPLETRIK}
+  public enum IKMode {FABRIK, CCD, TRIK, COMBINED}
 
   ;
   Scene scene;
   float boneLength = 50;
   float radius = 10;
-  int segments = 10;
+  int segments = 4;
   float stepHeight = boneLength / 2 * segments / 6f, stepWidth = boneLength * segments * 0.75f;
   static boolean solve = true;
 
@@ -48,7 +46,7 @@ public class NaiveLocomotion extends PApplet {
     scene.setRadius(segments * 4 * boneLength);
     scene.fit(1);
 
-    createStructure(segments, boneLength, radius, 0, 255, 0, new Vector(-boneLength * 3, 0, 0), IKMode.SIMPLETRIK, 20, 0);
+    createStructure(segments, boneLength, radius, 0, 255, 0, new Vector(-boneLength * 3, 0, 0), IKMode.TRIK, 20, 0);
   }
 
   public void draw() {
@@ -93,8 +91,8 @@ public class NaiveLocomotion extends PApplet {
     Solver solver;
     switch (mode) {
       case CCD: {
-        solver = new CCDSolver(limb, false);
-        ((CCDSolver) solver).setTarget(target);
+        solver = new IKSolver(limb, IKSolver.HeuristicMode.CCD);
+        ((IKSolver) solver).setTarget(target);
         break;
       }
       case FABRIK: {
@@ -104,23 +102,14 @@ public class NaiveLocomotion extends PApplet {
         break;
       }
       case TRIK: {
-        solver = new TRIK(limb);
-        ((TRIK) solver).setTarget(target);
-        ((TRIK) solver).setLookAhead(2);
-        ((TRIK) solver).enableWeight(true);
-        ((TRIK) solver).smooth(true);
+        solver = new IKSolver(limb, IKSolver.HeuristicMode.TRIK);
+        ((IKSolver) solver).setTarget(target);
         break;
       }
 
-      case SIMPLETRIK: {
-        solver = new SimpleTRIK(limb, SimpleTRIK.HeuristicMode.COMBINED_EXPRESSIVE);
-        ((SimpleTRIK) solver).context().setDirection(true);
-        ((SimpleTRIK) solver).context().setSearchingAreaRadius(0.2f, true);
-        ((SimpleTRIK) solver).context().setOrientationWeight(0.5f);
-        ((SimpleTRIK) solver).enableDeadLockResolution(false);
-        solver.setTarget(limb.get(limb.size() - 1), target);
-
-
+      case COMBINED: {
+        solver = new IKSolver(limb, IKSolver.HeuristicMode.COMBINED);
+        ((IKSolver) solver).setTarget(target);
         break;
       }
 
@@ -166,7 +155,7 @@ public class NaiveLocomotion extends PApplet {
     solvers.add(createLimb(segments, length, radius, red, green, blue, root, target1, new Vector(-length, 0, 0), mode, min, max));
     solvers.add(createLimb(segments, length, radius, red, green, blue, root, target2, new Vector(length, 0, 0), mode, min, max));
     //3. Create walking cycle
-    //createBipedCycle(root, solvers.get(solvers.size() - 1), solvers.get(solvers.size() - 2), target1, target2);
+    createBipedCycle(root, solvers.get(solvers.size() - 1), solvers.get(solvers.size() - 2), target1, target2);
   }
 
 

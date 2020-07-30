@@ -2,7 +2,6 @@ package ik.paper;
 
 import ik.basic.Util;
 import nub.core.Node;
-import nub.core.constraint.Constraint;
 import nub.ik.solver.Solver;
 import nub.ik.solver.trik.NodeInformation;
 import nub.ik.solver.trik.implementations.IKSolver;
@@ -128,7 +127,7 @@ public class AccuracyVSTime {
                 elapsedTime += System.nanoTime() - start;
                 minError = solver.error();
                 lastIteration = i + 1;
-                if(IKSolver.debugERROR){
+                if(IKSolver.log){
                     System.out.println("Error " + minError);
                 }
                 if(minError <= accuracyThreshold){

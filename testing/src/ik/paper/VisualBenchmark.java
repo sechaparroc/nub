@@ -5,11 +5,11 @@ import nub.core.Graph;
 import nub.core.Node;
 import nub.ik.animation.Joint;
 import nub.ik.solver.Solver;
+import nub.ik.solver.geometric.ChainSolver;
 import nub.ik.solver.geometric.FABRIKSolver;
-import nub.ik.solver.geometric.oldtrik.TRIK;
 import nub.ik.solver.trik.heuristic.Combined;
+import nub.ik.solver.trik.heuristic.TRIK;
 import nub.ik.solver.trik.implementations.IKSolver;
-import nub.ik.solver.trik.implementations.SimpleTRIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -25,12 +25,12 @@ public class VisualBenchmark extends PApplet {
     //Scene Parameters
     Scene scene;
     String renderer = P3D; //Define a 2D/3D renderer
-    int numJoints = 12; //Define the number of joints that each chain will contain
-    float targetRadius = 30; //Define size of target
+    int numJoints = 10; //Define the number of joints that each chain will contain
+    float targetRadius = 10; //Define size of target
     float boneLength = 50; //Define length of segments (bones)
 
     //Benchmark Parameters
-    Util.ConstraintType constraintType = Util.ConstraintType.MIX_CONSTRAINED; //Choose what kind of constraints apply to chain
+    Util.ConstraintType constraintType = Util.ConstraintType.MIX; //Choose what kind of constraints apply to chain
     Random random = new Random();
     ArrayList<Solver> solvers; //Will store Solvers
     int randRotation = -1; //Set seed to generate initial random rotations, otherwise set to -1
@@ -38,15 +38,16 @@ public class VisualBenchmark extends PApplet {
 
 
     Util.SolverType solversType[] = {
-            Util.SolverType.TRIANGULATION_HEURISTIC,
-            Util.SolverType.BACK_AND_FORTH_TRIANGULATION_HEURISTIC,
+            //Util.SolverType.TRIANGULATION_HEURISTIC,
+            //Util.SolverType.BACK_AND_FORTH_TRIANGULATION_HEURISTIC,
             Util.SolverType.CCD_HEURISTIC,
             Util.SolverType.BACK_AND_FORTH_CCD_HEURISTIC,
             Util.SolverType.TRIK_HEURISTIC,
             Util.SolverType.BACK_AND_FORTH_TRIK_HEURISTIC,
             Util.SolverType.COMBINED_HEURISTIC,
             Util.SolverType.COMBINED_EXPRESSIVE,
-            Util.SolverType.FABRIK
+            Util.SolverType.COMBINED_TRIK,
+            //Util.SolverType.FABRIK
     }; //Place Here Solvers that you want to compare
 
     ArrayList<ArrayList<Node>> structures = new ArrayList<>(); //Keep Structures
@@ -73,18 +74,17 @@ public class VisualBenchmark extends PApplet {
 
         float alpha = 1.f * width / height > 1.5f ? 0.5f * width / height : 0.5f;
         alpha *= numSolvers / 4f; //avoid undesirable overlapping
-
         //2. Generate Structures
         for (int i = 0; i < numSolvers; i++) {
             int red = (int) random(255);
             int green = (int) random(255);
             int blue = (int) random(255);
-            structures.add(Util.generateAttachedChain(numJoints, 0.3f * targetRadius, boneLength, new Vector(i * 2 * alpha * scene.radius() / (numSolvers - 1) - alpha * scene.radius(), 0, 0), red, green, blue, randRotation, randLength));
+            structures.add(Util.generateAttachedChain(numJoints, 0.3f * targetRadius, boneLength, new Vector(i * 2 * alpha * scene.radius() / Math.max(1,(numSolvers - 1)) - alpha * scene.radius(), 0, 0), red, green, blue, randRotation, randLength));
         }
 
         //3. Apply constraints
         for (ArrayList<Node> structure : structures) {
-            Util.generateConstraints(structure, constraintType, 0, scene.is3D());
+           Util.generateConstraints(structure, constraintType, 0, scene.is3D());
         }
 
         //4. Set eye scene
@@ -98,8 +98,8 @@ public class VisualBenchmark extends PApplet {
             solvers.add(solver);
             //6. Define solver parameters
             //solvers.get(i).setMaxError(0.001f);
-            solvers.get(i).setTimesPerFrame(1);
-            solvers.get(i).setMaxIterations(200);
+            solvers.get(i).setTimesPerFrame(20);
+            solvers.get(i).setMaxIterations(20);
             //solvers.get(i).setMinDistance(0.001f);
             //7. Set targets
             solvers.get(i).setTarget(structures.get(i).get(numJoints - 1), targets.get(i));
@@ -119,24 +119,17 @@ public class VisualBenchmark extends PApplet {
         background(0);
         if (scene.is3D()) lights();
         //Draw Constraints
-        scene.drawAxes();
-
-
-        for (Solver s : solvers) {
-            if (s instanceof SimpleTRIK) {
-                if (((SimpleTRIK) s).mainHeuristic() instanceof Combined) {
-                    Combined hig = (Combined) ((SimpleTRIK) s).mainHeuristic();
-                    hig.drawVectors(scene);
-                    //hig.drawPositionContourMap(scene);
-                }
-            }
-        }
-
         scene.render();
+        scene.drawAxes();
+        //TRIK.draw(this.g, targetRadius * 0.3f);
+
         scene.beginHUD();
         for (int i = 0; i < solvers.size(); i++) {
             Util.printInfo(scene, solvers.get(i), structures.get(i).get(0).position());
         }
+
+        text("" + mouseX + ", " + mouseY, mouseX, mouseY);
+
         scene.endHUD();
     }
 
@@ -174,8 +167,6 @@ public class VisualBenchmark extends PApplet {
 
         if (key == 'm' || key == 'M') {
             for (Solver s : solvers) {
-                if (s instanceof SimpleTRIK)
-                    ((SimpleTRIK) s).context().setSingleStep(!((SimpleTRIK) s).context().singleStep());
                 if (s instanceof IKSolver)
                     ((IKSolver) s).context().setSingleStep(!((IKSolver) s).context().singleStep());
             }
@@ -187,7 +178,6 @@ public class VisualBenchmark extends PApplet {
         // /*
 
         if (key == '1') {
-            TRIK._debug = !TRIK._debug;
             show1 = !show1;
         }
         if (key == '2') {

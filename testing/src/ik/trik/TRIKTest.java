@@ -5,8 +5,7 @@ import nub.core.Graph;
 import nub.core.Node;
 import nub.ik.animation.Joint;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.oldtrik.TRIK;
-import nub.ik.solver.trik.implementations.SimpleTRIK;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -81,16 +80,14 @@ public class TRIKTest extends PApplet {
         target.setPosition(endEffector.position());
         targets.add(target);
         //3. Relate the structure with a Solver. In this example we instantiate a solver
-        solver = new SimpleTRIK(skeleton, SimpleTRIK.HeuristicMode.COMBINED_EXPRESSIVE);
+        solver = new IKSolver(skeleton, IKSolver.HeuristicMode.COMBINED_EXPRESSIVE);
         //Optionally you could modify the following parameters of the Solver:
         //Maximum distance between end effector and target, If is below maxError, then we stop executing IK solver (Default value is 0.01)
         //solver.setMaxError(1);
         //Number of iterations to perform in order to reach the target (Default value is 50)
-        if (TRIK._singleStep) solver.setMaxIterations(500);
-        else solver.setMaxIterations(8);
+        solver.setMaxIterations(8);
         //Times a solver will iterate on a single Frame (Default value is 5)
-        if (!TRIK._debug) solver.setTimesPerFrame(8);
-        else solver.setTimesPerFrame(1);
+        solver.setTimesPerFrame(1);
         //Minimum distance between previous and current solution to consider that Solver converges (Default value is 0.01)
         //solver.setMinDistance(0.5f);
         //4. relate targets with end effectors
@@ -187,10 +184,6 @@ public class TRIKTest extends PApplet {
     }
 
     public void keyPressed() {
-        if (key == 'Q') {
-            TRIK._singleStep = !TRIK._singleStep;
-        }
-
         if (key == 'A' || key == 'a') {
             enableSolver = false;
             trik.solve();

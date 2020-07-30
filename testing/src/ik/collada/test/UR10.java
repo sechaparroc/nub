@@ -10,8 +10,8 @@ import nub.ik.loader.collada.data.Model;
 import nub.ik.solver.Solver;
 import nub.ik.solver.geometric.ChainSolver;
 import nub.ik.solver.geometric.FABRIKSolver;
-import nub.ik.solver.geometric.oldtrik.TRIK;
 import nub.ik.animation.Joint;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -104,8 +104,7 @@ public class UR10 extends PApplet {
 
 
     if (!ccd) {
-      solver = new TRIK(branch);
-      ((TRIK) solver).setLookAhead(2);
+      solver = new IKSolver(branch, IKSolver.HeuristicMode.COMBINED_EXPRESSIVE);
     } else {
       solver = new ChainSolver(branch);
       ((ChainSolver) solver).setKeepDirection(true);

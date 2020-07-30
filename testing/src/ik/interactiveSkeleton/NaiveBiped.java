@@ -6,12 +6,10 @@ import nub.core.Node;
 import nub.core.constraint.BallAndSocket;
 import nub.core.constraint.Hinge;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.CCDSolver;
 import nub.ik.solver.geometric.ChainSolver;
 import nub.ik.solver.geometric.FABRIKSolver;
-import nub.ik.solver.geometric.oldtrik.TRIK;
-import nub.ik.solver.trik.implementations.SimpleTRIK;
 import nub.ik.animation.Joint;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import nub.processing.TimingTask;
@@ -26,7 +24,7 @@ import java.util.List;
 
 public class NaiveBiped extends PApplet {
 
-  public enum IKMode {FABRIK, CCD, TRIK, SIMPLETRIK}
+  public enum IKMode {FABRIK, CCD, TRIK}
 
   ;
 
@@ -51,8 +49,6 @@ public class NaiveBiped extends PApplet {
   public void setup() {
     Joint.axes = true;
     if (debug) {
-      TRIK._debug = true;
-      TRIK._singleStep = true;
       FABRIKSolver.debug = true;
       for (int i = 0; i < show.length; i++) show[i] = true;
     }
@@ -63,10 +59,7 @@ public class NaiveBiped extends PApplet {
     scene.fit(1);
 
     if (!debug) {
-      createStructure(scene, segments, boneLength, radius, 0, 255, 0, new Vector(-boneLength * 3, 0, 0), IKMode.SIMPLETRIK, 70, 0);
-      //createStructure(scene, segments, boneLength, radius, color(255, 0, 0), new Vector(-boneLength * 3, 0, 0), IKMode.BIOIK, 40, 0);
-      //createStructure(scene, segments, boneLength, radius, color(0, 255, 0), new Vector(boneLength * 1, 0, 0), IKMode.FABRIK,40, 0);
-      //createStructure(scene, segments, boneLength, radius, color(0, 255, 0), new Vector(boneLength * 1, 0, 0), IKMode.FABRIK);
+      createStructure(scene, segments, boneLength, radius, 0, 255, 0, new Vector(-boneLength * 3, 0, 0), IKMode.TRIK, 70, 0);
     }
     //createStructure(scene, segments, boneLength, radius, color(0,0,255), new Vector(boneLength*5, 0,0), IKMode.TRIK, 0 , 40);
     //createStructure(scene, segments, boneLength, radius, color(0,0,255), new Vector(boneLength*5, 0,0), IKMode.MYSOLVER);
@@ -154,8 +147,8 @@ public class NaiveBiped extends PApplet {
     Solver solver;
     switch (mode) {
       case CCD: {
-        solver = new CCDSolver(limb, false);
-        ((CCDSolver) solver).setTarget(target);
+        solver = new IKSolver(limb, IKSolver.HeuristicMode.CCD, debug);
+        ((IKSolver)solver).setTarget(target);
         break;
       }
       case FABRIK: {
@@ -170,21 +163,8 @@ public class NaiveBiped extends PApplet {
       }
 
       case TRIK: {
-        solver = new TRIK(limb);
-        ((TRIK) solver).setTarget(target);
-        ((TRIK) solver).setLookAhead(2);
-        ((TRIK) solver).enableWeight(true);
-        ((TRIK) solver).smooth(true);
-        break;
-      }
-
-      case SIMPLETRIK: {
-        solver = new SimpleTRIK(limb, SimpleTRIK.HeuristicMode.COMBINED_EXPRESSIVE);
-        ((SimpleTRIK) solver).context().setDirection(true);
-        ((SimpleTRIK) solver).context().setSearchingAreaRadius(3f, true);
-        ((SimpleTRIK) solver).context().setOrientationWeight(0.1f);
-        solver.setTarget(limb.get(limb.size() - 1), target);
-
+        solver = new IKSolver(limb, IKSolver.HeuristicMode.COMBINED_EXPRESSIVE, debug);
+        ((IKSolver)solver).setTarget(target);
         break;
       }
 

@@ -67,8 +67,8 @@ public class AnimationTest extends PApplet {
     mainScene.context().lights();
     skinning.render(mainScene);
     if (showSkeleton) mainScene.display(0,0);
-    mainScene.display();
-    controlScene.context().background(150);
+    mainScene.display(0,0);
+    //controlScene.context().background(150);
     controlScene.display(0, (int) (height * 0.7f));
   }
 

@@ -5,7 +5,7 @@ import nub.core.Graph;
 import nub.core.Node;
 import nub.core.constraint.BallAndSocket;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.CCDSolver;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.ik.solver.geometric.ChainSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -86,7 +86,7 @@ public class ConeBall extends PApplet {
 
     int i = 0;
     //CCD
-    solvers.add(new CCDSolver(structures.get(i++)));
+    solvers.add(new IKSolver(structures.get(i++), IKSolver.HeuristicMode.CCD));
     //Standard FABRIK
     ChainSolver chainSolver;
     chainSolver = new ChainSolver(structures.get(i++));

@@ -6,10 +6,8 @@ import nub.core.Node;
 import nub.core.constraint.BallAndSocket;
 import nub.core.constraint.Hinge;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.CCDSolver;
 import nub.ik.solver.geometric.ChainSolver;
-import nub.ik.solver.geometric.oldtrik.TRIK;
-import nub.ik.solver.trik.implementations.SimpleTRIK;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.ik.animation.Joint;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -43,8 +41,6 @@ public class Case1 extends PApplet {
   }
 
   public void setup() {
-    TRIK._singleStep = true;
-
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
     scene.setRadius(numJoints * boneLength * 2.5f);
@@ -87,19 +83,14 @@ public class Case1 extends PApplet {
 
     int i = 0;
     //CCD
-    CCDSolver ccdSolver = new CCDSolver(structures.get(i++));
+    IKSolver ccdSolver = new IKSolver(structures.get(i++), IKSolver.HeuristicMode.CCD);
+    ccdSolver.context().setSingleStep(true);
     solvers.add(ccdSolver);
     //CCD TRIK
-    SimpleTRIK simpleTRIK = new SimpleTRIK(structures.get(i++), SimpleTRIK.HeuristicMode.COMBINED);
-    solvers.add(simpleTRIK);
+    IKSolver combinedSolver = new IKSolver(structures.get(i++), IKSolver.HeuristicMode.COMBINED);
+    combinedSolver.context().setSingleStep(true);
+    solvers.add(combinedSolver);
 
-    //ChainSolver chainSolver;
-    //chainSolver = new ChainSolver(structures.get(i++));
-    //chainSolver.setKeepDirection(false);
-    //chainSolver.setFixTwisting(false);
-
-    //solvers.add(chainSolver);
-    //FABRIK Keeping directions (H1)
     ChainSolver chainSolver = new ChainSolver(structures.get(i++));
     chainSolver.setFixTwisting(true);
     chainSolver.setKeepDirection(false);
@@ -114,10 +105,6 @@ public class Case1 extends PApplet {
     chainSolver.setFixTwisting(true);
     chainSolver.setKeepDirection(true);
     solvers.add(chainSolver);
-    TRIK trik = new TRIK(structures.get(i++));
-    trik.setLookAhead(2);
-    trik.enableWeight(true);
-    solvers.add(trik);
 
     for (i = 0; i < solvers.size(); i++) {
       Solver solver = solvers.get(i);

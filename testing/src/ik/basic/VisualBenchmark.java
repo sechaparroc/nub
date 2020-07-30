@@ -5,7 +5,7 @@ import nub.core.Node;
 import nub.ik.solver.Solver;
 import nub.ik.solver.geometric.ChainSolver;
 import nub.ik.solver.geometric.FABRIKSolver;
-import nub.ik.solver.geometric.oldtrik.TRIK;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -37,8 +37,8 @@ public class VisualBenchmark extends PApplet {
   int randLength = 0; //Set seed to generate random segment lengths, otherwise set to -1
 
 
-  Util.SolverType solversType[] = {Util.SolverType.CCD, Util.SolverType.FABRIK, Util.SolverType.FABRIK_H1_H2, Util.SolverType.TRIK_V1,
-      Util.SolverType.TRIK_V2, Util.SolverType.TRIK_V3, Util.SolverType.TRIK_V4}; //Place Here Solvers that you want to compare
+  Util.SolverType solversType[] = {Util.SolverType.CCD_HEURISTIC, Util.SolverType.FABRIK, Util.SolverType.FABRIK_H1_H2, Util.SolverType.TRIK_HEURISTIC,
+      Util.SolverType.COMBINED_EXPRESSIVE, Util.SolverType.COMBINED_HEURISTIC, Util.SolverType.TRIANGULATION_HEURISTIC}; //Place Here Solvers that you want to compare
 
   ArrayList<ArrayList<Node>> structures = new ArrayList<>(); //Keep Structures
   ArrayList<Node> targets = new ArrayList<Node>(); //Keep targets
@@ -51,7 +51,6 @@ public class VisualBenchmark extends PApplet {
   }
 
   public void setup() {
-    TRIK._debug = false;
     Joint.axes = true;
     scene = new Scene(this);
     if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
@@ -136,22 +135,6 @@ public class VisualBenchmark extends PApplet {
           Util.drawPositions(scene.context(), ((ChainSolver) solvers.get(i)).afterAvoidPosition(), color(0, 255, 0), 6);
         }
 
-      } else if (solvers.get(i) instanceof TRIK) {
-        List<Node> aux = ((TRIK) solvers.get(i)).auxiliaryChain();
-        List<Node> chain = ((TRIK) solvers.get(i)).copyChain();
-
-        ArrayList<Vector> aux_pos = new ArrayList<Vector>();
-        for (Node n : aux) {
-          aux_pos.add(n.position());
-        }
-
-        ArrayList<Vector> ch_pos = new ArrayList<Vector>();
-        for (Node n : chain) {
-          ch_pos.add(n.position());
-        }
-
-        if (show1) Util.drawPositions(scene.context(), aux_pos, color(255, 0, 100), 3);
-        if (show2) Util.drawPositions(scene.context(), ch_pos, color(255, 0, 100), 3);
       }
     }
 
@@ -202,7 +185,6 @@ public class VisualBenchmark extends PApplet {
     // /*
 
     if (key == '1') {
-      TRIK._debug = !TRIK._debug;
       show1 = !show1;
     }
     if (key == '2') {

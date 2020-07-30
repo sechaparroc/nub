@@ -2,7 +2,7 @@ package ik.trik.expressive;
 
 import nub.core.Node;
 import nub.core.constraint.Constraint;
-import nub.ik.solver.trik.implementations.SimpleTRIK;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -19,12 +19,12 @@ public class DelegationPanel extends Node {
   protected int _colorText;
   protected PFont _font36;
 
-  protected SimpleTRIK _solver;
+  protected IKSolver _solver;
   protected List<Slider> _sliders = new ArrayList<Slider>();
   protected Scene _scene;
 
 
-  public DelegationPanel(Scene scene, SimpleTRIK solver) {
+  public DelegationPanel(Scene scene, IKSolver solver) {
     super();
     tagging = false;
     _scene = scene;
@@ -83,7 +83,7 @@ public class DelegationPanel extends Node {
     for (int i = 0; i < num; i++) {
       final int idx = i;
       Vector t = new Vector(_sliderWidth * idx, _sliderHeight);
-      float value = _solver.context().delegationAtJoint(idx);
+      float value = _solver.context().maxAngleAtJoint(idx);
       _sliders.add(new Slider(this, i, t, value) {
         @Override
         public void onValueChanged() {
@@ -94,12 +94,12 @@ public class DelegationPanel extends Node {
   }
 
   protected void updateJoint(int idx) {
-    _solver.context().setDelegationAtJoint(idx, _sliders.get(idx)._value);
+    _solver.context().setMaxAngleAtJoint(idx, _sliders.get(idx)._value);
   }
 
   protected void updateSliders() {
     for (int i = 0; i < _sliders.size(); i++) {
-      _sliders.get(i).setValue(_solver.context().delegationAtJoint(i));
+      _sliders.get(i).setValue(_solver.context().maxAngleAtJoint(i));
     }
   }
 

@@ -26,6 +26,7 @@ public class Viewer extends PApplet {
   boolean absolute = true;
   //String path = "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/cmu-mocap-master/data/001/01_02.bvh";
   String path = "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__SlowFly.bvh";
+  //String path = "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Horse/__SlowWalk.bvh";
   Scene scene;
   BVHLoader parser;
   List<Skeleton> skeletons;
@@ -45,17 +46,18 @@ public class Viewer extends PApplet {
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
     scene.eye().rotate(new Quaternion(0, 0, PI));
-    scene.setRadius(600);
-    scene.fit(0);
     parser = new BVHLoader(absolute ? path : (sketchPath() + path), scene, null);
+    scene.setRadius(calculateHeight(parser) * 3);
+    scene.fit(0);
+
     parser.nextPose(true);
     parser.nextPose(true);
     parser.generateConstraints();
     System.out.println("Height : " + calculateHeight(parser));
     skeletons = new ArrayList<Skeleton>();
 
-    skeletons.add(new Skeleton(parser, IKSolver.HeuristicMode.COMBINED, scene, 0, 255, 0, scene.radius() * 0.01f, new Vector(0,0,-scene.radius())));
-    //skeletons.add(new Skeleton(parser, IKSolver.HeuristicMode.COMBINED, scene, 255,0,0, scene.radius() * 0.01f));
+    skeletons.add(new Skeleton(parser, IKSolver.HeuristicMode.COMBINED_EXPRESSIVE, scene, 0, 255, 0, scene.radius() * 0.01f, new Vector(0,0,-scene.radius())));
+    skeletons.add(new Skeleton(parser, IKSolver.HeuristicMode.COMBINED_TRIK, scene, 0, 255, 255, scene.radius() * 0.01f, new Vector(0,0,scene.radius())));
     //parser.root().cull(true);
     //skeleton._root.cull(true);
     //for(Skeleton sk : skeletons) sk._reference.cull(true);
@@ -226,13 +228,13 @@ public void mousePressed(){
 
     protected void _createSolver(IKSolver.HeuristicMode mode) {
       _solver = new Tree(_root, mode);
-      _solver.setMaxError(0.01f);
+      _solver.setMaxError(calculateHeight(parser) * 0.01f);
       //_solver.setDirection(true);
       //_solver.setSearchingAreaRadius(0.3f, true);
       //_solver.setOrientationWeight(0.5f);
 
-      _solver.setTimesPerFrame(10);
-      _solver.setMaxIterations(10);
+      _solver.setTimesPerFrame(5);
+      _solver.setMaxIterations(5);
       _solver.setChainMaxIterations(3);
 
       //add task to scene

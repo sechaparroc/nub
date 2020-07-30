@@ -8,7 +8,6 @@ import nub.core.constraint.Constraint;
 import nub.core.constraint.Hinge;
 import nub.ik.solver.trik.Tree;
 import nub.ik.solver.trik.implementations.IKSolver;
-import nub.ik.solver.trik.implementations.SimpleTRIK;
 import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
