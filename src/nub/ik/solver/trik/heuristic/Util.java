@@ -1,5 +1,6 @@
 package nub.ik.solver.trik.heuristic;
 
+import nub.core.Node;
 import nub.core.constraint.Hinge;
 import nub.ik.solver.trik.NodeInformation;
 import nub.primitives.Quaternion;
@@ -23,23 +24,27 @@ public class Util {
         return rotation;
     }
 
-
-    public static Quaternion clampRotation(Quaternion rotation, float maxAngle) {
+    public static Quaternion clampRotation(Quaternion rotation, float maxAngle, float factor){
         float angle = rotation.angle();
         float angleVal = Math.abs(angle);
         float angleSign = Math.signum(angle);
         Vector axis = rotation.axis();
-        if (Math.abs(angle) > Math.PI) {
+        if (angleVal > Math.PI) {
             axis.multiply(-1);
             angle = angleSign * (float) (2 * Math.PI - angleVal);
         }
+        angle *= factor;
         if (Math.abs(angle) > maxAngle) {
-            rotation = new Quaternion(axis, angleSign * maxAngle);
+            angle = angleSign * maxAngle;
         }
-        return rotation;
+        return new Quaternion(axis, angle);
     }
 
-    protected static Quaternion clampRotation(Quaternion current, Quaternion initial, Quaternion end, float maxAngle) {
+    public static Quaternion clampRotation(Quaternion rotation, float maxAngle) {
+        return clampRotation(rotation, maxAngle, 1);
+    }
+
+    protected static Quaternion clampRotation(Quaternion current, Quaternion initial, Quaternion end, float maxAngle, float factor) {
         Quaternion diff = Quaternion.compose(initial.inverse(), end);
         diff.normalize();
         float angle = diff.angle();
@@ -50,12 +55,19 @@ public class Util {
             axis.multiply(-1);
             angle = angleSign * (float) (2 * Math.PI - angleVal);
         }
+        angle *= factor;
         if (Math.abs(angle) > maxAngle) {
-            diff = new Quaternion(axis, angleSign * maxAngle);
+            angle = angleSign * maxAngle;
         }
+        diff = new Quaternion(axis, angle);
         Quaternion delta = Quaternion.compose(current.inverse(), initial);
         delta.compose(diff);
+        delta.normalize();
         return delta;
+    }
+
+    protected static Quaternion clampRotation(Quaternion current, Quaternion initial, Quaternion end, float maxAngle) {
+        return clampRotation(current, initial, end, maxAngle, 1);
     }
 
     //Set the position of the end effector and the target to lie in the plane defined by the Hinge twist axis
@@ -95,9 +107,16 @@ public class Util {
         return twist;
     }
 
-    public static float findMaxDirectionalAngle(NodeInformation j_i, NodeInformation endEffector, float searchingAreaRadius){
+    public static float findMaxDirectionalAngle(NodeInformation j_i, NodeInformation endEffector, Node target, float searchingAreaRadius){
         float max_dist = searchingAreaRadius;
         float radius = Vector.distance(endEffector.positionCache(), j_i.positionCache());
+        float rado = Vector.distance(target.position(), j_i.positionCache());
+        float p = Math.min(rado, radius) / Math.max(rado, radius);
+        float norm_error = Vector.distance(endEffector.positionCache(), target.position());
+        norm_error /= searchingAreaRadius;
+
+        //max_dist = searchingAreaRadius * (1 + p);
+
         //find max theta allowed
        return  (float) Math.acos(Math.max(Math.min(1 - (max_dist * max_dist) / (2 * radius * radius), 1), -1));
     }
