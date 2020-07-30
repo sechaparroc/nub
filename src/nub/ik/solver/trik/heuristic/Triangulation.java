@@ -20,12 +20,11 @@ public class Triangulation extends Heuristic {
   public void prepare() {
     //Update cache of usable chain
     NodeInformation._updateCache(_context.usableChainInformation());
-    _context.setTopToBottom(false);
   }
 
   @Override
   public void applyActions(int i) {
-    applyTriangulation(this, i, i < _context.endEffectorId() - 1 && !_context.topToBottom());
+    applyTriangulation(this, i, i < _context.endEffectorId() - 1 && !_context.topToBottom(), _context.applyDelegation());
     if(i == _context.endEffectorId() - 1) return;
     if(_context.topToBottom()) {
       CCD.applyOrientationalCCD(this, i);
@@ -35,7 +34,7 @@ public class Triangulation extends Heuristic {
     }
   }
 
-  public static void applyTriangulation(Heuristic heuristic, int i, boolean updateCouple){
+  public static void applyTriangulation(Heuristic heuristic, int i, boolean updateCouple, boolean applyDelegation){
     Context context = heuristic._context;
     NodeInformation j_i = context.usableChainInformation().get(i);
     NodeInformation j_i1 = context.usableChainInformation().get(i + 1);
@@ -70,16 +69,19 @@ public class Triangulation extends Heuristic {
       float angle = Vector.angleBetween(a,c) - B;
       delta = new Quaternion(Vector.cross(a, c, null), angle);
     }
-    if (heuristic._smooth) delta = Util.clampRotation(delta, heuristic._smoothAngle);
     delta = Util.constraintRotation(j_i, delta);
+    if (applyDelegation) {
+        delta = Util.clampRotation(delta, context.maxAngleAtJoint(i), context.clamping(i));
+    }
+
     j_i.rotateAndUpdateCache(delta, false, context.endEffectorInformation()); //Apply local rotation
 
-    if(!updateCouple) return;
+    if(!updateCouple || i + 1 >= context.endEffectorId()) return;
     //update the next joint using CCD
     j_i1.updateCacheUsingReference();
-    CCD.applyCCD(heuristic, i + 1);
+    //Find q_i1
+    CCD.applyCCD(heuristic, i + 1, applyDelegation);
   }
-
 
   /*
    * Robust implementation of law of cosines to find angle C
