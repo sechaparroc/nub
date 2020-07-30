@@ -187,6 +187,21 @@ public class Node {
   public float _axesLength;
   public int _cameraStroke;
   public float _cameraLength;
+
+  // Constraint
+  public float _constraintFactor = 0.5f;
+  public int _constraintColor;
+
+  // Bone
+  protected boolean _boneDepth = false;
+  protected String _boneName = null;
+  protected int _boneColor;
+  protected float _boneRadius;
+  protected boolean _boneRoot = false;
+  protected boolean _boneAsCylinder = false;
+
+
+
   public Consumer<processing.core.PGraphics> _imrHUD;
   public processing.core.PShape _rmrHUD;
   // Rendering
@@ -338,6 +353,8 @@ public class Node {
     _frustumColor = 2113928960;
     // magenta (color(255, 0, 255)) encoded as a processing int rgb color
     _cameraStroke = -65281;
+    // green (color(0, 255, 0, 150)) encoded as a processing int rgb color
+    _constraintColor = -1778319616;
     _children = new ArrayList<Node>();
   }
 
@@ -2814,6 +2831,10 @@ public class Node {
           _torusColor = Graph.castToInt(params[0]);
           return;
         }
+        if (hint == CONSTRAINT && Graph.isNumInstance(params[0])){
+          _constraintFactor = Graph.castToFloat(params[0]);
+          return;
+        }
         break;
       case 2:
         if (hint == BULLSEYE && params[0] instanceof BullsEyeShape && Graph.isNumInstance(params[1])) {
@@ -2854,6 +2875,11 @@ public class Node {
             return;
           }
         }
+        if (hint == CONSTRAINT && Graph.isNumInstance(params[0])){
+          _constraintFactor = Graph.castToFloat(params[0]);
+          _constraintColor = Graph.castToInt(params[1]);
+          return;
+        }
         break;
       case 4:
         if (hint == FRUSTUM) {
@@ -2888,8 +2914,11 @@ public class Node {
             return;
           }
         }
-        break;
+      break;
     }
     System.out.println("Warning: some params in Node.configHint(hint, params) couldn't be parsed!");
   }
+
+
+
 }
