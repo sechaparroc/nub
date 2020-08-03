@@ -976,6 +976,9 @@ public class Scene extends Graph {
     if (node.isHintEnable(Node.CONSTRAINT)){
       drawConstraint(pg, node, node._constraintFactor, node._constraintColor);
     }
+    if(node.isHintEnable(Node.BONE)){
+      drawBone(pg, node);
+    }
   }
 
   @Override
@@ -1003,8 +1006,12 @@ public class Scene extends Graph {
       }
     }
 
-    if (node.isHintEnable(Node.CONSTRAINT)){
+    if (node.isHintEnable(Node.CONSTRAINT) && node.isPickingModeEnable(Node.CONSTRAINT)){
       drawConstraint(pg, node, node._constraintFactor, node._constraintColor);
+    }
+
+    if(node.isHintEnable(Node.BONE) && node.isPickingModeEnable(Node.BONE)){
+      drawBone(pg, node);
     }
 
     pg.pushStyle();
@@ -3385,7 +3392,7 @@ public class Scene extends Graph {
     pGraphics.pushMatrix();
     pGraphics.pushStyle();
     pGraphics.noStroke();
-
+    pGraphics.colorMode(PApplet.RGB, 255);
     pGraphics.fill(color);
     Quaternion referenceRotation = node.rotation().inverse();
 
@@ -3429,6 +3436,30 @@ public class Scene extends Graph {
       drawArc(pGraphics, boneLength * factor, -constraint.minAngle(), constraint.maxAngle(), 10);
     }
     pGraphics.popMatrix();
+    pGraphics.popStyle();
+  }
+
+  public static void drawBone(PGraphics pGraphics, Node node){
+    pGraphics.pushStyle();
+    pGraphics.colorMode(PApplet.RGB, 255);
+    if(!node._boneDepth) pGraphics.hint(PConstants.DISABLE_DEPTH_TEST);
+    pGraphics.stroke(node._boneColor);
+    pGraphics.fill(node._boneColor);
+    Vector v = node.location(new Vector(), node.reference());
+    if(pGraphics.is2D()){
+      pGraphics.line(0, 0, v.x(), v.y());
+    } else{
+      if(node._boneRadius <= 0){
+        pGraphics.line(0, 0, 0, v.x(), v.y(), v.z());
+      } else{
+        pGraphics.pushMatrix();
+        Quaternion q = new Quaternion(new Vector(0, 0, 1), v);
+        pGraphics.rotate(q.angle(), q.axis()._vector[0], q.axis()._vector[1], q.axis()._vector[2]);
+        Scene.drawCylinder(pGraphics, node._boneRadius, v.magnitude());
+        pGraphics.popMatrix();
+      }
+    }
+    if(!node._boneDepth) pGraphics.hint(PConstants.ENABLE_DEPTH_TEST);
     pGraphics.popStyle();
   }
 }
