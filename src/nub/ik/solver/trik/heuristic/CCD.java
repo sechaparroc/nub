@@ -76,7 +76,7 @@ public class CCD extends Heuristic {
   public static void applyOrientationalCCD(Heuristic heuristic, int i){
     Context context = heuristic._context;
     NodeInformation j_i = context.usableChainInformation().get(i);
-    if (context.direction()) {
+    if (context.direction() && i != context.endEffectorId()) {
       float maxAngle = Util.findMaxDirectionalAngle(j_i, context.endEffectorInformation(), context.worldTarget(), context.searchingAreaRadius());
       Quaternion deltaDirection = findOrientationalCCD(j_i, context.usableChainInformation().get(context.endEffectorId()), context.worldTarget());
       deltaDirection = Util.constraintRotation(j_i, deltaDirection);
