@@ -202,6 +202,12 @@ public class Graph {
   protected boolean _isProjectionViewInverseCached;
 
   // TODO these three to are not only related to Quaternion.from but mainly to hint stuff
+  /**
+   * Returns {@code true} if {@code o} is instance of {@link Boolean} and {@code false} otherwise.
+   */
+  public static boolean isBooleanInstance(Object o) {
+    return o instanceof Boolean;
+  }
 
   /**
    * Returns {@code true} if {@code o} is instance of {@link Integer}, {@link Float} or {@link Double},
@@ -209,6 +215,14 @@ public class Graph {
    */
   public static boolean isNumInstance(Object o) {
     return o instanceof Float || o instanceof Integer || o instanceof Double;
+  }
+
+  /**
+   * Cast {@code o} to a {@link Boolean}. Returns {@code null} if {@code o} is not a boolean instance
+   * (See {@link #isNumInstance(Object)}).
+   */
+  public static Boolean castToBoolean(Object o) {
+    return isBooleanInstance(o) ? (Boolean) o : null;
   }
 
   /**

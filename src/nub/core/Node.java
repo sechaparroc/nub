@@ -193,12 +193,9 @@ public class Node {
   public int _constraintColor;
 
   // Bone
-  protected boolean _boneDepth = false;
-  protected String _boneName = null;
-  protected int _boneColor;
-  protected float _boneRadius;
-  protected boolean _boneRoot = false;
-  protected boolean _boneAsCylinder = false;
+  public boolean _boneDepth = false;
+  public int _boneColor;
+  public float _boneRadius = 0; //A radius greater than 0 will draw a bone as a Cylinder
 
 
 
@@ -355,6 +352,8 @@ public class Node {
     _cameraStroke = -65281;
     // green (color(0, 255, 0, 150)) encoded as a processing int rgb color
     _constraintColor = -1778319616;
+    // white (color(255, 255, 255)) encoded as a processing int rgb color
+    _boneColor = -1;
     _children = new ArrayList<Node>();
   }
 
@@ -2832,7 +2831,11 @@ public class Node {
           return;
         }
         if (hint == CONSTRAINT && Graph.isNumInstance(params[0])){
-          _constraintFactor = Graph.castToFloat(params[0]);
+          _constraintColor = Graph.castToInt(params[0]);
+          return;
+        }
+        if (hint == BONE && Graph.isNumInstance(params[0])){
+          _boneColor = Graph.castToInt(params[0]);
           return;
         }
         break;
@@ -2875,10 +2878,29 @@ public class Node {
             return;
           }
         }
-        if (hint == CONSTRAINT && Graph.isNumInstance(params[0])){
-          _constraintFactor = Graph.castToFloat(params[0]);
-          _constraintColor = Graph.castToInt(params[1]);
-          return;
+        if (hint == CONSTRAINT){
+          if (Graph.isNumInstance(params[0]) && Graph.isNumInstance(params[1])) {
+            _constraintColor = Graph.castToInt(params[0]);
+            _constraintFactor = Graph.castToFloat(params[1]);
+            return;
+          }
+        }
+        if (hint == BONE){
+          if (Graph.isNumInstance(params[0]) && Graph.isNumInstance(params[1])) {
+            _boneColor = Graph.castToInt(params[0]);
+            _boneRadius = Graph.castToFloat(params[1]);
+            return;
+          }
+        }
+        break;
+      case 3:
+        if (hint == BONE){
+          if (Graph.isNumInstance(params[0]) && Graph.isNumInstance(params[1]) && Graph.isBooleanInstance(params[2])) {
+            _boneColor = Graph.castToInt(params[0]);
+            _boneRadius = Graph.castToFloat(params[1]);
+            _boneDepth = Graph.castToBoolean(params[2]);
+            return;
+          }
         }
         break;
       case 4:
