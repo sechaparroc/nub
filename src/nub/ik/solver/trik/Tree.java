@@ -61,14 +61,14 @@ public class Tree extends Solver {
   }
 
   protected TreeNode _root;
-  protected IKSolver.HeuristicMode _mode = IKSolver.HeuristicMode.COMBINED_EXPRESSIVE;
+  protected IKSolver.HeuristicMode _mode;
   protected float _current = 10e10f, _best = 10e10f;
   protected HashMap<Node, Node> _endEffectorMap = new HashMap<>();
   protected float _distanceFactor = 5;
 
 
   public Tree(Node root) {
-    this(root, IKSolver.HeuristicMode.COMBINED_EXPRESSIVE);
+    this(root, IKSolver.HeuristicMode.COMBINED_TRIK);
   }
 
   public Tree(Node root, IKSolver.HeuristicMode mode) {
