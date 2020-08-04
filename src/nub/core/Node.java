@@ -195,6 +195,7 @@ public class Node {
   // Bone
   public boolean _boneDepth = false;
   public int _boneColor;
+  public float _boneWidth = 0; //A radius greater than 0 will draw a bone as a Cylinder
   public float _boneRadius = 0; //A radius greater than 0 will draw a bone as a Cylinder
 
 
@@ -2901,6 +2902,12 @@ public class Node {
             _boneDepth = Graph.castToBoolean(params[2]);
             return;
           }
+          if (Graph.isNumInstance(params[0]) && Graph.isNumInstance(params[1]) && Graph.isNumInstance(params[2])) {
+            _boneColor = Graph.castToInt(params[0]);
+            _boneRadius = Graph.castToFloat(params[1]);
+            _boneWidth = Graph.castToFloat(params[2]);
+            return;
+          }
         }
         break;
       case 4:
@@ -2911,6 +2918,16 @@ public class Node {
             _frustumtype = (Graph.Type) params[1];
             _zNear = Graph.castToFloat(params[2]);
             _zFar = Graph.castToFloat(params[3]);
+            return;
+          }
+        }
+
+        if (hint == BONE){
+          if (Graph.isNumInstance(params[0]) && Graph.isNumInstance(params[1]) && Graph.isNumInstance(params[2]) && Graph.isBooleanInstance(params[3])) {
+            _boneColor = Graph.castToInt(params[0]);
+            _boneRadius = Graph.castToFloat(params[1]);
+            _boneWidth = Graph.castToFloat(params[2]);
+            _boneDepth = Graph.castToBoolean(params[3]);
             return;
           }
         }
