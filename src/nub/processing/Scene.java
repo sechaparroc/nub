@@ -3446,16 +3446,24 @@ public class Scene extends Graph {
     pGraphics.stroke(node._boneColor);
     pGraphics.fill(node._boneColor);
     Vector v = node.location(new Vector(), node.reference());
+    float m = v.magnitude();
+    v.normalize();
     if(pGraphics.is2D()){
-      pGraphics.line(0, 0, v.x(), v.y());
+      pGraphics.line(node._boneRadius * v.x(), node._boneRadius * v.y(), (m - node._boneRadius) * v.x(), (m - node._boneRadius) * v.y());
+      pGraphics.ellipse(0, 0, node._boneRadius * 2, node._boneRadius * 2);
     } else{
-      if(node._boneRadius <= 0){
-        pGraphics.line(0, 0, 0, v.x(), v.y(), v.z());
+      pGraphics.sphere(node._boneRadius);
+      if(node._boneWidth <= 0){
+        pGraphics.line(node._boneRadius * v.x(), node._boneRadius * v.y(), node._boneRadius * v.z(),
+                (m - node._boneRadius) * v.x(), (m - node._boneRadius) * v.y(), (m - node._boneRadius) * v.z());
       } else{
+        pGraphics.noStroke();
         pGraphics.pushMatrix();
         Quaternion q = new Quaternion(new Vector(0, 0, 1), v);
+        Vector pos = Vector.multiply(v, node._boneRadius);
+        pGraphics.translate(pos.x(), pos.y(), pos.z());
         pGraphics.rotate(q.angle(), q.axis()._vector[0], q.axis()._vector[1], q.axis()._vector[2]);
-        Scene.drawCylinder(pGraphics, node._boneRadius, v.magnitude());
+        Scene.drawCylinder(pGraphics, node._boneWidth, m - 2 * node._boneRadius);
         pGraphics.popMatrix();
       }
     }
