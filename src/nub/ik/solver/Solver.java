@@ -12,7 +12,6 @@
 package nub.ik.solver;
 
 import nub.core.Node;
-import nub.ik.visualization.VisualizerMediator;
 
 import java.util.Iterator;
 
@@ -36,9 +35,6 @@ public abstract class Solver {
   protected boolean _change_temp = false; //TODO : Clean this!
   protected boolean _accumulate = false;
   protected float _accumulatedError = 0; //TODO : Remove this
-
-  protected VisualizerMediator _mediator;
-  protected boolean _enableMediator = false;
 
   /*Getters and setters*/
   public int lastIteration() {
@@ -133,28 +129,4 @@ public abstract class Solver {
   }
 
   public abstract void setTarget(Node endEffector, Node target);
-
-
-  //Animation Stuff
-  //TODO set as abstract
-
-  //TODO: Perhaps change it to use an iterator pattern
-  public Iterator<? extends Node> iterator() {
-    return null;
-  }
-
-  public VisualizerMediator mediator() {
-    return _mediator;
-  }
-
-  public void setMediator(VisualizerMediator mediator) {
-    _mediator = mediator;
-  }
-
-  public void enableMediator(boolean enable) {
-    _enableMediator = enable;
-  }
-
-  public void registerStructure(VisualizerMediator mediator) {
-  }
 }

@@ -4,7 +4,6 @@ import nub.core.Graph;
 import nub.core.Node;
 import nub.core.constraint.Constraint;
 import nub.ik.solver.Solver;
-import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 
@@ -459,14 +458,10 @@ public class Context {
       }
     }
 
-    int r = (int) (Math.random() * 255);
-    int g = (int) (Math.random() * 255);
-    int b = (int) (Math.random() * 255);
     for (Node joint : chain) {
-      Joint newJoint = new Joint(r, g, b, 3);
-      if (copy.isEmpty()) {
-        newJoint.setRoot(true);
-      }
+      Node newJoint = new Node();
+      newJoint.enableHint(Node.CONSTRAINT);
+      if (!copy.isEmpty()) newJoint.enableHint(Node.BONE);
       newJoint.setReference(ref);
       newJoint.setPosition(joint.position().get());
       newJoint.setOrientation(joint.orientation().get());
