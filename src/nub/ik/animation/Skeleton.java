@@ -18,7 +18,6 @@ import nub.core.constraint.BallAndSocket;
 import nub.core.constraint.Constraint;
 import nub.core.constraint.Hinge;
 import nub.ik.solver.Solver;
-import nub.ik.solver.trik.Tree;
 import nub.primitives.Quaternion;
 import nub.processing.Scene;
 import processing.core.PGraphics;
@@ -59,13 +58,15 @@ public class Skeleton {
     _targets = new HashMap<String, Node>();
     _constraints = new HashMap<Node, Constraint>();
     _solvers = new HashMap<Node, Solver>();
-    _reference = reference;
+    if(reference == null){
+      _reference = new Node();
+      _reference.tagging = false;
+    }
   }
 
 
   public Skeleton() {
-    this(new Node());
-    _reference.tagging = false;
+    this((Node) null);
   }
 
   /**
