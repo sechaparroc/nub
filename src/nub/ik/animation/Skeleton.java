@@ -25,25 +25,21 @@ import processing.core.PGraphics;
 import processing.data.JSONArray;
 import processing.data.JSONObject;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A Wrapper class that facilitates the creation of an Skeleton i.e. a tree of {@link Node}s,
  * its manipulation and its animation.
  */
 public class Skeleton {
-  HashMap<String, Node> _joints;
-  HashMap<Node, String> _names;
-  HashMap<Node, Constraint> _constraints;
-  HashMap<Node, Solver> _solvers;
-  HashMap<String, Node> _targets;
+  protected HashMap<String, Node> _joints;
+  protected HashMap<Node, String> _names;
+  protected HashMap<Node, Constraint> _constraints;
+  protected HashMap<Node, Solver> _solvers;
+  protected HashMap<String, Node> _targets;
 
-  Node _reference;
-  Scene _scene;
-  float _targetRadius;
+  protected Node _reference;
+  protected float _targetRadius = 7;
 
   /**
    * Constructor for a Skeleton.
@@ -57,16 +53,19 @@ public class Skeleton {
    * you require to relate some targets with the appropiate end effectors. A Target
    * is represented by default as a red ball.
    * */
-  public Skeleton(Scene scene) {
+  public Skeleton(Node reference) {
     _joints = new HashMap<String, Node>();
     _names = new HashMap<Node, String>();
     _targets = new HashMap<String, Node>();
     _constraints = new HashMap<Node, Constraint>();
     _solvers = new HashMap<Node, Solver>();
-    _reference = new Node(); //dummy node to contain all generated Joints
+    _reference = reference;
+  }
+
+
+  public Skeleton() {
+    this(new Node());
     _reference.tagging = false;
-    _scene = scene;
-    _targetRadius = 0.06f * scene.radius();
   }
 
   /**
@@ -76,8 +75,7 @@ public class Skeleton {
    * @see  Skeleton#_load(String)
    * */
 
-  public Skeleton(Scene scene, String file) {
-    this(scene);
+  public Skeleton(String file) {
     _load(file);
   }
 
@@ -88,53 +86,43 @@ public class Skeleton {
    * @param name    The name of the new Joint
    * @param color   The rgb color of the joint
    * @param radius  The radius of the ball that represents the Joint.
-   * @return the created {@link Joint}, use this reference to modify its position and orientation.
+   * @return the created {@link Node}, use this reference to modify its position and orientation.
    * Warning: you must not set explicitly the reference of the created Joint.
    */
-  public Joint addJoint(String name, int color, float radius) {
-    int r = (int) _scene.context().red(color);
-    int g = (int) _scene.context().green(color);
-    int b = (int) _scene.context().blue(color);
-    return addJoint(name, r, g, b, radius);
-  }
-
-  /**
-   * Same as {@code return addJoint(name, color(r,g,b), radius)}
-   */
-  public Joint addJoint(String name, int red, int green, int blue, float radius) {
+  public Node addJoint(String name, int color, float radius) {
     if (_joints.containsKey(name)) {
       Node node = _joints.remove(name);
       _names.remove(node);
     }
+    Node joint = new Node(pg -> {
+      pg.pushStyle();
+      pg.noStroke();
+      pg.fill(color);
+      if(pg.is3D()) pg.sphere(radius);
+      else pg.ellipse(0,0, 2 * radius, 2 * radius);
+      pg.popStyle();
+    });
+    joint.enableHint(Node.CONSTRAINT);
 
-    Joint joint = new Joint(red, green, blue, radius);
     _joints.put(name, joint);
     _names.put(joint, name);
     _constraints.put(joint, joint.constraint());
     joint.setReference(_reference);
-    joint.setRoot(true);
     return joint;
-  }
-
-  /**
-   * @return the Scene related with the skeleton.
-   */
-  public Scene scene() {
-    return _scene;
   }
 
   /**
    * Same as {@code return addJoint(name, color(255 * random(), 255 * random(), 255 * random()), radius)}
    */
-  public Joint addJoint(String name, float radius) {
-    return addJoint(name, (int) (255 * Math.random()), (int) (255 * Math.random()), (int) (255 * Math.random()), radius);
+  public Node addJoint(String name, float radius) {
+    return addJoint(name, Scene.pApplet.color(255 * (float) Math.random(), 255 * (float) Math.random(), 255 * (float) Math.random()), radius);
   }
 
   /**
-   * Same as {@code return addJoint(name, color(255 * random(), 255 * random(), 255 * random()), scene.radius() * 0.05)}
+   * Same as {@code return addJoint(name, color(255 * random(), 255 * random(), 255 * random()), 0)}
    */
-  public Joint addJoint(String name) {
-    return addJoint(name, _scene.radius() * 0.05f);
+  public Node addJoint(String name) {
+    return addJoint(name, 5);
   }
 
   /**
@@ -155,19 +143,15 @@ public class Skeleton {
    * @param radius  The radius of the ball that represents the Joint.
    * @return
    */
-  public Joint addJoint(String name, String reference, int color, float radius) {
-    int r = (int) _scene.context().red(color);
-    int g = (int) _scene.context().green(color);
-    int b = (int) _scene.context().blue(color);
-    return addJoint(name, reference, r, g, b, radius);
-  }
-
-  public Joint addJoint(String name, String reference, int red, int green, int blue, float radius) {
+  public Node addJoint(String name, String reference, int color, float radius) {
     if (_joints.containsKey(name)) {
       Node node = _joints.remove(name);
       _names.remove(node);
     }
-    Joint joint = new Joint(red, green, blue, radius);
+
+    Node joint = new Node();
+    joint.enableHint(Node.CONSTRAINT);
+    joint.enableHint(Node.BONE, color, radius, radius / 4f, false);
     _joints.put(name, joint);
     _names.put(joint, name);
     _constraints.put(joint, joint.constraint());
@@ -175,8 +159,8 @@ public class Skeleton {
     return joint;
   }
 
-  public Joint addJoint(String name, String reference) {
-    return addJoint(name, reference, (int) (255 * Math.random()), (int) (255 * Math.random()), (int) (255 * Math.random()), _scene.radius() * 0.05f);
+  public Node addJoint(String name, String reference) {
+    return addJoint(name, reference, Scene.pApplet.color(255 * (float) Math.random(), 255 * (float) Math.random(), 255 * (float) Math.random()), 5);
   }
 
   public void addJoint(String name, String reference, Node node) {
@@ -251,7 +235,7 @@ public class Skeleton {
     target.setPosition(endEffector.position().get());
     target.setOrientation(endEffector.orientation().get());
 
-    _scene.addIKTarget(endEffector, target);
+    Scene.addIKTarget(endEffector, target);
     return target;
   }
 
@@ -273,7 +257,7 @@ public class Skeleton {
    */
   public void addTarget(String name, Node target) {
     target.setReference(_reference);
-    _scene.addIKTarget(_joints.get(name), target);
+    Scene.addIKTarget(_joints.get(name), target);
   }
 
   /**
@@ -297,6 +281,10 @@ public class Skeleton {
    */
   public String jointName(Node node) {
     return _names.get(node);
+  }
+
+  public HashMap<Node, String> names(){
+    return _names;
   }
 
   public Node target(String name) {
@@ -422,8 +410,6 @@ public class Skeleton {
     for (Node child : _reference.children()) {
       if (!_solvers.containsKey(child)) {
         Solver s = Graph.registerTreeSolver(child);
-        if(s instanceof Tree)
-          ((Tree) s).set2D(_scene.is2D());
         _solvers.put(child, s);
       } else {
         Graph.executeSolver(_solvers.get(child));
@@ -534,18 +520,10 @@ public class Skeleton {
       joint.setFloat("q_z", node.rotation().z());
       joint.setFloat("q_w", node.rotation().w());
       _saveConstraint(joint, node);
-      if (node instanceof Joint) {
-        joint.setFloat("radius", ((Joint) node).radius());
-        joint.setFloat("red", ((Joint) node).red());
-        joint.setFloat("green", ((Joint) node).green());
-        joint.setFloat("blue", ((Joint) node).blue());
-      } else {
-        joint.setFloat("radius", _scene.radius() * 0.05f);
-        joint.setFloat("red", 0);
-        joint.setFloat("green", 255);
-        joint.setFloat("blue", 0);
-      }
+      joint.setFloat("radius", node._boneRadius);
+      joint.setFloat("width", node._boneWidth);
       jsonArray.setJSONObject(i, joint);
+      joint.setInt("color", node._boneColor);
     }
     int idx = i;
     String ref = _names.get(node);
@@ -561,19 +539,15 @@ public class Skeleton {
       JSONObject jsonJoint = jointsArray.getJSONObject(i);
       if (jsonJoint.getString("name").equals("")) continue;
       //add joint to the skeleton
-      Joint joint;
+      Node joint;
       if (jsonJoint.getString("reference").equals("")) {
         joint = addJoint(jsonJoint.getString("name"),
-            jsonJoint.getInt("red"),
-            jsonJoint.getInt("green"),
-            jsonJoint.getInt("blue"),
+            jsonJoint.getInt("color"),
             jsonJoint.getFloat("radius"));
       } else {
         joint = addJoint(jsonJoint.getString("name"),
             jsonJoint.getString("reference"),
-            jsonJoint.getInt("red"),
-            jsonJoint.getInt("green"),
-            jsonJoint.getInt("blue"),
+            jsonJoint.getInt("color"),
             jsonJoint.getFloat("radius"));
       }
       joint.setTranslation(jsonJoint.getFloat("x"), jsonJoint.getFloat("y"), jsonJoint.getFloat("z"));
@@ -677,13 +651,7 @@ public class Skeleton {
       jsonTarget.setFloat("q_y", node.rotation().y());
       jsonTarget.setFloat("q_z", node.rotation().z());
       jsonTarget.setFloat("q_w", node.rotation().w());
-
-      Node joint = _joints.get(entry.getKey());
-      if (joint instanceof Joint) {
-        jsonTarget.setFloat("radius", ((Joint) joint).radius() * 1.2f);
-      } else {
-        jsonTarget.setFloat("radius", _scene.radius() * 0.07f);
-      }
+      jsonTarget.setFloat("radius", _targetRadius);
       jsonTargets.setJSONObject(i++, jsonTarget);
     }
   }
