@@ -2,9 +2,9 @@ package nub.ik.loader.bvh;
 
 import nub.core.Node;
 import nub.core.constraint.AxisPlaneConstraint;
-import nub.core.constraint.Constraint;
 import nub.core.constraint.SphericalPolygon;
-import nub.ik.animation.Joint;
+import nub.ik.animation.Posture;
+import nub.ik.animation.Skeleton;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -14,7 +14,6 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,37 +26,25 @@ import java.util.List;
  * Created by sebchaparr on 23/03/18.
  */
 public class BVHLoader {
-    //TODO : Update
     protected BufferedReader _buffer;
     //A Joint is a Node with some Properties
-    //TODO: Consider _id() public?
-    protected HashMap<Integer, Properties> _joint;
     protected int _frames;
     protected int _period;
-    protected Class<? extends Node> _class;
-    protected Node _root;
-    protected List<Node> _branch;
-    protected HashMap<Integer, ArrayList<Node>> _poses;
-    protected int _currentPose;
+    protected Skeleton _skeleton;
+    protected List<Posture> _postures;
+    protected HashMap<Integer, Properties> _joint;
+    protected int _currentPosture;
     protected boolean _loop;
     protected float _radius;
 
 
     public BVHLoader(String path, Node reference) {
-        _class = Joint.class;
         _radius = 5f;
         _setup(path, reference);
     }
 
-
     public BVHLoader(String path, Scene scene, Node reference) {
-        _class = Joint.class;
         _radius = scene.radius() * 0.01f;
-        _setup(path, reference);
-    }
-
-    public BVHLoader(Class<? extends Node> nodeClass, String path, Node reference) {
-        _class = nodeClass;
         _setup(path, reference);
     }
 
@@ -85,30 +72,27 @@ public class BVHLoader {
         }
     }
 
-    public List<Node> branch() {
-        return _branch;
+    public int postures() {
+        return _postures.size();
     }
 
-    public int poses() {
-        return _poses.get(_root.id()).size();
+    public Skeleton root() {
+        return _skeleton;
     }
 
-    public Node root() {
-        return _root;
-    }
-
-    public int currentPose() {
-        return _currentPose;
+    public int currentPosture() {
+        return _currentPosture;
     }
 
     protected void _setup(String path, Node reference) {
         _frames = 0;
         _period = 0;
-        _currentPose = 0;
+        _currentPosture = 0;
         _joint = new HashMap<>();
-        _poses = new HashMap<>();
         _loop = true;
-        _readHeader(path, reference);
+        _skeleton = new Skeleton(reference);
+        _postures = new ArrayList<Posture>();
+        _readHeader(path);
         _saveFrames();
     }
 
@@ -117,29 +101,29 @@ public class BVHLoader {
      * Reads a .bvh file from the given path and builds
      * A Hierarchy of Nodes given by the .bvh header
      */
-    protected Node _readHeader(String path, Node reference) {
-        Node root = null;
+    protected void _readHeader(String path) {
         try {
             _buffer = new BufferedReader(new FileReader(path));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
-            return null;
+            return;
         }
-        Node current = root;
-        Node currentRoot = reference;
+        Node current = null;
+        Node currentRoot = _skeleton.reference();
         Properties currentProperties = null;
         boolean boneBraceOpened = false;
+        boolean rootRead = false;
         //READ ALL THE HEADER
         String line = "";
         while (!line.contains("FRAME_TIME") &&
                 !line.contains("FRAME TIME")) {
             try {
                 line = _buffer.readLine();
-                if (line == null) return root;
+                if (line == null) return;
                 line = line.toUpperCase();
             } catch (IOException e) {
                 e.printStackTrace();
-                return null;
+                return;
             }
             //clean line
             line.replace("\t", " ");
@@ -152,14 +136,14 @@ public class BVHLoader {
             String[] expression = line.split(" ");
             //Check Type
             if (expression[0].equals("ROOT")) {
-                if (root != null) {
+                if (rootRead) {
                     //TODO : Allow multiple ROOTS
                     while (!line.equals("MOTION")) {
                         try {
                             line = _buffer.readLine();
                         } catch (IOException e) {
                             e.printStackTrace();
-                            return null;
+                            return;
                         }
                         //clean line
                         line.replace("\t", " ");
@@ -167,33 +151,15 @@ public class BVHLoader {
                         line.replace("\r", "");
                         line.replace(":", " ");
                     }
-                    return root;
+                    return;
                 }
-                //Create a Frame
-                try {
-                    root = _class.getConstructor().newInstance();
-
-                } catch (InstantiationException e) {
-                    e.printStackTrace();
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                } catch (NoSuchMethodException e) {
-                    e.printStackTrace();
-                } catch (InvocationTargetException e) {
-                    e.printStackTrace();
-                }
-                root.setReference(reference);
-                current = root;
-                currentRoot = root;
+                //Create a Joint and add to the skeleton
+                current = _skeleton.addJoint(expression[1], -1,_radius);
+                currentRoot = current;
                 currentProperties = new Properties(expression[1]);
-                if (root instanceof Joint) {
-                    ((Joint) current).setName(expression[1]);
-                    ((Joint) current).setRadius(_radius);
-                    ((Joint) current).setColor(255, 255, 255);
-                }
                 _joint.put(current.id(), currentProperties);
-                _poses.put(current.id(), new ArrayList<>());
                 boneBraceOpened = true;
+                rootRead = true;
             } else if (expression[0].equals("OFFSET")) {
                 if (!boneBraceOpened) continue;
                 float x = Float.valueOf(expression[1]);
@@ -206,26 +172,10 @@ public class BVHLoader {
                     currentProperties.addChannelType(expression[i + 2]);
             } else if (expression[0].equals("JOINT")) {
                 //Create a node
-                try {
-                    current = _class.getConstructor().newInstance();
-                    if (current instanceof Joint) {
-                        ((Joint) current).setRadius(_radius);
-                        ((Joint) current).setColor(255, 255, 255);
-                    }
-                } catch (InstantiationException e) {
-                    e.printStackTrace();
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                } catch (NoSuchMethodException e) {
-                    e.printStackTrace();
-                } catch (InvocationTargetException e) {
-                    e.printStackTrace();
-                }
-                current.setReference(currentRoot);
+                current = _skeleton.addJoint(expression[1], _skeleton.jointName(currentRoot), -1, _radius);
                 currentRoot = current;
                 currentProperties = new Properties(expression[1]);
                 _joint.put(current.id(), currentProperties);
-                _poses.put(current.id(), new ArrayList<>());
                 boneBraceOpened = true;
             } else if (expression[0].equals("END_SITE")) {
                 boneBraceOpened = false;
@@ -249,11 +199,6 @@ public class BVHLoader {
                 }
             }
         }
-        _root = root;
-        if (root instanceof Joint) ((Joint) root).setRoot(true);
-
-        _branch = Scene.branch(_root);
-        return root;
     }
 
     public void setLoop(boolean loop){
@@ -279,6 +224,7 @@ public class BVHLoader {
             e.printStackTrace();
             return false;
         }
+        Posture posture = new Posture(_skeleton);
 
         //clean line
         line.replace("\t", " ");
@@ -289,7 +235,8 @@ public class BVHLoader {
         String[] expression = line.split(" ");
         //traverse each line
         int i = 0;
-        for (Node current : _branch) {
+        for (Node current : Scene.branch(_skeleton.reference())) {
+            if(current == _skeleton.reference()) continue;
             Properties properties = _joint.get(current.id());
             boolean translationInfo = false;
             boolean rotationInfo = false;
@@ -332,61 +279,44 @@ public class BVHLoader {
                 }
                 i++;
             }
+            String name = _skeleton.jointName(current);
             // Use the shortest rotation between two quaternions
             // See: https://stackoverflow.com/questions/2886606/flipping-issue-when-interpolating-rotations-using-quaternions
-            Node prev = _poses.get(current.id()).size() > 0 ? _poses.get(current.id()).get(_poses.get(current.id()).size() - 1) : current;
+            Node prev = _postures.size() > 0 ? _postures.get(_postures.size() - 1).jointState(name) : current;
             if (Quaternion.dot(rotation, prev.rotation()) < 0) {
                 // change sign
                 rotation.negate();
             }
-            Node next = Node.detach(current.translation().get(), current.rotation().get(), 1);
-            if (rotationInfo) {
-                next.setRotation(rotation);
-            }
-            if (translationInfo) {
-                next.setTranslation(translation);
-            }
-            _poses.get(current.id()).add(next);
+            if(rotationInfo) posture.jointState(name).setRotation(rotation);
+            if(translationInfo) posture.jointState(name).setTranslation(translation);
         }
+        _postures.add(posture);
         return true;
     }
 
     public void nextPose(boolean remove) {
-        if (_currentPose >= _poses.get(_root.id()).size()) {
-            if (_loop) _currentPose = 0;
+        if (_currentPosture >= _postures.size()) {
+            if (_loop) _currentPosture = 0;
             else return;
         }
-        for (Node node : _branch) {
-            Constraint c = node.constraint();
-            //node.setConstraint(null);
-            node.setRotation(_poses.get(node.id()).get(_currentPose).rotation().get());
-            node.setTranslation(_poses.get(node.id()).get(_currentPose).translation().get());
-            node.setConstraint(c);
-            if (remove) _poses.get(node.id()).remove(_currentPose);
-        }
-        if (!remove) _currentPose++;
+        _postures.get(_currentPosture).loadValues(_skeleton);
+        if (remove) _postures.remove(_currentPosture);
+        if (!remove) _currentPosture++;
     }
 
     public void nextPose() {
         nextPose(false);
     }
 
-    public void poseAt(int idx) {
-        if (idx >= _poses.get(_root.id()).size()) {
+    public void postureAt(int idx) {
+        if (idx >= _postures.size()) {
             return;
         }
-        for (Node node : _branch) {
-            Constraint c = node.constraint();
-            node.setConstraint(null);
-            node.setRotation(_poses.get(node.id()).get(idx).rotation().get());
-            node.setTranslation(_poses.get(node.id()).get(idx).translation().get());
-            node.setConstraint(c);
-        }
-        _currentPose = idx;
+        _postures.get(idx).loadValues(_skeleton);
+        _currentPosture = idx;
     }
 
     protected Vector findRestVector(Node node) {
-        List<Node> poses = _poses.get(node.id());
         Vector init = new Vector(0, 1, 0); //use any vector
         Vector rest = init.get();
         if (node.children().size() == 1) {
@@ -406,8 +336,10 @@ public class BVHLoader {
                 return centroid;
             }
         }
+        String name = _skeleton.jointName(node);
         Quaternion restRotation = node.rotation().get();
-        for (Node keyNode : poses) {
+        for (int i = 0; i < _postures.size(); i++) {
+            Node keyNode = _postures.get(i).jointState(name);
             Quaternion delta = Quaternion.compose(restRotation.inverse(), keyNode.rotation());
             delta.normalize();
             rest.add(delta.rotate(init));
@@ -417,14 +349,14 @@ public class BVHLoader {
             rest = init;
 
 
-        rest.multiply(1f / (poses.size() + 1));
+        rest.multiply(1f / (_postures.size() + 1));
         rest.normalize();
         return rest.get();
     }
 
     public void generateConstraints() {
-        for (Node node : _branch) {
-            if (node == _root) continue;
+        for (Node node : _skeleton.BFS()) {
+            if (node.reference() == _skeleton.reference()) continue;
             generateConstraint(node);
         }
     }
@@ -433,7 +365,6 @@ public class BVHLoader {
 
     protected void generateConstraint(Node node) {
         Vector rest = findRestVector(node);
-        List<Node> poses = _poses.get(node.id());
         Quaternion restRotation = node.rotation().get();
         Vector up = rest.orthogonalVector();
         Vector right = Vector.cross(rest, up, null);
@@ -445,7 +376,9 @@ public class BVHLoader {
         float minTwist = 0, maxTwist = 0;
         float upAngle = 0, downAngle = 0, leftAngle = 0, rightAngle = 0;
 
-        for (Node keyNode : poses) {
+        String name = _skeleton.jointName(node);
+        for (int i = 0; i < _postures.size(); i++) {
+            Node keyNode = _postures.get(i).jointState(name);
             Quaternion delta = Quaternion.compose(restRotation.inverse(), keyNode.rotation());
             delta.normalize();
             if (Quaternion.dot(delta, restRotation) < 0) {
@@ -459,16 +392,12 @@ public class BVHLoader {
             if(restAng > 0)maxTwist = Math.max(restAng, maxTwist);
             else minTwist = Math.max(-restAng, minTwist);
 
-            Vector restUp = Vector.projectVectorOnPlane(delta.rotate(rest), up);
-            Quaternion q = new Quaternion(rest, restUp);
             Quaternion deltaUp = decomposeQuaternion(delta, up);
             float upAng = calcAngle(up , deltaUp);
 
             if(upAng > 0)upAngle = Math.max(upAng, upAngle);
             else downAngle = Math.max(-upAng, downAngle);
 
-            Vector restright = Vector.projectVectorOnPlane(delta.rotate(rest), right);
-            q = new Quaternion(rest, restright);
             Quaternion deltaRight = decomposeQuaternion(delta, right);
             float rightAng = calcAngle(right , deltaRight);
 
@@ -493,7 +422,6 @@ public class BVHLoader {
 
     protected float calcAngle(Vector axis, Quaternion q){
         axis = q.inverseRotate(axis);
-
         Vector rotAxis = q.axis();
         float angle = q.angle();
         if (rotAxis.dot(axis) < 0) angle = -angle;
@@ -506,7 +434,6 @@ public class BVHLoader {
     protected Quaternion decomposeQuaternion(Quaternion quaternion, Vector axis) {
         //pass axis to local space
         axis = quaternion.inverseRotate(axis);
-
         Vector rotationAxis = new Vector(quaternion._quaternion[0], quaternion._quaternion[1], quaternion._quaternion[2]);
         rotationAxis = Vector.projectVectorOnAxis(rotationAxis, axis); // w.r.t idle
         //Get rotation component on Axis direction
