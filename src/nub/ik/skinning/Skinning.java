@@ -11,8 +11,6 @@ public interface Skinning {
 
   void initParams();
 
-  void render();
-
   void render(PGraphics pg);
 
   void render(Scene scene);

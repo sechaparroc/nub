@@ -2,7 +2,6 @@ package nub.ik.skinning;
 
 import nub.core.Node;
 import nub.ik.animation.Skeleton;
-import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -22,7 +21,6 @@ public class GPULinearBlendSkinning implements Skinning {
   //Skeleton & Geometry information
   protected List<PShape> _shapes;
   protected List<Node> _skeleton;
-  protected PGraphics _pg;
   //Shader information
   protected PShader _shader;
   protected Quaternion[] _initialOrientations;
@@ -35,7 +33,7 @@ public class GPULinearBlendSkinning implements Skinning {
   protected final String _vertexPath = "skinning.glsl";
   protected Node _reference, _renderMesh;
 
-  public GPULinearBlendSkinning(List<Node> skeleton, PGraphics pg, PShape shape) {
+  public GPULinearBlendSkinning(List<Node> skeleton, PShape shape) {
     this._shapes = new ArrayList<>();
     _ids = new HashMap<>();
     _skeleton = skeleton;
@@ -53,10 +51,9 @@ public class GPULinearBlendSkinning implements Skinning {
     _initialPositionsArray = new float[joints * 3];
     _positionsArray = new float[joints * 3];
     _orientationsArray = new float[joints * 4];
-    PApplet pApplet = pg.parent;
+    PApplet pApplet = Scene.pApplet;
     _shader = pApplet.loadShader(_fragmentPath, _vertexPath);
     _shapes.add(shape);
-    _pg = pg;
     initParams();
 
     _renderMesh = new Node();
@@ -66,13 +63,13 @@ public class GPULinearBlendSkinning implements Skinning {
   }
 
   public GPULinearBlendSkinning(Skeleton skeleton, PShape shape) {
-    this(skeleton.BFS(), skeleton.scene().context(), shape);
+    this(skeleton.BFS(), shape);
     _reference = skeleton.reference();
     _renderMesh.setReference(_reference);
   }
 
-  public GPULinearBlendSkinning(List<Node> skeleton, PGraphics pg, String shape, String texture, float factor) {
-    this(skeleton, pg, shape, texture, factor, false);
+  public GPULinearBlendSkinning(List<Node> skeleton, String shape, String texture, float factor) {
+    this(skeleton, shape, texture, factor, false);
   }
 
   public GPULinearBlendSkinning(Skeleton skeleton, String shape, String texture, float factor) {
@@ -82,22 +79,21 @@ public class GPULinearBlendSkinning implements Skinning {
   }
 
   public GPULinearBlendSkinning(Skeleton skeleton, String shape, String texture, float factor, boolean quad) {
-    this(skeleton.BFS(), skeleton.scene().context(), shape, texture, factor, quad);
+    this(skeleton.BFS(), shape, texture, factor, quad);
     _reference = skeleton.reference();
     _renderMesh.setReference(_reference);
   }
 
-  public GPULinearBlendSkinning(List<Node> skeleton, PGraphics pg, String shape, String texture, float factor, boolean quad) {
+  public GPULinearBlendSkinning(List<Node> skeleton, String shape, String texture, float factor, boolean quad) {
+    PGraphics pg = Scene.pApplet.g;
     this._shapes = new ArrayList<>();
     _ids = new HashMap<>();
     _skeleton = skeleton;
     int joints = skeleton.size();
     for (int i = 0; i < joints; i++) {
       _ids.put(_skeleton.get(i), i);
-      if (_skeleton.get(i) instanceof Joint) {
-        int c = Color.HSBtoRGB((i + 1.0f) / skeleton.size(), 1f, 1f);
-        ((Joint) _skeleton.get(i)).setColor((int) pg.red(c), (int) pg.blue(c), (int) pg.green(c));
-      }
+      int c = Color.HSBtoRGB((i + 1.0f) / skeleton.size(), 1f, 1f);
+      _skeleton.get(i)._boneColor = c;
     }
     _initialOrientations = new Quaternion[joints];
     _initialPositions = new Vector[joints];
@@ -265,11 +261,6 @@ public class GPULinearBlendSkinning implements Skinning {
   @Override
   public void render(Scene scene) {
     render(scene, _reference);
-  }
-
-  @Override
-  public void render() {
-    render(_pg);
   }
 
   @Override

@@ -26,7 +26,6 @@ public class CPULinearBlendSkinning implements Skinning {
   protected Vector[] _currentPositions;
   protected Map<Node, Integer> _ids;
   protected List<Vertex> _vertices;
-  protected PGraphics _pg;
   protected Node _reference, _renderMesh;
 
   protected class Vertex {
@@ -71,23 +70,23 @@ public class CPULinearBlendSkinning implements Skinning {
     }
   }
 
-  public CPULinearBlendSkinning(List<Node> skeleton, PGraphics pg, String shape, String texture, float factor) {
-    this(skeleton, pg, shape, texture, factor, false);
+  public CPULinearBlendSkinning(List<Node> skeleton, String shape, String texture, float factor) {
+    this(skeleton, shape, texture, factor, false);
   }
 
   public CPULinearBlendSkinning(Skeleton skeleton, String shape, String texture, float factor) {
-    this(skeleton.BFS(), skeleton.scene().context(), shape, texture, factor);
+    this(skeleton.BFS(), shape, texture, factor);
     _reference = skeleton.reference();
     _renderMesh.setReference(_reference);
   }
 
   public CPULinearBlendSkinning(Skeleton skeleton, String shape, String texture, float factor, boolean quad) {
-    this(skeleton.BFS(), skeleton.scene().context(), shape, texture, factor, quad);
+    this(skeleton.BFS(), shape, texture, factor, quad);
     _reference = skeleton.reference();
     _renderMesh.setReference(_reference);
   }
 
-  public CPULinearBlendSkinning(List<Node> skeleton, PGraphics pg, String shape, String texture, float factor, boolean quad) {
+  public CPULinearBlendSkinning(List<Node> skeleton, String shape, String texture, float factor, boolean quad) {
     this._shapes = new ArrayList<>();
     _ids = new HashMap<>();
     _skeleton = skeleton;
@@ -104,10 +103,8 @@ public class CPULinearBlendSkinning implements Skinning {
     _currentOrientations = new Quaternion[joints];
     _currentPositions = new Vector[joints];
 
-
     _vertices = new ArrayList<Vertex>();
-    _shapes.add(createShape(pg, pg.loadShape(shape), texture, factor, quad));
-    _pg = pg;
+    _shapes.add(createShape(Scene.pApplet.g, Scene.pApplet.g.loadShape(shape), texture, factor, quad));
     initParams();
 
     _renderMesh = new Node();
@@ -202,10 +199,6 @@ public class CPULinearBlendSkinning implements Skinning {
     }
   }
 
-  @Override
-  public void render() {
-    render(_pg);
-  }
 
   @Override
   public void render(Scene scene) {
