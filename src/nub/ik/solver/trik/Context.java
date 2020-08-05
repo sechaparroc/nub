@@ -276,7 +276,7 @@ public class Context {
 
     for (int i = 0; i < origin.size(); i++) {
       Node node = origin.get(i).node();
-      Constraint constraint = dest.get(i).node().constraint();
+      Constraint constraint = node.constraint();
       Quaternion rotation = node.rotation().get();
       Vector translation = node.translation().get();
 
