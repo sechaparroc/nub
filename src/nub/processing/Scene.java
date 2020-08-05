@@ -3441,7 +3441,7 @@ public class Scene extends Graph {
 
   public static void drawBone(PGraphics pGraphics, Node node){
     pGraphics.pushStyle();
-    pGraphics.colorMode(PApplet.RGB, 255);
+//    pGraphics.colorMode(PApplet.RGB, 255);
     if(!node._boneDepth) pGraphics.hint(PConstants.DISABLE_DEPTH_TEST);
     pGraphics.stroke(node._boneColor);
     pGraphics.fill(node._boneColor);
@@ -3449,23 +3449,29 @@ public class Scene extends Graph {
     float m = v.magnitude();
     v.normalize();
     if(pGraphics.is2D()){
-      pGraphics.line(node._boneRadius * v.x(), node._boneRadius * v.y(), (m - node._boneRadius) * v.x(), (m - node._boneRadius) * v.y());
+      if(m > node._boneRadius) pGraphics.line(node._boneRadius * v.x(), node._boneRadius * v.y(), (m - node._boneRadius) * v.x(), (m - node._boneRadius) * v.y());
       pGraphics.ellipse(0, 0, node._boneRadius * 2, node._boneRadius * 2);
     } else{
-      pGraphics.sphere(node._boneRadius);
-      if(node._boneWidth <= 0){
-        pGraphics.line(node._boneRadius * v.x(), node._boneRadius * v.y(), node._boneRadius * v.z(),
-                (m - node._boneRadius) * v.x(), (m - node._boneRadius) * v.y(), (m - node._boneRadius) * v.z());
-      } else{
-        pGraphics.noStroke();
-        pGraphics.pushMatrix();
-        Quaternion q = new Quaternion(new Vector(0, 0, 1), v);
-        Vector pos = Vector.multiply(v, node._boneRadius);
-        pGraphics.translate(pos.x(), pos.y(), pos.z());
-        pGraphics.rotate(q.angle(), q.axis()._vector[0], q.axis()._vector[1], q.axis()._vector[2]);
-        Scene.drawCylinder(pGraphics, node._boneWidth, m - 2 * node._boneRadius);
-        pGraphics.popMatrix();
+      if(m > node._boneRadius) {
+        if (node._boneWidth <= 0) {
+          pGraphics.line(node._boneRadius * v.x(), node._boneRadius * v.y(), node._boneRadius * v.z(),
+                  (m - node._boneRadius) * v.x(), (m - node._boneRadius) * v.y(), (m - node._boneRadius) * v.z());
+        } else {
+          pGraphics.noStroke();
+          pGraphics.pushMatrix();
+          Quaternion q = new Quaternion(new Vector(0, 0, 1), v);
+          Vector pos = Vector.multiply(v, node._boneRadius);
+          pGraphics.translate(pos.x(), pos.y(), pos.z());
+          pGraphics.rotate(q.angle(), q.axis()._vector[0], q.axis()._vector[1], q.axis()._vector[2]);
+          Scene.drawCylinder(pGraphics, node._boneWidth, m - 2 * node._boneRadius);
+          pGraphics.popMatrix();
+        }
       }
+      pGraphics.noStroke();
+      int du = pGraphics.sphereDetailU, dv = pGraphics.sphereDetailV;
+      pGraphics.sphereDetail(8,8);
+      pGraphics.sphere(node._boneRadius);
+      pGraphics.sphereDetail(du, dv);
     }
     if(!node._boneDepth) pGraphics.hint(PConstants.ENABLE_DEPTH_TEST);
     pGraphics.popStyle();
