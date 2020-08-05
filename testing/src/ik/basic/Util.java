@@ -8,7 +8,6 @@ import nub.core.constraint.PlanarPolygon;
 import nub.ik.solver.Solver;
 import nub.ik.solver.geometric.ChainSolver;
 import nub.ik.solver.trik.implementations.IKSolver;
-import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -167,13 +166,25 @@ public class Util {
     Random r1 = randRotation != -1 ? new Random(randRotation) : null;
     Random r2 = randLength != -1 ? new Random(randLength) : null;
 
-    Joint prevJoint = null;
-    Joint chainRoot = null;
+    ArrayList<Node> chain = new ArrayList<Node>();
+    Node prevJoint = null;
+    Node chainRoot = null;
     for (int i = 0; i < numJoints; i++) {
-      Joint joint;
-      joint = new Joint(red, green, blue, radius);
-      if (i == 0)
-        chainRoot = joint;
+      Node joint = new Node();
+      if (i == 0) {
+          chainRoot = joint;
+          chainRoot.setShape(pg -> {
+              pg.pushStyle();
+              pg.noStroke();
+              pg.fill(red, green, blue);
+              if(pg.is3D()) pg.sphere(radius);
+              else pg.ellipse(0,0, 2 * radius, 2 * radius);
+              pg.popStyle();
+          });
+      } else{
+          joint.enableHint(Node.BONE, Scene.pApplet.color(red, green, blue), radius);
+      }
+      joint.enableHint(Node.CONSTRAINT);
       if (prevJoint != null) joint.setReference(prevJoint);
 
       float x = 0;
@@ -194,12 +205,12 @@ public class Util {
         translate.multiply(boneLength);
       joint.setTranslation(translate);
       prevJoint = joint;
+      chain.add(joint);
     }
     //Consider Standard Form: Parent Z Axis is Pointing at its Child
     chainRoot.setTranslation(translation);
     //chainRoot.setupHierarchy();
-    chainRoot.setRoot(true);
-    return (ArrayList) Scene.branch(chainRoot);
+    return chain;
   }
 
   public static List<Node> generateAttachedChain(int numJoints, float boneLength, int randRotation, int randLength) {

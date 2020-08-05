@@ -11,7 +11,6 @@ import nub.ik.loader.collada.data.Model;
 import nub.ik.skinning.GPULinearBlendSkinning;
 import nub.ik.solver.Solver;
 import nub.ik.solver.geometric.ChainSolver;
-import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -25,7 +24,6 @@ import java.util.ArrayList;
  * Created by sebchaparr on 23/07/18.
  */
 public class LoadMesh extends PApplet {
-  //TODO : Update
   Scene scene;
   String path = "/testing/data/dae/";
   String dae = "humanoid.dae";
@@ -53,10 +51,10 @@ public class LoadMesh extends PApplet {
     scene.eye().rotate(new Quaternion(new Vector(1, 0, 0), PI / 2));
     scene.eye().rotate(new Quaternion(new Vector(0, 0, 1), PI));
     scene.fit();
-    skinning = new GPULinearBlendSkinning(model.structure(), this.g, model.mesh());
+    skinning = new GPULinearBlendSkinning(model.structure(), model.mesh());
 
     for (int i = 0; i < effectors.length; i++) {
-      Node target = new Target(scene, ((Joint) model.root()).radius() * 0.6f);
+      Node target = new Target(scene.radius() * 0.01f);
       target.setBullsEyeSize(0);
       targets.add(target);
     }
@@ -122,41 +120,15 @@ public class LoadMesh extends PApplet {
 
     model.printNames();
 
-    boolean whole = true;
-    //TODO: Fix Tree Solver when model has constraints!
-    if (whole) {
-      Solver s = scene.registerTreeSolver(model.root());
-      s.setTimesPerFrame(1);
-      s.setMaxIterations(50);
-      s.setMaxError(0.01f);
-      s.setMinDistance(0.01f);
+    Solver s = scene.registerTreeSolver(model.root());
+    s.setTimesPerFrame(5);
+    s.setMaxIterations(5);
+    s.setMaxError(0.01f);
+    s.setMinDistance(0.01f);
 
-      for (int i = 0; i < effectors.length; i++) {
-        targets.get(i).setPosition(model.skeleton().get(effectors[i]).position());
-        scene.addIKTarget(model.skeleton().get(effectors[i]), targets.get(i));
-      }
-    } else {
-      /*Chain solver*/
-      for (int i = 0; i < effectors.length; i++) {
-        targets.get(i).setPosition(model.skeleton().get(effectors[i]).position());
-        ChainSolver solver_r_leg = new ChainSolver(scene.branch(model.skeleton().get(roots[i])));
-        solver_r_leg.setKeepDirection(false);
-        solver_r_leg.setFixTwisting(false);
-        solver_r_leg.explore(false);
-
-        solver_r_leg.setTimesPerFrame(5);
-        solver_r_leg.setMaxIterations(50);
-        solver_r_leg.setMaxError(0.01f);
-        solver_r_leg.setMinDistance(0.01f);
-        solver_r_leg.setTarget(model.skeleton().get(effectors[i]), targets.get(i));
-        TimingTask task = new TimingTask() {
-          @Override
-          public void execute() {
-            solver_r_leg.solve();
-          }
-        };
-        task.run(40);
-      }
+    for (int i = 0; i < effectors.length; i++) {
+      targets.get(i).setPosition(model.skeleton().get(effectors[i]).position());
+      scene.addIKTarget(model.skeleton().get(effectors[i]), targets.get(i));
     }
   }
 
@@ -164,9 +136,8 @@ public class LoadMesh extends PApplet {
     background(0);
     lights();
     scene.drawAxes();
-
     //Render mesh
-    skinning.render();
+    skinning.render(scene);
     //Render skeleton
     hint(DISABLE_DEPTH_TEST);
     scene.render();

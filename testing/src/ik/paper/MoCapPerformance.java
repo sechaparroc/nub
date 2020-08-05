@@ -1,9 +1,7 @@
 package ik.paper;
 
-import ik.basic.Util;
 import nub.core.Node;
 import nub.core.constraint.Constraint;
-import nub.ik.animation.Joint;
 import nub.ik.loader.bvh.BVHLoader;
 import nub.ik.solver.trik.Context;
 import nub.ik.solver.trik.Tree;
@@ -21,7 +19,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class MoCapPerformance {
     static String dir = "C:/Users/olgaa/Desktop/Sebas/Thesis/Results/MoCapPerformance/";
@@ -53,12 +50,12 @@ public class MoCapPerformance {
 
 
     public static BVHLoader loadBVH(String path){
-        BVHLoader loader = new BVHLoader(Node.class, path, null);
+        BVHLoader loader = new BVHLoader(path, null);
         loader.setLoop(false);
 
         //skip first two frames
-        loader.nextPose(true);
-        loader.nextPose(true);
+        loader.nextPosture(true);
+        loader.nextPosture(true);
         //generate constraints
         loader.generateConstraints();
         return loader;
@@ -66,14 +63,14 @@ public class MoCapPerformance {
 
     public static void generateExperiment(BVHLoader loader, IKSolver.HeuristicMode mode, BVHStats stats, float height){
         //1. reset the loader
-        loader.poseAt(0);
+        loader.postureAt(0);
         //2. create the appropriate skeleton
         Skeleton skeleton = new Skeleton(loader, mode);
         skeleton.createSolver(maxError, iterationsChain, iterations);
         //3. Try to reach the desired postures and collect the statistics
-        System.out.println("Solver" + mode.name() + " Current Pose " + loader.currentPose() + " total : " + loader.poses());
-        while(loader.currentPose() < loader.poses()){
-            skeleton.readPose();
+        System.out.println("Solver" + mode.name() + " Current Pose " + loader.currentPosture() + " total : " + loader.postures());
+        while(loader.currentPosture() < loader.postures()){
+            skeleton.readPosture();
             //solve and collect
             skeleton.solver.change(true);
             long start = System.nanoTime();
@@ -81,7 +78,7 @@ public class MoCapPerformance {
             stats.timeSt.addValue((System.nanoTime() - start) / 1000000.0);
             stats.positionSt.addValue(skeleton.positionDistance(height));
             stats.orientationSt.addValue(skeleton.orientationDistance());
-            loader.nextPose();
+            loader.nextPosture();
         }
     }
 
@@ -191,7 +188,7 @@ public class MoCapPerformance {
             structure = new HashMap<>();
             jointToNode = new HashMap<>();
             HashMap<Node, Node> pairs = new HashMap<>();
-            for(Node node : loader.branch()){
+            for(Node node : loader.skeleton().BFS()){
                 Node joint = Node.detach(new Vector(), new Quaternion(), 1);
                 joint.setReference(pairs.get(node.reference()));
                 joint.setTranslation(node.translation().get());
@@ -202,7 +199,7 @@ public class MoCapPerformance {
                 if(node.children() == null || node.children().size() == 0) endEffectors.add(loader.joint().get(node.id()).name());
                 jointToNode.put(joint, node);
             }
-            root = pairs.get(loader.root());
+            root = pairs.get(loader.skeleton().reference().children().get(0));
         }
 
         void createSolver(float maxError, int iterationsChain, int iterations){
@@ -225,11 +222,11 @@ public class MoCapPerformance {
             }
         }
 
-        void readPose(){
+        void readPosture(){
             Constraint c = root.constraint();
             root.setConstraint(null);
-            root.setPosition(loader.root().position().get());
-            root.setOrientation(loader.root().orientation().get());
+            root.setPosition(loader.skeleton().reference().children().get(0).position().get());
+            root.setOrientation(loader.skeleton().reference().children().get(0).orientation().get());
             root.setConstraint(c);
             //update targets if prev distance is high
             for(String s : endEffectors){
@@ -305,11 +302,11 @@ public class MoCapPerformance {
             } else{
                 files.remove(idx);
             }
-            BVHLoader auxLoader = new BVHLoader(Node.class, path + name + "/" + t_pose, null);
+            BVHLoader auxLoader = new BVHLoader(path + name + "/" + t_pose, null);
             Vector max = new Vector(), min = new Vector(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE);
             max = Vector.multiply(min, -1);
-            for(Node n : auxLoader.branch()){
-                Vector pos = auxLoader.root().location(n);
+            for(Node n : auxLoader.skeleton().BFS()){
+                Vector pos = auxLoader.skeleton().reference().location(n);
                 if(max.x() < pos.x()) max.setX(pos.x());
                 if(max.y() < pos.y()) max.setY(pos.y());
                 if(max.z() < pos.z()) max.setZ(pos.z());

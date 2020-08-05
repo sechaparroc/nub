@@ -1,3 +1,4 @@
+
 package ik.basic;
 
 import nub.core.Graph;
@@ -5,8 +6,6 @@ import nub.core.Node;
 import nub.ik.solver.Solver;
 import nub.ik.solver.geometric.ChainSolver;
 import nub.ik.solver.geometric.FABRIKSolver;
-import nub.ik.solver.trik.implementations.IKSolver;
-import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -21,6 +20,7 @@ import java.util.Random;
 /**
  * Created by sebchaparr on 8/10/18.
  */
+
 public class VisualBenchmark extends PApplet {
   //Scene Parameters
   Scene scene;
@@ -51,7 +51,6 @@ public class VisualBenchmark extends PApplet {
   }
 
   public void setup() {
-    Joint.axes = true;
     scene = new Scene(this);
     if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
     scene.setRadius(numJoints * 1f * boneLength);

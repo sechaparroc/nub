@@ -87,7 +87,7 @@ public class InstantiateIK extends PApplet {
     //3. Relate the structure with a Solver. In this example we instantiate a solver
     //As we're dealing with a Chain Structure a Chain Solver is preferable
     //A Chain solver constructor receives an ArrayList containing the Skeleton structure
-    IKSolver solver = new IKSolver(skeleton, IKSolver.HeuristicMode.COMBINED_EXPRESSIVE);
+    IKSolver solver = new IKSolver(skeleton, IKSolver.HeuristicMode.COMBINED_TRIK);
 
     //Optionally you could modify the following parameters of the Solver:
     //Maximum distance between end effector and target, If is below maxError, then we stop executing IK solver (Default value is 0.01)
@@ -180,7 +180,6 @@ public class InstantiateIK extends PApplet {
     };
     joint.setReference(node);
     //Exact picking precision
-    joint.setBullsEyeSize(0);
     joint.setTranslation(translation);
     return joint;
   }

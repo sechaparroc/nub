@@ -20,7 +20,6 @@ import java.util.List;
  * Created by sebchaparr on 18/05/19.
  */
 public class LoadMesh2 extends PApplet {
-  //TODO : Update
   Scene scene;
   String path = "/testing/data/dae/";
   String dae = "dummy.dae";
@@ -52,11 +51,10 @@ public class LoadMesh2 extends PApplet {
     scene.fit();
 
     //4. Relate mesh and skinning
-    skinning = new GPULinearBlendSkinning(model.structure(), scene.context(), model.mesh());
+    skinning = new GPULinearBlendSkinning(model.structure(), model.mesh());
 
     //5. Adding IK behavior
     //Register an IK Solver
-    scene.enableTRIK(true);
     solver = scene.registerTreeSolver(model.root());
     //Update params
     solver.setMaxError(1f);
@@ -76,7 +74,7 @@ public class LoadMesh2 extends PApplet {
       if (s.equals("Bone_020") || s.equals("Bone_016") || s.equals("Bone_008") || s.equals("Bone_007")) {
         endEffectors.add(node);
         // Create targets
-        Target target = new Target(scene, scene.radius() * 0.02f);
+        Target target = new Target(scene.radius() * 0.02f);
         //target.setReference(root);
         target.setPosition(node.position().get());
         //add IK target to solver
@@ -91,7 +89,7 @@ public class LoadMesh2 extends PApplet {
     scene.drawAxes();
 
     //Render mesh
-    skinning.render();
+    skinning.render(scene);
     //Render skeleton
     hint(DISABLE_DEPTH_TEST);
     scene.render();

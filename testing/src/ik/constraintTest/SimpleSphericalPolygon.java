@@ -4,7 +4,6 @@ import ik.basic.Util;
 import nub.core.Graph;
 import nub.core.Node;
 import nub.core.constraint.SphericalPolygon;
-import nub.ik.animation.Joint;
 import nub.ik.solver.Solver;
 import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
@@ -19,7 +18,7 @@ import java.util.List;
 public class SimpleSphericalPolygon extends PApplet{
     Scene scene;
     Solver solver;
-    Joint j1, j2;
+    Node j1, j2;
     public void settings() {
         size(700, 700, P3D);
     }
@@ -31,10 +30,12 @@ public class SimpleSphericalPolygon extends PApplet{
         scene.fit(1);
         scene.leftHanded = false;
         //Create a simple structure
-        j1 = new Joint();
+        j1 = new Node();
+        j1.enableHint(Node.CONSTRAINT);
         j1.rotate(Quaternion.random());
-        j2 = new Joint();
+        j2 = new Node();
         j2.setReference(j1);
+        j2.enableHint(Node.BONE | Node.CONSTRAINT);
         j2.translate(100,0,0, 0);
         //Add a constraint
         //Defines vertices at theta degrees

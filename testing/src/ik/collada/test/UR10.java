@@ -10,7 +10,6 @@ import nub.ik.loader.collada.data.Model;
 import nub.ik.solver.Solver;
 import nub.ik.solver.geometric.ChainSolver;
 import nub.ik.solver.geometric.FABRIKSolver;
-import nub.ik.animation.Joint;
 import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -53,7 +52,6 @@ public class UR10 extends PApplet {
       for (int i = 0; i < show.length; i++) show[i] = true;
     }
 
-    Joint.axes = true;
     //Joint.markers = true;
     randomSeed(14);
     this.g.textureMode(NORMAL);
@@ -64,7 +62,7 @@ public class UR10 extends PApplet {
 
 
     model.printNames();
-    target = new Target(scene, ((Joint) model.root()).radius());
+    target = new Target(scene.radius() * 0.01f);
 
     /*Adding constraints*/
     Node node_1 = model.skeleton().get("node1");
@@ -104,7 +102,7 @@ public class UR10 extends PApplet {
 
 
     if (!ccd) {
-      solver = new IKSolver(branch, IKSolver.HeuristicMode.COMBINED_EXPRESSIVE);
+      solver = new IKSolver(branch, IKSolver.HeuristicMode.COMBINED_TRIK);
     } else {
       solver = new ChainSolver(branch);
       ((ChainSolver) solver).setKeepDirection(true);
@@ -112,8 +110,8 @@ public class UR10 extends PApplet {
       ((ChainSolver) solver).explore(false);
     }
 
-    solver.setTimesPerFrame(debug ? 1 : 10);
-    solver.setMaxIterations(50);
+    solver.setTimesPerFrame(10);
+    solver.setMaxIterations(10);
     solver.setMaxError(scene.radius() * 0.01f);
     solver.setMinDistance(scene.radius() * 0.01f);
     solver.setTarget(branch.get(branch.size() - 1), target);

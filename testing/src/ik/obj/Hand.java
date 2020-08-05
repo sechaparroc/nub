@@ -1,3 +1,4 @@
+/*
 package ik.obj;
 
 import ik.interactive.Target;
@@ -16,9 +17,11 @@ import processing.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 
+*/
 /**
  * Created by sebchaparr on 10/05/19.
- */
+ *//*
+
 public class Hand extends PApplet {
   Scene scene;
   GPULinearBlendSkinning skinning;
@@ -254,3 +257,4 @@ public class Hand extends PApplet {
   }
 
 }
+*/

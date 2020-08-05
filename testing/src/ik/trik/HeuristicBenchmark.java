@@ -5,9 +5,7 @@ import nub.core.Graph;
 import nub.core.Interpolator;
 import nub.core.Node;
 import nub.ik.solver.Solver;
-import nub.ik.solver.trik.heuristic.Combined;
 import nub.ik.solver.trik.implementations.IKSolver;
-import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -36,7 +34,7 @@ public class HeuristicBenchmark extends PApplet {
   int randLength = 0; //Set seed to generate random segment lengths, otherwise set to -1
 
   //Util.SolverType solversType [] = {Util.SolverType.CCD_BACK_AND_FORTH, Util.SolverType.CCDT_BACK_AND_FORTH, Util.SolverType.CCD_TRIK_AND_TWIST, Util.SolverType.CCD,
-  //Util.SolverType.TRIK_V3, Util.SolverType.FABRIK, Util.SolverType.BACK_AND_FORTH_TRIK, Util.SolverType.BACK_AND_FORTH_TRIK_T}; //Place Here Solvers that you want to compare*/
+  //Util.SolverType.TRIK_V3, Util.SolverType.FABRIK, Util.SolverType.BACK_AND_FORTH_TRIK, Util.SolverType.BACK_AND_FORTH_TRIK_T}; //Place Here Solvers that you want to compare
 
   //Util.SolverType solversType [] = {Util.SolverType.CCD, Util.SolverType.CCD_TRIK, Util.SolverType.BACK_AND_FORTH_TRIK, Util.SolverType.FINAL_TRIK, Util.SolverType.EXPRESSIVE_FINAL_TRIK, Util.SolverType.FABRIK};
 
@@ -58,7 +56,6 @@ public class HeuristicBenchmark extends PApplet {
   }
 
   public void setup() {
-    Joint.axes = true;
     scene = new Scene(this);
     if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
     scene.setRadius(numJoints * 1f * boneLength);

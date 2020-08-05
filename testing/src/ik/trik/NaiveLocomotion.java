@@ -7,7 +7,6 @@ import nub.core.constraint.Hinge;
 import nub.ik.solver.Solver;
 import nub.ik.solver.geometric.ChainSolver;
 import nub.ik.solver.trik.implementations.IKSolver;
-import nub.ik.animation.Joint;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import nub.processing.TimingTask;
@@ -22,12 +21,10 @@ import java.util.List;
 
 public class NaiveLocomotion extends PApplet {
   public enum IKMode {FABRIK, CCD, TRIK, COMBINED}
-
-  ;
   Scene scene;
   float boneLength = 50;
   float radius = 10;
-  int segments = 4;
+  int segments = 14;
   float stepHeight = boneLength / 2 * segments / 6f, stepWidth = boneLength * segments * 0.75f;
   static boolean solve = true;
 
@@ -40,19 +37,18 @@ public class NaiveLocomotion extends PApplet {
   ArrayList<Solver> solvers = new ArrayList<>();
 
   public void setup() {
-    Joint.axes = true;
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
     scene.setRadius(segments * 4 * boneLength);
     scene.fit(1);
 
-    createStructure(segments, boneLength, radius, 0, 255, 0, new Vector(-boneLength * 3, 0, 0), IKMode.TRIK, 20, 0);
+    scene.enableHint(Graph.BACKGROUND | Graph.AXES);
+
+    createStructure(segments, boneLength, radius, color(0, 255, 0), new Vector(-boneLength * 3, 0, 0), IKMode.COMBINED, 20, 0);
   }
 
   public void draw() {
-    background(0);
     lights();
-    scene.drawAxes();
     scene.render();
     for(Solver s : solvers){
       s.hasChanged(true);
@@ -108,7 +104,7 @@ public class NaiveLocomotion extends PApplet {
       }
 
       case COMBINED: {
-        solver = new IKSolver(limb, IKSolver.HeuristicMode.COMBINED);
+        solver = new IKSolver(limb, IKSolver.HeuristicMode.COMBINED_TRIK);
         ((IKSolver) solver).setTarget(target);
         break;
       }
@@ -139,35 +135,41 @@ public class NaiveLocomotion extends PApplet {
     };
   }
 
-  public void createStructure(int segments, float length, float radius, int red, int green, int blue, Vector translation, IKMode mode, float min, float max) {
+  public void createStructure(int segments, float length, float radius, int col, Vector translation, IKMode mode, float min, float max) {
     Node reference = new Node();
     reference.translate(translation);
 
     //1. Create reference Frame
-    Joint root = new Joint(255, 0, 0, radius);
-    root.setRoot(true);
+    Node root = new Node(pg ->{
+          pg.pushStyle();
+          pg.fill(col);
+          pg.sphere(radius);
+          pg.popStyle();
+    });
     root.setReference(reference);
 
     //2. Create Targets, Limbs & Solvers
     Node target1 = createTarget(radius * 1.2f);
     Node target2 = createTarget(radius * 1.2f);
 
-    solvers.add(createLimb(segments, length, radius, red, green, blue, root, target1, new Vector(-length, 0, 0), mode, min, max));
-    solvers.add(createLimb(segments, length, radius, red, green, blue, root, target2, new Vector(length, 0, 0), mode, min, max));
+    solvers.add(createLimb(segments, length, radius, col, root, target1, new Vector(-length, 0, 0), mode, min, max));
+    solvers.add(createLimb(segments, length, radius, col, root, target2, new Vector(length, 0, 0), mode, min, max));
     //3. Create walking cycle
     createBipedCycle(root, solvers.get(solvers.size() - 1), solvers.get(solvers.size() - 2), target1, target2);
   }
 
 
-  public Solver createLimb(int segments, float length, float radius, int red, int green, int blue, Node reference, Node target, Vector translation, IKMode mode, float min, float max) {
+  public Solver createLimb(int segments, float length, float radius, int col, Node reference, Node target, Vector translation, IKMode mode, float min, float max) {
     target.setReference(reference.reference());
     ArrayList<Node> joints = new ArrayList<>();
-    Joint root = new Joint(red, green, blue, radius);
+    Node root = new Node();
+    root.enableHint(Node.BONE, col, radius);
     root.setReference(reference);
     joints.add(root);
 
     for (int i = 0; i < max(segments, 2); i++) {
-      Joint middle = new Joint(red, green, blue, radius);
+      Node middle = new Node();
+      middle.enableHint(Node.BONE, col, radius);
       middle.setReference(joints.get(i));
       middle.translate(0, length, 0);
       if (i < max(segments, 2) - 1) {
@@ -180,7 +182,8 @@ public class NaiveLocomotion extends PApplet {
     cone.setRestRotation(joints.get(joints.size() - 1).rotation().get(), new Vector(0, -1, 0), new Vector(0, 0, 1));
     joints.get(joints.size() - 1).setConstraint(cone);
 
-    Joint low = new Joint(red, green, blue, radius);
+    Node low = new Node();
+    low.enableHint(Node.BONE, col, radius);
     low.setReference(joints.get(joints.size() - 1));
     low.translate(0, 0, length);
 

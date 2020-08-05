@@ -28,16 +28,16 @@ public class TRIKConstrained extends PApplet {
         scene.setRadius(200);
         scene.fit(1);
         //Create the Skeleton described above
-        skeleton = new Skeleton(scene);
-        Joint joint0 = skeleton.addJoint("Joint 0");
+        skeleton = new Skeleton();
+        Node joint0 = skeleton.addJoint("Joint 0");
         joint0.translate(new Vector(0,-scene.radius()/2));
-        Joint joint1 = skeleton.addJoint("Joint 1", "Joint 0");
+        Node joint1 = skeleton.addJoint("Joint 1", "Joint 0");
         joint1.translate(new Vector(0,length));
-        Joint joint2 = skeleton.addJoint("Joint 2","Joint 1");
+        Node joint2 = skeleton.addJoint("Joint 2","Joint 1");
         joint2.translate(new Vector(0,length));
-        Joint joint3 = skeleton.addJoint("Joint 3", "Joint 2");
+        Node joint3 = skeleton.addJoint("Joint 3", "Joint 2");
         joint3.translate(new Vector(0,length));
-        Joint joint4 = skeleton.addJoint("Joint 4", "Joint 3");
+        Node joint4 = skeleton.addJoint("Joint 4", "Joint 3");
         joint4.translate(new Vector(0,length));
         //Apply a Ball & Socket constraint to node0:
         if(scene.is3D()) {

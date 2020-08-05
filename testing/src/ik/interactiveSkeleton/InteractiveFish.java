@@ -4,12 +4,12 @@ import nub.core.Graph;
 import nub.core.Interpolator;
 import nub.core.Node;
 import nub.ik.skinning.GPULinearBlendSkinning;
-import nub.ik.animation.Joint;
 import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import nub.processing.TimingTask;
 import processing.core.PApplet;
+import processing.core.PConstants;
 import processing.core.PShape;
 import processing.event.MouseEvent;
 
@@ -41,7 +41,6 @@ public class InteractiveFish extends PApplet {
   }
 
   public void setup() {
-    Joint.axes = true;
     //1. Create and set the scene
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
@@ -57,7 +56,7 @@ public class InteractiveFish extends PApplet {
 
     skeleton2 = fishSkeleton(reference);
     //3. Relate the shape with a skinning method (CPU or GPU)
-    skinning = new GPULinearBlendSkinning(skeleton, this.g, sketchPath() + shapePath, sketchPath() + texturePath, 200, true);
+    skinning = new GPULinearBlendSkinning(skeleton, sketchPath() + shapePath, sketchPath() + texturePath, 200, true);
 
     //4. Adding IK behavior
     //4.1 Identify root and end effector(s) (first and last joint on the skeleton)
@@ -89,7 +88,7 @@ public class InteractiveFish extends PApplet {
       @Override
       public void execute() {
         //a solver perform an iteration when solve method is called
-        //solver.solve();
+        solver.solve();
       }
     };
     solverTask.run(40); //Execute the solverTask each 40 ms
@@ -116,26 +115,37 @@ public class InteractiveFish extends PApplet {
   }
 
   public List<Node> fishSkeleton(Node reference) {
-    Joint j1 = new Joint();
+    Node j1 = new Node(pg ->{
+      pg.hint(PConstants.DISABLE_DEPTH_TEST);
+      pg.pushStyle();
+      pg.fill(-1);
+      pg.sphere(scene.radius() * 0.03f);
+      pg.popStyle();
+      pg.hint(PConstants.ENABLE_DEPTH_TEST);
+    });
     j1.setReference(reference);
     j1.setPosition(0, 10.8f, 93);
-    Joint j2 = new Joint();
+    Node j2 = new Node();
     j2.setReference(j1);
     j2.setPosition(0, 2.3f, 54.7f);
-    Joint j3 = new Joint();
+    j2.enableHint(Node.BONE, -1, scene.radius() * 0.03f);
+    Node j3 = new Node();
     j3.setReference(j2);
     j3.setPosition(0, 0.4f, 22);
-    Joint j4 = new Joint();
+    j3.enableHint(Node.BONE, -1, scene.radius() * 0.03f);
+    Node j4 = new Node();
     j4.setReference(j3);
     j4.setPosition(0, 0, -18);
-    Joint j5 = new Joint();
+    j4.enableHint(Node.BONE, -1, scene.radius() * 0.03f);
+    Node j5 = new Node();
     j5.setReference(j4);
     j5.setPosition(0, 1.8f, -54);
-    Joint j6 = new Joint();
+    j5.enableHint(Node.BONE, -1, scene.radius() * 0.03f);
+    Node j6 = new Node();
     j6.setReference(j5);
     j6.setPosition(0, -1.1f, -95);
-    j1.setRoot(true);
-    return scene.branch(j1);
+    j6.enableHint(Node.BONE, -1, scene.radius() * 0.03f);
+    return Scene.branch(j1);
   }
 
   public Interpolator setupTargetInterpolator(Node target) {

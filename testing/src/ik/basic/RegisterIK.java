@@ -147,13 +147,13 @@ public class RegisterIK extends PApplet {
      * that is joined to its reference Node
      * */
 
-    Node joint = new Node() {
-      @Override
-      public void graphics(PGraphics pg) {
+    Node joint = new Node();
+
+    joint.setShape(pg -> {
         pg.pushStyle();
         if (drawLine) {
           pg.stroke(255);
-          Vector v = location(new Vector(), reference());
+          Vector v = joint.location(new Vector(), joint.reference());
           if (pg.is2D()) {
             pg.line(0, 0, v.x(), v.y());
           } else {
@@ -165,8 +165,8 @@ public class RegisterIK extends PApplet {
         if (pg.is2D()) pg.ellipse(0, 0, radius * 2, radius * 2);
         else pg.sphere(radius);
         pg.popStyle();
-      }
-    };
+    });
+
     joint.setReference(node);
     //Exact picking precision
     joint.setBullsEyeSize(0);

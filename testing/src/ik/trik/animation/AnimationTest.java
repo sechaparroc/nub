@@ -1,3 +1,4 @@
+/*
 package ik.trik.animation;
 
 import nub.core.Node;
@@ -66,8 +67,8 @@ public class AnimationTest extends PApplet {
   public void draw() {
     mainScene.context().lights();
     skinning.render(mainScene);
-    if (showSkeleton) mainScene.display(0,0);
-    mainScene.display(0,0);
+    if (showSkeleton) mainScene.display(skeleton.reference(), 0,0);
+    mainScene.image(0,0);
     //controlScene.context().background(150);
     controlScene.display(0, (int) (height * 0.7f));
   }
@@ -180,3 +181,4 @@ public class AnimationTest extends PApplet {
 
 
 }
+*/

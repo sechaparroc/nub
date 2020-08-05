@@ -1,3 +1,4 @@
+/*
 package ik.trik.animation;
 
 import nub.core.*;
@@ -178,3 +179,4 @@ public class SimpleInterpolation extends PApplet {
     }
 
 }
+*/

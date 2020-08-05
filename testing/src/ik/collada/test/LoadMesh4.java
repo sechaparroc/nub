@@ -44,7 +44,7 @@ public class LoadMesh4 extends PApplet {
     scene.fit();
 
     //4. Relate mesh and skinning
-    skinning = new GPULinearBlendSkinning(model.structure(), scene.context(), model.mesh());
+    skinning = new GPULinearBlendSkinning(model.structure(), model.mesh());
   }
 
   public void draw() {
@@ -52,7 +52,7 @@ public class LoadMesh4 extends PApplet {
     lights();
     scene.drawAxes();
     //Render mesh
-    skinning.render();
+    skinning.render(scene);
     //Render skeleton
     hint(DISABLE_DEPTH_TEST);
     scene.render();

@@ -7,7 +7,6 @@ import nub.core.constraint.BallAndSocket;
 import nub.core.constraint.FixedConstraint;
 import nub.ik.solver.Solver;
 import nub.ik.solver.geometric.ChainSolver;
-import nub.ik.animation.Joint;
 import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -135,18 +134,32 @@ public class OffsetCone extends PApplet {
     ArrayList<Node> limb = new ArrayList<>();
 
     //Create a simple limb
-    Joint j1 = new Joint(red, green, blue, targetRadius * 0.7f);
+    Node j1 = new Node();
+    j1.enableHint(Node.CONSTRAINT);
+    j1.setShape(pg -> {
+          pg.pushStyle();
+          pg.noStroke();
+          pg.fill(red, green, blue);
+          if(pg.is3D()) pg.sphere(targetRadius * 0.7f);
+          else pg.ellipse(0,0, 2 * targetRadius * 0.7f, 2 * targetRadius * 0.7f);
+          pg.popStyle();
+    });
     j1.setTranslation(0, 90, 0);
-    Joint j2 = new Joint(red, green, blue, targetRadius * 0.7f);
+    Node j2 = new Node();
+    j2.enableHint(Node.CONSTRAINT);
+    j2.enableHint(Node.BONE, color(red, green, blue), targetRadius * 0.7f);
     j2.setReference(j1);
     j2.setTranslation(50, 30, 0);
-    Joint j3 = new Joint(red, green, blue, targetRadius * 0.7f);
+    Node j3 = new Node();
+    j3.enableHint(Node.CONSTRAINT);
+    j3.enableHint(Node.BONE, color(red, green, blue), targetRadius * 0.7f);
     j3.setReference(j2);
     j3.setTranslation(50, -80, 0);
-    Joint j4 = new Joint(red, green, blue, targetRadius * 0.7f);
+    Node j4 = new Node();
+    j4.enableHint(Node.CONSTRAINT);
+    j4.enableHint(Node.BONE, color(red, green, blue), targetRadius * 0.7f);
     j4.setReference(j3);
     j4.setTranslation(0, -80, 0);
-    j1.setRoot(true);
 
     j1.setPosition(position);
 

@@ -3,12 +3,8 @@ package ik.paper;
 import ik.basic.Util;
 import nub.core.Graph;
 import nub.core.Node;
-import nub.ik.animation.Joint;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.ChainSolver;
 import nub.ik.solver.geometric.FABRIKSolver;
-import nub.ik.solver.trik.heuristic.Combined;
-import nub.ik.solver.trik.heuristic.TRIK;
 import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -61,7 +57,6 @@ public class VisualBenchmark extends PApplet {
     }
 
     public void setup() {
-        Joint.axes = true;
         scene = new Scene(this);
         if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
         scene.setRadius(numJoints * 1f * boneLength);

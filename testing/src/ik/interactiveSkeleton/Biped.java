@@ -1,3 +1,4 @@
+/*
 package ik.interactiveSkeleton;
 
 import nub.core.Graph;
@@ -16,9 +17,11 @@ import processing.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+*/
 /**
  * Created by sebchaparr on 30/07/18.
- */
+ *//*
+
 public class Biped extends PApplet {
   //TODO : Update
   Scene scene;
@@ -180,3 +183,4 @@ public class Biped extends PApplet {
     PApplet.main(new String[]{"ik.interactiveSkeleton.Biped"});
   }
 }
+*/

@@ -1,3 +1,4 @@
+/*
 package ik.trik.expressive;
 
 import ik.basic.Util;
@@ -186,3 +187,4 @@ public class ExpressiveTest extends PApplet {
     PApplet.main(new String[]{"ik.trik.expressive.ExpressiveTest"});
   }
 }
+*/

@@ -4,7 +4,6 @@ import nub.core.Graph;
 import nub.core.Node;
 import nub.core.constraint.BallAndSocket;
 import nub.ik.solver.Solver;
-import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -19,7 +18,6 @@ import processing.event.MouseEvent;
  */
 
 public class GaitGenerator extends PApplet {
-  //TODO : Update
   Scene scene;
   Node target;
   float y_floor = 0;
@@ -35,7 +33,6 @@ public class GaitGenerator extends PApplet {
   Node ref;
 
   public void setup() {
-    Joint.depth = true;
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
     scene.setFOV(PI / 3);
@@ -84,25 +81,24 @@ public class GaitGenerator extends PApplet {
 
     //Create a leg
     Vector v = new Vector(-boneLength, 0, 0);
-    Joint j1 = new Joint();
+    Node j1 = new Node();
     j1.setReference(reference);
-    j1.setDrawConstraint(false);
     BallAndSocket c1 = new BallAndSocket(radians(80), radians(80), radians(80), radians(80));
     c1.setRestRotation(j1.rotation().get(), new Vector(0, 1, 0), new Vector(-1, 0, 0));
     j1.setConstraint(c1);
 
-    Joint j2 = new Joint();
-    j2.setDrawConstraint(false);
+    Node j2 = new Node();
+    j2.enableHint(Node.BONE, -1, scene.radius() * 0.03f);
     j2.setReference(j1);
     j2.translate(-boneLength, 0, 0);
 
-    Joint j3 = new Joint();
-    j3.setDrawConstraint(false);
+    Node j3 = new Node();
+    j3.enableHint(Node.BONE, -1, scene.radius() * 0.03f);
     j3.setReference(j2);
     j3.translate(new Quaternion(new Vector(0, 0, 1), radians(-35)).rotate(v));
 
-    Joint j4 = new Joint();
-    j4.setDrawConstraint(false);
+    Node j4 = new Node();
+    j4.enableHint(Node.BONE, -1, scene.radius() * 0.03f);
     j4.setReference(j3);
     j4.translate(new Quaternion(new Vector(0, 0, 1), radians(-35)).rotate(v));
 

@@ -1,3 +1,4 @@
+/*
 package ik.interactive;
 
 import nub.core.Graph;
@@ -19,9 +20,11 @@ import processing.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 
+*/
 /**
  * Created by sebchaparr on 27/10/18.
- */
+ *//*
+
 public class SkeletonBuilder extends PApplet {
   //TODO Check Fitting curve method for target path
   Scene scene, focus;
@@ -36,11 +39,15 @@ public class SkeletonBuilder extends PApplet {
 
   float radius = 30;
   int w = 1000, h = 700;
-  /*Create different skeletons to interact with*/
+  */
+/*Create different skeletons to interact with*//*
+
   //Choose FX2D, JAVA2D, P2D or P3D
   String renderer = P3D;
 
-  /*Constraint Parameters*/
+  */
+/*Constraint Parameters*//*
+
   float minAngle = radians(60);
   float maxAngle = radians(60);
 
@@ -106,22 +113,26 @@ public class SkeletonBuilder extends PApplet {
         popStyle();
       }
     }
-        /*
+        */
+/*
         panel._scene.beginDraw();
         panel._scene.frontBuffer().background(0);
         if(panel._frame != null)
             panel._scene.traverse();
         panel._scene.endDraw();
         panel._scene.display();
+        *//*
+
         */
-        /*
+/*
         scene.beginHUD();
         for(AuxiliaryView view : views) {
             InteractiveJoint.setPGraphics(scene.frontBuffer());
             image(view._pGraphics,0,0, width, height);
         }
         scene.endHUD();
-        */
+        *//*
+
     if (debug && solver instanceof TreeSolver) {
       pushStyle();
       for (ArrayList<Vector> list : ((TreeSolver) solver).aux_p) {
@@ -165,7 +176,8 @@ public class SkeletonBuilder extends PApplet {
     scene.beginHUD();
     if (fitCurve != null) fitCurve.drawCurves(scene.context());
     scene.endHUD();
-        /*for(int i = 0; i < views.length; i++) {
+        */
+/*for(int i = 0; i < views.length; i++) {
             scene.shift(views[i]);
             Joint.setPGraphics(views[i].frontBuffer());
             scene.beginHUD();
@@ -178,7 +190,8 @@ public class SkeletonBuilder extends PApplet {
             if(fitCurve != null) fitCurve.drawCurves(scene.frontBuffer());
             scene.endHUD();
             views[i].shift(scene);
-        }*/
+        }*//*
+
     if (solve && debug) {
       solver.solve();
     }
@@ -250,7 +263,8 @@ public class SkeletonBuilder extends PApplet {
   }
 
   public void mouseReleased(MouseEvent event) {
-        /*if(event.isControlDown() && event.getButton() == LEFT){
+        */
+/*if(event.isControlDown() && event.getButton() == LEFT){
             //Reset Curve
             if(fitCurve != null){
                 fitCurve.setStarted(false);
@@ -260,7 +274,8 @@ public class SkeletonBuilder extends PApplet {
                 scene.drawPath(fitCurve._interpolator, 5);
 
             }
-        }*/
+        }*//*
+
 
     //mouse = scene.location(mouse);
     //mouse = Vector.projectVectorOnPlane(mouse, scene.viewDirection());
@@ -488,3 +503,4 @@ public class SkeletonBuilder extends PApplet {
   }
 }
 
+*/

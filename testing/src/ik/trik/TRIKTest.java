@@ -3,7 +3,6 @@ package ik.trik;
 import ik.basic.Util;
 import nub.core.Graph;
 import nub.core.Node;
-import nub.ik.animation.Joint;
 import nub.ik.solver.Solver;
 import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
@@ -37,7 +36,6 @@ public class TRIKTest extends PApplet {
     }
 
     public void setup() {
-        Joint.axes = true;
         scene = new Scene(this);
         if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
         scene.setRadius(280);
@@ -58,12 +56,12 @@ public class TRIKTest extends PApplet {
         //Define Text Properties
         textAlign(CENTER);
         textSize(24);
+
+        scene.enableHint(Graph.BACKGROUND | Graph.AXES);
     }
 
     public void draw() {
-        background(0);
         if (scene.is3D()) lights();
-        scene.drawAxes();
         scene.render();
         scene.beginHUD();
         drawInfo(skeleton);
@@ -129,19 +127,6 @@ public class TRIKTest extends PApplet {
         return target;
     }
 
-    public Node createJoint(Scene scene, Node node, Vector translation, float radius, boolean drawLine) {
-        /*
-         * A Joint will be represented as a ball
-         * that is joined to its reference Node
-         * */
-        Joint joint = new Joint(radius);
-        joint.setReference(node);
-        //Exact picking precision
-        joint.setBullsEyeSize(0);
-        joint.setTranslation(translation);
-        if (!drawLine) joint.setRoot(true);
-        return joint;
-    }
 
     public void drawInfo(List<Node> skeleton) {
         for (int i = 0; i < skeleton.size(); i++) {

@@ -1,3 +1,4 @@
+/*
 package ik.obj;
 
 import nub.core.Graph;
@@ -12,9 +13,11 @@ import processing.core.PApplet;
 import processing.event.MouseEvent;
 
 
+*/
 /**
  * Created by sebchaparr on 10/05/19.
- */
+ *//*
+
 public class Rex extends PApplet {
   Scene scene;
   Skeleton skeleton;
@@ -96,3 +99,4 @@ public class Rex extends PApplet {
   }
 
 }
+*/

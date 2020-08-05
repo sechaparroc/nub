@@ -1,3 +1,4 @@
+/*
 package ik.obj;
 
 import ik.interactive.Target;
@@ -15,9 +16,11 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+*/
 /**
  * Created by sebchaparr on 10/05/19.
- */
+ *//*
+
 public class Eagle extends PApplet {
   Scene scene;
   GPULinearBlendSkinning skinning;
@@ -160,7 +163,8 @@ public class Eagle extends PApplet {
   }
 
   //Skeleton is founded by interacting with SimpleBuilder
-    /* No Local coordinate has rotation (all are aligned with respect to reference system coordinates)
+    */
+/* No Local coordinate has rotation (all are aligned with respect to reference system coordinates)
         J1 |-> Node translation: [ -1.7894811E-7, -1.2377515, -1.5709928 ]rotation axis: [ 0.0, 0.0, 0.0 ]rotation angle : 0.0
             J2 |-> Node translation: [ 6.425498E-7, 1.2980552, 5.463369 ]rotation axis: [ 0.0, 0.0, 0.0 ]rotation angle : 0.0
                 J3 |-> Node translation: [ 6.5103023E-7, 0.23802762, 5.4746757 ]rotation axis: [ 0.0, 0.0, 0.0 ]rotation angle : 0.0
@@ -175,7 +179,8 @@ public class Eagle extends PApplet {
             J12 |-> Node translation: [ 8.201833, 3.9170508, -1.8660631 ]rotation axis: [ 0.0, 0.0, 0.0 ]rotation angle : 0.0
                 J13 |-> Node translation: [ 11.942226, 5.541193, 1.8152181 ]rotation axis: [ 0.0, 0.0, 0.0 ]rotation angle : 0.0
                     J14 |-> Node translation: [ 13.184211, 3.8215134, 2.3884451 ]rotation axis: [ 0.0, 0.0, 0.0 ]rotation angle : 0.0
-    */
+    *//*
+
 
   public List<Node> buildSkeleton(Node reference) {
     Joint j1 = new Joint(scene.radius() * 0.01f);
@@ -267,3 +272,4 @@ public class Eagle extends PApplet {
   }
 
 }
+*/

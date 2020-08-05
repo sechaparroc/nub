@@ -6,7 +6,6 @@ import nub.core.Node;
 import nub.ik.loader.collada.URDFLoader;
 import nub.ik.loader.collada.data.Model;
 import nub.ik.solver.geometric.ChainSolver;
-import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -31,7 +30,6 @@ public class LoadURDF extends PApplet {
   }
 
   public void setup() {
-    Joint.axes = true;
     //Joint.markers = true;
     randomSeed(14);
     this.g.textureMode(NORMAL);
@@ -46,7 +44,7 @@ public class LoadURDF extends PApplet {
 
     model.printNames();
     if (dae != 2) {
-      Target target = new Target(scene, ((Joint) model.root()).radius());
+      Target target = new Target(scene.radius() * 0.01f);
       /*Chain solver*/
 
       List<Node> branch = Node.path(model.skeleton().get("node1"), model.skeleton().get(dae == 0 ? "node10" : "node8"));

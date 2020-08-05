@@ -1,44 +1,46 @@
 package ik.interactive;
 
-import nub.core.Graph;
 import nub.core.Interpolator;
 import nub.core.Node;
+import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import nub.processing.TimingTask;
 import processing.core.PConstants;
-import processing.core.PShape;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Target extends Node {
-  //TODO : Reduce code Duplicaion by means of Abstract Class
-  //TODO : Improve multiple translation
   protected static List<Target> _selectedTargets = new ArrayList<Target>();
   protected Interpolator _interpolator;
   protected List<KeyFrame> _path = new ArrayList<KeyFrame>();
-  protected PShape _redBall;
   protected Vector _desiredTranslation;
   protected ArrayList<Vector> _last = new ArrayList<>();
   protected float _radius;
-  protected Scene _scene;
+  protected boolean _selected;
 
   public Interpolator interpolator() {
     return _interpolator;
   }
 
-  public Target(Scene scene, float radius) {
+  public Target(float radius) {
     super();
-    _scene = scene;
-    _redBall = scene.is3D() ? scene.context().createShape(PConstants.SPHERE, radius * 2f) :
-        scene.context().createShape(PConstants.ELLIPSE, 0, 0, radius * 4f, radius * 4f);
-    _redBall.setStroke(false);
-    _redBall.setFill(scene.pApplet.color(255, 0, 0));
     _radius = radius;
+    setShape(pg ->{
+      pg.hint(PConstants.DISABLE_DEPTH_TEST);
+      pg.pushStyle();
+      pg.noStroke();
+      if(_selected) pg.fill(0,255,0);
+      else pg.fill(255,0,0);
+      if(pg.is2D()) pg.ellipse(0,0, _radius * 2, _radius * 2);
+      else pg.sphere(_radius * 2);
+      pg.popStyle();
+      pg.hint(PConstants.ENABLE_DEPTH_TEST);
+    });
+    enableHint(AXES, _radius * 1.5f);
 
     _interpolator = new Interpolator(this);
-    //setShape(_redBall);
     setBullsEyeSize(0);
 
     Target t = this;
@@ -52,19 +54,12 @@ public class Target extends Node {
     task.run(150);
   }
 
-  public Target(Scene scene, float radius, Node frame) {
-    this(scene, radius);
-    setPosition(frame.position());
-    setOrientation(frame.orientation());
+  public Target(float radius, Vector position, Quaternion orientation) {
+    this(radius);
+    setPosition(position);
+    setOrientation(orientation);
   }
 
-  @Override
-  public void graphics(processing.core.PGraphics pGraphics) {
-    pGraphics.hint(PConstants.DISABLE_DEPTH_TEST);
-    pGraphics.shape(_redBall);
-    Scene.drawAxes(pGraphics, _radius * 4);
-    pGraphics.hint(PConstants.ENABLE_DEPTH_TEST);
-  }
 
 
   public ArrayList<Vector> last() {
@@ -72,7 +67,7 @@ public class Target extends Node {
   }
 
   public void drawPath() {
-    _interpolator.configHint(Interpolator.SPLINE, _scene.context().color(255, 255, 0));
+    _interpolator.configHint(Interpolator.SPLINE, Scene.pApplet.color(255, 255, 0));
   }
 
   @Override
@@ -80,27 +75,28 @@ public class Target extends Node {
     String command = (String) gesture[0];
     if (command.matches("KeepSelected")) {
       if (!_selectedTargets.contains(this)) {
-        _redBall.setFill(_scene.pApplet.color(0, 255, 0));
+        _selected = true;
         _selectedTargets.add(this);
       } else {
-        _redBall.setFill(_scene.pApplet.color(255, 0, 0));
+        _selected = false;
         _selectedTargets.remove(this);
       }
     } else if (command.matches("Add")) {
       if (_desiredTranslation != null) {
         if (!_path.isEmpty()) removeKeyFrame(_path.get(0));
         KeyFrame frame = new KeyFrame(this);
-        frame.translate(this.worldLocation(this.translateDesired((Vector) gesture[1])));
+        frame.translate(this.worldLocation(this.translateDesired((Scene) gesture[1], (Vector) gesture[2])));
         addKeyFrame(frame, 0);
       }
       _desiredTranslation = null;
     } else if (command.matches("OnAdding")) {
-      _desiredTranslation = translateDesired((Vector) gesture[1]);
+      _desiredTranslation = translateDesired((Scene) gesture[1], (Vector) gesture[2]);
     } else if (command.matches("Reset")) {
       _desiredTranslation = null;
     } else if (command.matches("AddCurve")) {
-      FitCurve fitCurve = (FitCurve) gesture[1];
-      fitCurve.getCatmullRomCurve(_scene, this, _scene.screenLocation(this.position()).z());
+      Scene scene = (Scene) gesture[1];
+      FitCurve fitCurve = (FitCurve) gesture[2];
+      fitCurve.getCatmullRomCurve(scene, this, scene.screenLocation(this.position()).z());
       _interpolator = fitCurve._interpolator;
       _interpolator.setNode(this);
       _interpolator.setSpeed(5f);
@@ -112,10 +108,10 @@ public class Target extends Node {
     return _selectedTargets;
   }
 
-  public static void multipleTranslate() {
+  public static void multipleTranslate(Scene scene) {
     for (Target target : _selectedTargets) {
-      if (target._scene.node() != target)
-        target._scene.translateNode(target, target._scene.mouseDX(), target._scene.mouseDY(), 0, 0);
+      if (scene.node() != target)
+        scene.translateNode(target, scene.mouseDX(), scene.mouseDY(), 0, 0);
     }
   }
 
@@ -149,38 +145,10 @@ public class Target extends Node {
     updateInterpolator();
   }
 
-  //------------------------------------
-  //Interactive actions - same method found in Graph Class (duplicated cause of visibility)
-  protected Vector _translateDesired(float dx, float dy, float dz, int zMax, Node node) {
-    if (_scene.is2D() && dz != 0) {
-      System.out.println("Warning: graph is 2D. Z-translation reset");
-      dz = 0;
-    }
-    dx = _scene.isEye(node) ? -dx : dx;
-    dy = !Scene.leftHanded ^ _scene.isEye(node) ? -dy : dy;
-    dz = _scene.isEye(node) ? dz : -dz;
-    // Scale to fit the screen relative vector displacement
-    if (_scene.type() == Graph.Type.PERSPECTIVE) {
-      float k = (float) Math.tan(_scene.fov() / 2.0f) * Math.abs(
-          _scene.eye().location(_scene.isEye(node) ? _scene.anchor() : node.position())._vector[2] * _scene.eye().magnitude());
-      //TODO check me weird to find height instead of width working (may it has to do with fov?)
-      dx *= 2.0 * k / (_scene.height() * _scene.eye().magnitude());
-      dy *= 2.0 * k / (_scene.height() * _scene.eye().magnitude());
-    }
-    // this expresses the dz coordinate in world units:
-    //Vector eyeVector = new Vector(dx, dy, dz / eye().magnitude());
-    Vector eyeVector = new Vector(dx, dy, dz * 2 * _scene.radius() / zMax);
-    return node.reference() == null ? _scene.eye().worldDisplacement(eyeVector) : node.reference().displacement(eyeVector, _scene.eye());
-  }
-
-
-  public Vector translateDesired(Vector mouse) {
-    float dx = mouse.x() - _scene.screenLocation(position()).x();
-    float dy = mouse.y() - _scene.screenLocation(position()).y();
-    return _translateDesired(dx, dy, 0, Math.min(_scene.width(), _scene.height()), this);
-  }
-
-  public Scene scene() {
-    return _scene;
+  protected Vector translateDesired(Scene scene, Vector point) {
+    Vector delta = Vector.subtract(point, scene.screenLocation(position()));
+    delta.setZ(0);
+    Vector vector = scene.displacement(delta, this);
+    return reference() == null ? worldDisplacement(vector) : reference().displacement(vector, this);
   }
 }

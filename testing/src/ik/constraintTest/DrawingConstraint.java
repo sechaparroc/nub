@@ -100,10 +100,16 @@ public class DrawingConstraint extends PApplet {
     base.setReference(baseRoot);
     //Update controllers
     updateControllers(constraint, t_lr, t_ud, base);
+
+    //Define scene hints
+    constraintScene.enableHint(Graph.BACKGROUND, color(0));
+    thetaScene.enableHint(Graph.BACKGROUND, color(0));
+    baseScene.enableHint(Graph.BACKGROUND, color(0));
   }
 
   public void draw() {
     handleMouse();
+    background(0);
     drawScene(constraintScene, constraintRoot, "Constraint View", 0, 0);
     drawScene(thetaScene, thetaRoot, "Side / Top View", w / 3, 0);
     drawScene(baseScene, baseRoot, "Front View", 2 * w / 3, 0);
@@ -140,7 +146,6 @@ public class DrawingConstraint extends PApplet {
   }
 
   public void drawScene(Scene scene, Node root, String title, int x, int y) {
-    scene.context().background(0);
     scene.context().lights();
     scene.render(root);
     scene.beginHUD();
@@ -156,7 +161,7 @@ public class DrawingConstraint extends PApplet {
     scene.context().rect(0, 0, constraintScene.context().width, constraintScene.context().height);
     scene.context().popStyle();
     scene.endHUD();
-    scene.display(x, y);
+    scene.image(x, y);
   }
 
   static class BaseControl extends Node {

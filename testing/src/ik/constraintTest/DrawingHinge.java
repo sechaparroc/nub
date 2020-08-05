@@ -67,6 +67,9 @@ public class DrawingHinge extends PApplet {
 
     //Update controllers
     updateControllers(constraint, control);
+
+    constraintScene.enableHint(Graph.BACKGROUND, color(0));
+    thetaScene.enableHint(Graph.BACKGROUND, color(0));
   }
 
   public void draw() {
@@ -96,8 +99,8 @@ public class DrawingHinge extends PApplet {
   }
 
   public void drawScene(Scene scene, Node root, String title, int x, int y) {
-    scene.context().background(0);
     scene.context().lights();
+    scene.render(root);
     scene.beginHUD();
     scene.context().noLights();
     scene.context().pushStyle();
@@ -111,7 +114,7 @@ public class DrawingHinge extends PApplet {
     scene.context().rect(0, 0, constraintScene.context().width, constraintScene.context().height);
     scene.context().popStyle();
     scene.endHUD();
-    scene.display(x, y);
+    scene.image(x, y);
   }
 
   static class ThetaControl extends Node {

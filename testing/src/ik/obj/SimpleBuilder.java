@@ -3,7 +3,6 @@ package ik.obj;
 import ik.interactive.InteractiveJoint;
 import nub.core.Graph;
 import nub.ik.animation.Skeleton;
-import nub.ik.animation.Joint;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import processing.core.PApplet;
@@ -11,6 +10,7 @@ import processing.core.PImage;
 import processing.core.PShape;
 import processing.core.PVector;
 import processing.event.MouseEvent;
+import sun.security.provider.SHA;
 
 /**
  * Simple Builder
@@ -62,24 +62,31 @@ public class SimpleBuilder extends PApplet {
     // Create a scene
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
-    //Import model
-        /*
-          If you have a mesh with quad faces use:
-          model = createShapeQuad(loadShape(shapePath), texturePath, 100);
-        */
-    model = createShapeTri(loadShape(shapePath), texturePath, 100);
+    model = loadShape(shapePath);
+    model.setTexture(loadImage(texturePath));
     //Scale scene
     float size = max(model.getHeight(), model.getWidth());
     scene.leftHanded = false;
     scene.setRadius(size);
     scene.fit();
+    scene.enableHint(Graph.BACKGROUND | Graph.AXES);
+    scene.enableHint(Graph.SHAPE);
+    scene.setShape(pg ->{
+      pg.shape(model);
+    });
+    scene.enableHint(Graph.HUD);
+    scene.setHUD(pg ->{
+      pg.noLights();
+      pg.stroke(255);
+      pg.stroke(255, 0, 0);
+      pg.text("Last action: " + lastCommand, width / 2, 50);
+    });
+
     //Create the Skeleton and add an Interactive Joint at the center of the scene
-    skeleton = new Skeleton(scene);
+    skeleton = new Skeleton();
     //Create the interactive joint
     radius = scene.radius() * 0.01f;
-    InteractiveJoint initial = new InteractiveJoint(radius);
-    initial.setRoot(true);
-    initial.setBullsEyeSize(-0.01f);
+    InteractiveJoint initial = new InteractiveJoint(true, color(random(255),random(255),random(255)), radius, false);
     //Add the joint to the skeleton
     skeleton.addJoint("J0", initial);
     textSize(18);
@@ -87,22 +94,12 @@ public class SimpleBuilder extends PApplet {
   }
 
   public void draw() {
-    background(0);
     ambientLight(102, 102, 102);
     lightSpecular(204, 204, 204);
     directionalLight(102, 102, 102, 0, 0, -1);
     specular(255, 255, 255);
     shininess(10);
-    stroke(255);
-    stroke(255, 0, 0);
-    scene.drawAxes();
-    shape(model);
     scene.render();
-
-    noLights();
-    scene.beginHUD();
-    text("Last action: " + lastCommand, width / 2, 50);
-    scene.endHUD();
   }
 
   //mouse events
@@ -124,7 +121,7 @@ public class SimpleBuilder extends PApplet {
     } else if (mouseButton == LEFT) {
       scene.mouseSpin();
     } else if (mouseButton == RIGHT) {
-      scene.mouseTranslate();
+      scene.mouseTranslate(0);
     } else if (mouseButton == CENTER) {
       scene.scale(scene.mouseDX());
     }
@@ -161,14 +158,10 @@ public class SimpleBuilder extends PApplet {
   public void keyPressed() {
     if (key == 'J' || key == 'j') {
       lastCommand = "Adding Joint on the middle of the scene";
-      InteractiveJoint initial = new InteractiveJoint(radius);
-      initial.setRoot(true);
-      initial.setBullsEyeSize(-0.01f);
+      InteractiveJoint initial = new InteractiveJoint(true, color(random(255),random(255),random(255)), radius, false);
     } else if (key == 'P' || key == 'p') {
       lastCommand = "Skeleton information saved on : " + sketchPath() + jsonPath;
       skeleton.save(sketchPath() + jsonPath);
-    } else if (key == 'A' || key == 'a') {
-      Joint.axes = !Joint.axes;
     } else if (key == 'E' || key == 'e') {
       if (scene.node() != null) {
         lastCommand = "Setting Joint translation to (0,0,0)";
@@ -176,55 +169,6 @@ public class SimpleBuilder extends PApplet {
         scene.node().tagging = false;
       }
     }
-  }
-
-  //Adapted from http://www.cutsquash.com/2015/04/better-obj-model-loading-in-processing/
-  public PShape createShapeTri(PShape r, String texture, float size) {
-    float scaleFactor = size / max(r.getWidth(), r.getHeight());
-    PImage tex = loadImage(texture);
-    PShape s = createShape();
-    s.beginShape(TRIANGLES);
-    s.noStroke();
-    s.texture(tex);
-    s.textureMode(NORMAL);
-    for (int i = 100; i < r.getChildCount(); i++) {
-      if (r.getChild(i).getVertexCount() == 3) {
-        for (int j = 0; j < r.getChild(i).getVertexCount(); j++) {
-          PVector p = r.getChild(i).getVertex(j).mult(scaleFactor);
-          PVector n = r.getChild(i).getNormal(j);
-          float u = r.getChild(i).getTextureU(j);
-          float v = r.getChild(i).getTextureV(j);
-          s.normal(n.x, n.y, n.z);
-          s.vertex(p.x, p.y, p.z, u, v);
-        }
-      }
-    }
-    s.endShape();
-    return s;
-  }
-
-  public PShape createShapeQuad(PShape r, String texture, float size) {
-    float scaleFactor = size / max(r.getWidth(), r.getHeight());
-    PImage tex = loadImage(texture);
-    PShape s = createShape();
-    s.beginShape(QUADS);
-    s.noStroke();
-    s.texture(tex);
-    s.textureMode(NORMAL);
-    for (int i = 100; i < r.getChildCount(); i++) {
-      if (r.getChild(i).getVertexCount() == 4) {
-        for (int j = 0; j < r.getChild(i).getVertexCount(); j++) {
-          PVector p = r.getChild(i).getVertex(j).mult(scaleFactor);
-          PVector n = r.getChild(i).getNormal(j);
-          float u = r.getChild(i).getTextureU(j);
-          float v = r.getChild(i).getTextureV(j);
-          s.normal(n.x, n.y, n.z);
-          s.vertex(p.x, p.y, p.z, u, v);
-        }
-      }
-    }
-    s.endShape();
-    return s;
   }
 }
 

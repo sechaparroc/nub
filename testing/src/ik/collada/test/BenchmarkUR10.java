@@ -9,7 +9,6 @@ import nub.ik.loader.collada.URDFLoader;
 import nub.ik.loader.collada.data.Model;
 import nub.ik.solver.Solver;
 import nub.ik.solver.geometric.ChainSolver;
-import nub.ik.animation.Joint;
 import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -33,7 +32,7 @@ public class BenchmarkUR10 extends PApplet {
   List<Solver> solvers = new ArrayList<>();
   List<Vector> positions = new ArrayList<>();
   List<Target> targets = new ArrayList<>();
-  int[] enable = {0, 1, 2, 3, 4};
+  int[] enable = {0, 1, 2, 3};
 
 
   public void settings() {
@@ -41,7 +40,6 @@ public class BenchmarkUR10 extends PApplet {
   }
 
   public void setup() {
-    Joint.axes = true;
     //Joint.markers = true;
     randomSeed(14);
     this.g.textureMode(NORMAL);
@@ -54,7 +52,7 @@ public class BenchmarkUR10 extends PApplet {
       Model model = models[i];
 
       model.printNames();
-      Target target = new Target(scene, ((Joint) model.root()).radius());
+      Target target = new Target(scene.radius() * 0.05f);
 
       /*Adding constraints*/
       Node node_1 = model.skeleton().get("node1");

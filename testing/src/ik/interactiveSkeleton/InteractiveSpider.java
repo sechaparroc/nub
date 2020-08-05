@@ -7,7 +7,6 @@ import nub.core.constraint.BallAndSocket;
 import nub.core.constraint.FixedConstraint;
 import nub.core.constraint.LocalConstraint;
 import nub.ik.solver.Solver;
-import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -113,25 +112,23 @@ public class InteractiveSpider extends PApplet {
     }
 
     //Skeleton and IK Stuff
-    public Joint leg(int i, Node reference, Vector upper, Vector middle, Vector lower, Node target, boolean invert, float radius) {
-      Joint j1 = new Joint(radius);
-      j1.setDrawConstraint(false);
+    public Node leg(int i, Node reference, Vector upper, Vector middle, Vector lower, Node target, boolean invert, float radius) {
+      Node j1 = new Node();
       j1.setReference(reference);
       j1.setPosition(reference.worldLocation(upper));
-      Joint j2 = new Joint(radius);
-      j2.setDrawConstraint(false);
+      Node j2 = new Node();
+      j2.enableHint(Node.BONE, -1, radius, true);
       j2.setReference(j1);
       j2.setPosition(reference.worldLocation(middle));
-      Joint j21 = new Joint(radius);
-      j21.setDrawConstraint(false);
+      Node j21 = new Node();
+      j21.enableHint(Node.BONE, -1, radius, true);
       j21.setReference(j2);
       Vector v = Vector.add(middle, Vector.multiply(Vector.subtract(lower, middle), 0.5f));
       j21.setPosition(reference.worldLocation(v));
-      Joint j3 = new Joint(radius);
-      j3.setDrawConstraint(false);
+      Node j3 = new Node();
+      j3.enableHint(Node.BONE, -1, radius, true);
       j3.setReference(j21);
       j3.setPosition(reference.worldLocation(lower));
-      j1.setRoot(true);
       addIk(i, j1, j3, target, invert);
 
       BallAndSocket ballAndSocket = new BallAndSocket(radians(20), radians(20));
@@ -240,7 +237,6 @@ public class InteractiveSpider extends PApplet {
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
     scene.setFOV(PI / 3);
-    Joint.depth = true;
     for (int i = 0; i < spiders.length; i++) {
       spiders[i] = new Spider(scene,
           random(6, 14),

@@ -3,7 +3,6 @@ package ik.constraintTest;
 import nub.core.Graph;
 import nub.core.Node;
 import nub.core.constraint.BallAndSocket;
-import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -38,17 +37,36 @@ public class SimpleCone extends PApplet {
     scene.eye().rotate(new Quaternion(new Vector(0, 1, 0), PI));
 
     //Generate a basic structure
-    Joint j1 = new Joint(radius);
-    Joint j2 = new Joint(radius);
+    Node j1 = new Node();
+    j1.enableHint(Node.CONSTRAINT);
+    j1.setShape(pg -> {
+        pg.pushStyle();
+        pg.noStroke();
+        pg.fill(255);
+        if(pg.is3D()) pg.sphere(radius);
+        else pg.ellipse(0,0, 2 * radius, 2 * radius);
+        pg.popStyle();
+    });
+    Node j2 = new Node();
+    j2.enableHint(Node.CONSTRAINT);
+    j2.enableHint(Node.BONE, color(255), radius);
     j2.setReference(j1);
     j2.translate(0, 50, 0);
-    Joint j3 = new Joint(radius);
+
+    Node j3 = new Node();
+    j3.enableHint(Node.CONSTRAINT);
+    j3.enableHint(Node.BONE, color(255), radius);
     j3.setReference(j2);
     j3.translate(30, 30, 0);
 
-    Joint j4 = new Joint(radius);
+    Node j4 = new Node();
+    j4.enableHint(Node.CONSTRAINT);
+    j4.enableHint(Node.BONE, color(255), radius);
     j4.translate(0, -30, 0);
-    Joint j5 = new Joint(radius);
+
+    Node j5 = new Node();
+    j5.enableHint(Node.CONSTRAINT);
+    j5.enableHint(Node.BONE, color(255), radius);
     j5.translate(0, -50, 0);
     j5.setReference(j4);
     BallAndSocket c4 = new BallAndSocket(radians(20), radians(30), radians(60), radians(40));

@@ -3,7 +3,6 @@ package ik.basic;
 import ik.interactive.Target;
 import nub.core.Graph;
 import nub.core.Node;
-import nub.ik.animation.Joint;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import processing.core.PApplet;
@@ -19,19 +18,22 @@ public class Multiple_Test extends PApplet {
   List<Target> targets = new ArrayList<>();
 
   public void settings() {
-    size(500, 500, P3D);
+    size(800, 600, P3D);
   }
 
   public void setup() {
-    Joint.axes = true;
     //Setting the scene
     scene = new Scene(this);
     if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
     scene.setRadius(2000);
     scene.fit(1);
 
-    Joint root = new Joint();
-    root.setRoot(true);
+    Node root = new Node(pg -> {
+      pg.pushStyle();
+      pg.fill(255,0,0);
+      pg.sphere(5);
+      pg.popStyle();
+    });
     generateTree(scene, root, branches, num, depth, 0, 0.5f * scene.radius() / ((num + 1) * depth));
 
     //Add IK
@@ -51,7 +53,7 @@ public class Multiple_Test extends PApplet {
     if (root == null) ;
     if (root.children() == null || root.children().isEmpty()) {
       root.tagging = false;
-      Target target = new Target(scene, 6);
+      Target target = new Target(6);
       target.setPosition(root.position().get());
       scene.addIKTarget(root, target);
       targets.add(target);
@@ -89,12 +91,14 @@ public class Multiple_Test extends PApplet {
 
     for (int i = 0; i < branches; i++) {
       //Add joint
-      Node child = new Joint();
+      Node child = new Node();
+      child.enableHint(Node.BONE);
       child.setReference(root);
       child.rotate(new Vector(0, 0, 1), angle);
       child.translate(root.displacement(new Vector(0, l), child));
       for (int j = 0; j < num; j++) {
-        Node next = new Joint();
+        Node next = new Node();
+        next.enableHint(Node.BONE);
         next.setReference(child);
         next.translate(new Vector(0, l));
         child = next;
@@ -119,12 +123,12 @@ public class Multiple_Test extends PApplet {
     if (mouseButton == RIGHT && event.isControlDown()) {
       Vector vector = new Vector(scene.mouseX(), scene.mouseY());
       if (scene.node() != null)
-        scene.node().interact("OnAdding", vector);
+        scene.node().interact("OnAdding", scene, vector);
     } else if (mouseButton == LEFT) {
       scene.spin(scene.pmouseX(), scene.pmouseY(), scene.mouseX(), scene.mouseY());
     } else if (mouseButton == RIGHT) {
-      scene.translate(scene.mouseX() - scene.pmouseX(), scene.mouseY() - scene.pmouseY(), 0);
-      Target.multipleTranslate();
+      scene.mouseTranslate();
+      Target.multipleTranslate(scene);
     } else if (mouseButton == CENTER) {
       scene.scale(scene.mouseDX());
     } else if (scene.node() != null)
@@ -132,7 +136,6 @@ public class Multiple_Test extends PApplet {
     if (!Target.selectedTargets().contains(scene.node())) {
       Target.clearSelectedTargets();
     }
-
   }
 
   public void mouseWheel(MouseEvent event) {

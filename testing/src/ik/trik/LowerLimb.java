@@ -4,7 +4,6 @@ import nub.core.Graph;
 import nub.core.Interpolator;
 import nub.core.Node;
 import nub.ik.solver.trik.implementations.IKSolver;
-import nub.ik.animation.Joint;
 import nub.processing.Scene;
 import nub.processing.TimingTask;
 import processing.core.PApplet;
@@ -35,7 +34,7 @@ public class LowerLimb extends PApplet {
     scene.fit();
     //Create a kinematic chain
     target = createTarget(radius * 1.5f);
-    List<Joint> skeleton = createSkeleton(scene, numJoints, boneLength, radius, color(255, 0, 255));
+    List<Node> skeleton = createSkeleton(scene, numJoints, boneLength, radius, color(255, 0, 255));
     //Add target
     //Place target at end effector position
     target.setPosition(skeleton.get(skeleton.size() - 1));
@@ -49,8 +48,8 @@ public class LowerLimb extends PApplet {
     solver.setMaxError(scene.radius() * 0.001f);
     solver.setTarget(skeleton.get(skeleton.size() - 1), target);
 
-    List<Joint> skeleton2 = createSkeleton(scene, numJoints, boneLength, radius, color(0, 255, 0));
-    IKSolver solver2 = new IKSolver(skeleton2, IKSolver.HeuristicMode.COMBINED);
+    List<Node> skeleton2 = createSkeleton(scene, numJoints, boneLength, radius, color(0, 255, 0));
+    IKSolver solver2 = new IKSolver(skeleton2, IKSolver.HeuristicMode.COMBINED_TRIK);
     solver2.context().enableDelegation(true);
 
     //solver2.enableSmooth(true);
@@ -84,15 +83,19 @@ public class LowerLimb extends PApplet {
     return new Node(sphere);
   }
 
-  public List<Joint> createSkeleton(Scene scene, int numJoints, float boneLength, float radius, int col) {
-    int r = (int) red(col), g = (int) green(col), b = (int) blue(col);
-    List<Joint> skeleton = new ArrayList<Joint>();
-    Joint root = new Joint(r, g, b, radius);
-    root.setRoot(true);
+  public List<Node> createSkeleton(Scene scene, int numJoints, float boneLength, float radius, int col) {
+    List<Node> skeleton = new ArrayList<Node>();
+    Node root = new Node(pg ->{
+        pg.pushStyle();
+        pg.fill(col);
+        pg.sphere(radius);
+        pg.popStyle();
+    });
     skeleton.add(root);
-    Joint prev = root;
+    Node prev = root;
     for (int i = 0; i < numJoints; i++) {
-      Joint joint = new Joint(r, g, b, radius);
+      Node joint = new Node();
+      joint.enableHint(Node.BONE, col);
       joint.setReference(prev);
       joint.translate(0, -boneLength, 0);
       prev = joint;

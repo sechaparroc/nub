@@ -8,7 +8,6 @@ import nub.core.constraint.Constraint;
 import nub.core.constraint.Hinge;
 import nub.ik.solver.trik.Tree;
 import nub.ik.solver.trik.implementations.IKSolver;
-import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -37,7 +36,7 @@ public class MultipleLimbs extends PApplet {
     scene.setRadius(boneLength * numJoints);
     scene.fit();
     //Create a kinematic chain
-    createSkeleton(null, 0, 255, 0, radius, boneLength, numJoints);
+    createSkeleton(null, color(0, 255, 0), radius, boneLength, numJoints);
   }
 
   public void draw() {
@@ -79,7 +78,7 @@ public class MultipleLimbs extends PApplet {
 
 
   public Tree createSolver(Node root, float radius) {
-    Tree solver = new Tree(root, IKSolver.HeuristicMode.COMBINED);
+    Tree solver = new Tree(root, IKSolver.HeuristicMode.COMBINED_TRIK);
     solver.setTimesPerFrame(10);
     solver.setMaxIterations(10);
     solver.setChainTimesPerFrame(15);
@@ -106,10 +105,15 @@ public class MultipleLimbs extends PApplet {
     return solver;
   }
 
-  public HashMap<String, Node> createSkeleton(Node reference, int red, int green, int blue, float radius, float boneLength, int numJoints) {
+  public HashMap<String, Node> createSkeleton(Node reference, int col, float radius, float boneLength, int numJoints) {
     HashMap<String, Node> skeleton = new HashMap<>();
     //Create root
-    Joint root = new Joint(red, green, blue, radius);
+    Node root = new Node(pg ->{
+      pg.pushStyle();
+      pg.fill(col);
+      pg.sphere(radius);
+      pg.popStyle();
+    });
     root.setReference(reference);
     root.setConstraint(new Constraint() {
       @Override
@@ -122,13 +126,12 @@ public class MultipleLimbs extends PApplet {
         return new Quaternion();
       }
     });
-    root.setRoot(true);
     skeleton.put("ROOT", root);
 
     //create lower limbs
-    createLimb("LOWER_LEFT_1", numJoints, red, green, blue, radius, boneLength,
+    createLimb("LOWER_LEFT_1", numJoints, col, radius, boneLength,
         root, Vector.multiply(new Vector(-1, 1, 0), boneLength), new Vector(0, 1, 0), skeleton);
-    createLimb("LOWER_RIGHT_1", numJoints, red, green, blue, radius, boneLength,
+    createLimb("LOWER_RIGHT_1", numJoints, col, radius, boneLength,
         root, Vector.multiply(new Vector(1, 1, 0), boneLength), new Vector(0, 1, 0), skeleton);
 
     createSolver(root, radius);
@@ -136,17 +139,19 @@ public class MultipleLimbs extends PApplet {
     return skeleton;
   }
 
-  public void createLimb(String name, int joints, int red, int green, int blue, float radius, float boneLength, Node reference, Vector translation, Vector direction, HashMap<String, Node> skeleton) {
+  public void createLimb(String name, int joints, int col, float radius, float boneLength, Node reference, Vector translation, Vector direction, HashMap<String, Node> skeleton) {
     Vector v = direction.normalize(null);
     v.multiply(boneLength);
 
-    Joint prev = new Joint(red, green, blue, radius);
+    Node prev = new Node();
+    prev.enableHint(Node.BONE, col, radius);
     prev.setReference(reference);
     prev.translate(translation);
     skeleton.put(name, prev);
 
     for (int i = 0; i < joints; i++) {
-      Joint next = new Joint(red, green, blue, radius);
+      Node next = new Node();
+      next.enableHint(Node.BONE, col, radius);
       next.setReference(prev);
       next.translate(v);
       skeleton.put(name + i, next);
