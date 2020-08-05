@@ -12,8 +12,8 @@
 package nub.core;
 
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.TreeSolver;
 import nub.ik.solver.trik.Tree;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Matrix;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -308,7 +308,6 @@ public class Graph {
   Type _type;
 
   // 9. Inverse Kinematics solvers
-  protected static boolean _useTRIK = true; //TODO : remove this flag and solve only with TRIK when it is finished.
   protected static List<Solver> _solvers = new ArrayList<Solver>();
   protected static HashMap<Solver, Task> _solverTasks = new HashMap<Solver, Task>();
 
@@ -4975,14 +4974,6 @@ public class Graph {
   }
 
   //IK SOLVERS
-
-  /**
-   * Choose between FABRIK or TRIK to solve a given chain
-   */
-  public static void enableTRIK(boolean trik) {
-    _useTRIK = trik;
-  }
-
   /**
    * Return registered solvers
    */
@@ -4993,11 +4984,14 @@ public class Graph {
   /**
    * Registers the given chain to solve IK.
    */
-  public static Solver registerTreeSolver(Node node) {
+  public static Solver registerTreeSolver(Node node){
+    return registerTreeSolver(node, IKSolver.HeuristicMode.COMBINED_TRIK);
+  }
+
+  public static Solver registerTreeSolver(Node node, IKSolver.HeuristicMode mode) {
     for (Solver solver : _solvers) {
       Node head = null;
-      if (solver instanceof TreeSolver) head = ((TreeSolver) solver).head();
-      else if (solver instanceof Tree) head = ((Tree) solver).head();
+      if (solver instanceof Tree) head = ((Tree) solver).head();
       else return null;
       //If Head is Contained in any structure do nothing
       if (!((isReachable(head) && isReachable(node)) ? Node.path(head, node) : new ArrayList<Node>()).isEmpty())
@@ -5006,8 +5000,7 @@ public class Graph {
 
     Solver solver;
 
-    if (_useTRIK) solver = new Tree(node);
-    else solver = new TreeSolver(node);
+    solver = new Tree(node, IKSolver.HeuristicMode.COMBINED_TRIK);
     _solvers.add(solver);
     //Add task
     Task task = new Task(TimingHandler) {
@@ -5028,8 +5021,7 @@ public class Graph {
     Solver toRemove = null;
     for (Solver solver : _solvers) {
       Node head = null;
-      if (solver instanceof TreeSolver) head = ((TreeSolver) solver).head();
-      else if (solver instanceof Tree) head = ((Tree) solver).head();
+      if (solver instanceof Tree) head = ((Tree) solver).head();
       else return false;
       if (head == node) {
         toRemove = solver;
@@ -5047,8 +5039,7 @@ public class Graph {
   public static Solver treeSolver(Node node) {
     for (Solver solver : _solvers) {
       Node head = null;
-      if (solver instanceof TreeSolver) head = ((TreeSolver) solver).head();
-      else if (solver instanceof Tree) head = ((Tree) solver).head();
+      if (solver instanceof Tree) head = ((Tree) solver).head();
       else return null;
 
       if (head == node) {
@@ -5060,7 +5051,6 @@ public class Graph {
 
   public static boolean addIKTarget(Node endEffector, Node target) {
     for (Solver solver : _solvers) {
-      if (solver instanceof TreeSolver && ((TreeSolver) solver).addTarget(endEffector, target)) return true;
       if (solver instanceof Tree && ((Tree) solver).addTarget(endEffector, target)) return true;
     }
     return false;
@@ -5077,7 +5067,7 @@ public class Graph {
 
   /**
    * Only meaningful for non-registered solvers. Solver should be different than
-   * {@link TreeSolver}.
+   * {@link Tree}.
    *
    * @see #registerTreeSolver(Node)
    * @see #unregisterTreeSolver(Node)
