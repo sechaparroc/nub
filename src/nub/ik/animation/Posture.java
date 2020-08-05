@@ -84,8 +84,8 @@ public class Posture {
         copy.setReference(_reference);
       }
       //set values
-      copy.setPosition(original.position().get());
-      copy.setOrientation(original.orientation().get());
+      copy.setTranslation(original.translation().get());
+      copy.setRotation(original.rotation().get());
       copy.setMagnitude(original.magnitude());
     }
   }
@@ -103,8 +103,8 @@ public class Posture {
       Constraint constrain = node.constraint();
       node.setConstraint(null);
       Node info = _nodeInformation.get(name);
-      node.setPosition(info.position().get());
-      node.setOrientation(info.orientation().get());
+      node.setTranslation(info.translation().get());
+      node.setRotation(info.rotation().get());
       node.setConstraint(constrain);
     }
     skeleton.restoreTargetsState();
