@@ -1,12 +1,12 @@
-/*
+
 package ik.trik.animation;
 
+import nub.core.Graph;
 import nub.core.Node;
 import nub.core.constraint.Constraint;
 import nub.ik.animation.Skeleton;
 import nub.ik.skinning.GPULinearBlendSkinning;
 import nub.ik.skinning.Skinning;
-import nub.ik.animation.Joint;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -35,8 +35,7 @@ public class AnimationTest extends PApplet {
     mainScene.leftHanded = false;
     mainScene.enableHint(Scene.BACKGROUND | Scene.AXES);
 
-
-    skeleton = new Skeleton(mainScene, jsonPath);
+    skeleton = new Skeleton(jsonPath);
     skeleton.enableIK();
     skeleton.addTargets();
     skeleton.setTargetRadius(0.03f * mainScene.radius());
@@ -46,6 +45,8 @@ public class AnimationTest extends PApplet {
     controlScene = new Scene(createGraphics(width, (int) (height * 0.3), P2D)); //0, (int) (height * 0.7f)
     controlScene.setRadius(height * 0.3f / 2.f);
     controlScene.fit();
+    controlScene.enableHint(Graph.BACKGROUND, color(150));
+
     //Setting the panel
     panel = new AnimationPanel(controlScene, skeleton);
     //set eye constraint
@@ -65,30 +66,14 @@ public class AnimationTest extends PApplet {
 
 
   public void draw() {
+    mainScene.openContext();
     mainScene.context().lights();
     skinning.render(mainScene);
-    if (showSkeleton) mainScene.display(skeleton.reference(), 0,0);
-    mainScene.image(0,0);
-    //controlScene.context().background(150);
-    controlScene.display(0, (int) (height * 0.7f));
-  }
+    if (showSkeleton) mainScene.render(skeleton.reference());
+    mainScene.closeContext();
 
-  //Skeleton definition methods
-  public Skeleton generateSkeleton(Scene scene, int n) {
-    Skeleton skeleton = new Skeleton(scene);
-    //1. create a basic skeleton composed of n Joints
-    int idx = 0;
-    skeleton.addJoint("J" + idx++);
-    Vector t = new Vector(0, scene.radius() / n);
-    for (; idx < n; idx++) {
-      Joint joint = skeleton.addJoint("J" + idx, "J" + (idx - 1));
-      joint.translate(t);
-    }
-    //2. create solvers
-    skeleton.enableIK();
-    //3. add targets
-    skeleton.addTarget("J" + --idx);
-    return skeleton;
+    mainScene.image(0,0);
+    controlScene.display(panel,0, (int) (height * 0.7f));
   }
 
 
@@ -100,23 +85,14 @@ public class AnimationTest extends PApplet {
   }
 
   public void mouseDragged() {
-    if (focus == controlScene && focus.node() instanceof ik.trik.expressive.Slider) {
-      focus.node().interact("OnMovement", new Vector(focus.mouseX(), focus.mouseY()));
-    } else {
       if (mouseButton == LEFT) {
         focus.mouseSpin();
       } else if (mouseButton == RIGHT)
         focus.mouseTranslate(0);
       else
         focus.moveForward(mouseX - pmouseX);
-    }
   }
 
-  public void mouseReleased() {
-    if (focus.node() instanceof ik.trik.expressive.Slider) {
-      focus.node().interact("OnFinishedMovement", new Vector(focus.mouseX(), focus.mouseY()));
-    }
-  }
 
   public void mouseWheel(MouseEvent event) {
     if (focus != controlScene && focus.node() == null) focus.scale(event.getCount() * 50);
@@ -181,4 +157,3 @@ public class AnimationTest extends PApplet {
 
 
 }
-*/

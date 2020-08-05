@@ -1,17 +1,13 @@
-/*
 package ik.interactive;
 
 import nub.core.Graph;
 import nub.core.Interpolator;
 import nub.core.Node;
 import nub.core.constraint.BallAndSocket;
-import nub.core.constraint.Constraint;
 import nub.core.constraint.Hinge;
 import nub.ik.solver.Solver;
 import nub.ik.solver.geometric.TreeSolver;
 import nub.ik.solver.trik.Tree;
-import nub.ik.animation.Joint;
-import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import processing.core.PApplet;
@@ -20,17 +16,15 @@ import processing.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-*/
 /**
  * Created by sebchaparr on 27/10/18.
- *//*
+ * */
 
-public class SkeletonBuilder extends PApplet {
+ public class SkeletonBuilder extends PApplet {
   //TODO Check Fitting curve method for target path
-  Scene scene, focus;
+  Scene scene;
   Scene[] views;
-  boolean debug = false;
-  boolean showPath = false, showLast = false, showGrid = false;
+  boolean showPath = false, showLast = false, debug = false;
   //focus;
   //OptionPanel panel;
   //PGraphics canvas1;
@@ -39,14 +33,12 @@ public class SkeletonBuilder extends PApplet {
 
   float radius = 30;
   int w = 1000, h = 700;
-  */
-/*Create different skeletons to interact with*//*
+  //Create different skeletons to interact with
 
   //Choose FX2D, JAVA2D, P2D or P3D
   String renderer = P3D;
 
-  */
-/*Constraint Parameters*//*
+  //Constraint Parameters
 
   float minAngle = radians(60);
   float maxAngle = radians(60);
@@ -63,28 +55,16 @@ public class SkeletonBuilder extends PApplet {
   }
 
   public void setup() {
-    Joint.axes = true;
-    //canvas1 = createGraphics((int)(0.7f*w), h, renderer);
-    //canvas1 = createGraphics(w, h, renderer);
-    //canvas1 = this.g;
     scene = new Scene(this);
-    scene.enableTRIK(true);
-    focus = scene;
     if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
     scene.setRadius(800);
     scene.fit();
+    scene.enableHint(Graph.BACKGROUND | Graph.AXES);
 
-    new InteractiveJoint(radius).setRoot(true);
-    // = new OptionPanel(this, 0.7f * width, 0, (int)(0.3f * width), h );
-    //scene.fit(1);
+    new InteractiveJoint(true, color(random(255), random(255), random(255)), radius, true);
   }
 
   public void draw() {
-    //setFocus();
-    //handleMouse();
-    //scene.beginDraw();
-    //canvas1.background(0);
-    background(0);
     ambientLight(102, 102, 102);
     lightSpecular(204, 204, 204);
     directionalLight(102, 102, 102, 0, 0, -1);
@@ -92,7 +72,6 @@ public class SkeletonBuilder extends PApplet {
     shininess(10);
     //canvas1.stroke(255,0,0);
     stroke(255);
-    if (showGrid) scene.drawGrid();
     stroke(255, 0, 0);
     //scene.drawAxes();
     scene.render();
@@ -113,61 +92,6 @@ public class SkeletonBuilder extends PApplet {
         popStyle();
       }
     }
-        */
-/*
-        panel._scene.beginDraw();
-        panel._scene.frontBuffer().background(0);
-        if(panel._frame != null)
-            panel._scene.traverse();
-        panel._scene.endDraw();
-        panel._scene.display();
-        *//*
-
-        */
-/*
-        scene.beginHUD();
-        for(AuxiliaryView view : views) {
-            InteractiveJoint.setPGraphics(scene.frontBuffer());
-            image(view._pGraphics,0,0, width, height);
-        }
-        scene.endHUD();
-        *//*
-
-    if (debug && solver instanceof TreeSolver) {
-      pushStyle();
-      for (ArrayList<Vector> list : ((TreeSolver) solver).aux_p) {
-        Vector prev = null;
-        for (Vector v : list) {
-          pushMatrix();
-          strokeWeight(radius / 4);
-          stroke(0, 0, 255);
-          if (prev != null) line(v.x(), v.y(), v.z(), prev.x(), prev.y(), prev.z());
-          translate(v.x(), v.y(), v.z());
-          noStroke();
-          fill(0, 0, 255);
-          sphere(radius / 2);
-          popMatrix();
-          prev = v;
-        }
-      }
-
-      for (ArrayList<Vector> list : ((TreeSolver) solver).aux_prev) {
-        Vector prev = null;
-        for (Vector v : list) {
-          pushMatrix();
-          strokeWeight(radius / 4);
-          stroke(0, 255, 0);
-          if (prev != null) line(v.x(), v.y(), v.z(), prev.x(), prev.y(), prev.z());
-          translate(v.x(), v.y(), v.z());
-          noStroke();
-          fill(0, 255, 0);
-          sphere(radius / 2);
-          popMatrix();
-          prev = v;
-        }
-      }
-      popStyle();
-    }
 
     if (fitCurve != null)
       if (fitCurve._interpolator != null)
@@ -176,55 +100,21 @@ public class SkeletonBuilder extends PApplet {
     scene.beginHUD();
     if (fitCurve != null) fitCurve.drawCurves(scene.context());
     scene.endHUD();
-        */
-/*for(int i = 0; i < views.length; i++) {
-            scene.shift(views[i]);
-            Joint.setPGraphics(views[i].frontBuffer());
-            scene.beginHUD();
-            views[i].beginDraw();
-            views[i].frontBuffer().background(100);
-            views[i].drawAxes();
-            views[i].render();
-            views[i].endDraw();
-            views[i].display();
-            if(fitCurve != null) fitCurve.drawCurves(scene.frontBuffer());
-            scene.endHUD();
-            views[i].shift(scene);
-        }*//*
-
-    if (solve && debug) {
-      solver.solve();
-    }
-  }
-
-  public void setFocus() {
-    if (mouseY <= 2 * h / 3) {
-      focus = scene;
-    } else if (mouseX <= w / 3) {
-      focus = views[0];
-    } else if (mouseX <= 2 * w / 3) {
-      focus = views[1];
-    } else {
-      focus = views[2];
-    }
   }
 
   //mouse events
   @Override
   public void mouseMoved() {
     if (!mousePressed) {
-      focus.mouseTag();
+      scene.mouseTag();
     }
   }
 
   public void mouseDragged(MouseEvent event) {
     if (mouseButton == RIGHT && event.isControlDown()) {
-      Vector vector = new Vector(focus.mouseX(), focus.mouseY());
-      if (focus.node() != null)
-        if (focus.node() instanceof InteractiveJoint)
-          focus.node().interact("OnAdding", focus, vector);
-        else
-          focus.node().interact("OnAdding", vector);
+      Vector vector = new Vector(scene.mouseX(), scene.mouseY());
+      if (scene.node() != null)
+        scene.node().interact("OnAdding", scene, vector);
     } else if (mouseButton == LEFT) {
       if (event.isControlDown() && fitCurve != null) {
         if (fitCurve.started()) {
@@ -232,24 +122,16 @@ public class SkeletonBuilder extends PApplet {
           fitCurve.fitCurve();
         }
       } else {
-        focus.spin(focus.pmouseX(), focus.pmouseY(), focus.mouseX(), focus.mouseY());
+        scene.spin(scene.pmouseX(), scene.pmouseY(), scene.mouseX(), scene.mouseY());
       }
     } else if (mouseButton == RIGHT) {
-      focus.translate(focus.mouseX() - focus.pmouseX(), focus.mouseY() - focus.pmouseY(), 0, 0);
-      Target.multipleTranslate();
+      scene.translate(scene.mouseX() - scene.pmouseX(), scene.mouseY() - scene.pmouseY(), 0, 0);
+      Target.multipleTranslate(scene);
     } else if (mouseButton == CENTER) {
-      focus.scale(focus.mouseDX());
-    } else if (focus.node() != null)
-      focus.node().interact("Reset");
-    //PANEL
-    //else {
-    //panel._scene.defaultFrame().interact();
-    //}
-    //if(focus == scene)panel.updateFrameOptions();
-    //if(focus == scene && !Target.selectedTargets().contains(focus.trackedFrame())){
-    //    Target.clearSelectedTargets();
-    //}
-    if (!Target.selectedTargets().contains(focus.node())) {
+      scene.scale(scene.mouseDX());
+    } else if (scene.node() != null)
+      scene.node().interact("Reset");
+    if (!Target.selectedTargets().contains(scene.node())) {
       Target.clearSelectedTargets();
     }
   }
@@ -263,34 +145,32 @@ public class SkeletonBuilder extends PApplet {
   }
 
   public void mouseReleased(MouseEvent event) {
-        */
-/*if(event.isControlDown() && event.getButton() == LEFT){
-            //Reset Curve
-            if(fitCurve != null){
-                fitCurve.setStarted(false);
-                fitCurve.printCurves();
-                fitCurve.getCatmullRomCurve(scene, 0);
-                fitCurve._interpolator.start();
-                scene.drawPath(fitCurve._interpolator, 5);
-
-            }
-        }*//*
+    if(event.isControlDown() && event.getButton() == LEFT){
+      //Reset Curve
+      if(fitCurve != null){
+        fitCurve.setStarted(false);
+        fitCurve.printCurves();
+        fitCurve.getCatmullRomCurve(scene, scene.node(), 0);
+        fitCurve._interpolator.run();
+        fitCurve._interpolator.enableHint(Interpolator.SPLINE | Interpolator.AXES);
+      }
+  }
 
 
     //mouse = scene.location(mouse);
     //mouse = Vector.projectVectorOnPlane(mouse, scene.viewDirection());
     //mouse.add(scene.defaultFrame().position());
-    Vector vector = new Vector(focus.mouseX(), focus.mouseY());
-    if (focus.node() != null)
-      if (focus.node() instanceof InteractiveJoint)
-        focus.node().interact("Add", focus, vector);
+    Vector vector = new Vector(scene.mouseX(), scene.mouseY());
+    if (scene.node() != null)
+      if (scene.node() instanceof InteractiveJoint)
+        scene.node().interact("Add", scene, vector);
         //else focus.trackedFrame().interact("Add", vector, false);
       else {
         if (fitCurve != null) {
           fitCurve.setStarted(false);
-          fitCurve.getCatmullRomCurve(scene, focus.node(), 0);
+          fitCurve.getCatmullRomCurve(scene, scene.node(), 0);
           //fitCurve._interpolator.run();
-          focus.node().interact("AddCurve", fitCurve);
+          scene.node().interact("AddCurve", scene, fitCurve);
         }
       }
     fitCurve = null;
@@ -298,7 +178,7 @@ public class SkeletonBuilder extends PApplet {
   }
 
   public void mouseWheel(MouseEvent event) {
-    focus.scale(event.getCount() * 20);
+    scene.scale(event.getCount() * 20);
   }
 
   public void mouseClicked(MouseEvent event) {
@@ -306,35 +186,35 @@ public class SkeletonBuilder extends PApplet {
       if (event.getCount() == 1) {
         //panel.setFrame(scene.trackedFrame());
         if (event.isControlDown()) {
-          if (focus.node() != null)
-            focus.node().interact("KeepSelected");
+          if (scene.node() != null)
+            scene.node().interact("KeepSelected");
         }
       } else if (event.getCount() == 2) {
         if (event.isShiftDown())
           if (scene.node() != null)
             scene.node().interact("Remove");
           else
-            focus.focus();
+            scene.focus();
       } else {
-        focus.align();
+        scene.align();
       }
     }
   }
 
-  boolean solve = false, keepDirections = true, fixTwisting = true;
+  boolean solve = false;
 
   public void keyPressed() {
     if (key == '+') {
-      new InteractiveJoint(radius).setRoot(true);
+      new InteractiveJoint(true, color(random(255), random(255), random(255)), radius, true);
     }
     if (key == 'A' || key == 'a') {
       addTreeSolver();
     }
     if (key == 'C' || key == 'c') {
-      addConstraint(focus.node(), false);
+      addConstraint(scene.node(), false);
     }
     if (key == 'H' || key == 'h') {
-      addConstraint(focus.node(), true);
+      addConstraint(scene.node(), true);
     }
 
     if (key == 'S' || key == 's') {
@@ -379,30 +259,12 @@ public class SkeletonBuilder extends PApplet {
       showPath = !showPath;
     }
     if (key == '5') {
-      showGrid = !showGrid;
-    }
-    if (key == '6') {
-      Joint.axes = !Joint.axes;
+      scene.toggleHint(Graph.GRID);
     }
 
     if (key == 'r' || key == 'R') {
       for (Target target : targets) {
         target._interpolator.enableRecurrence(!target._interpolator.isRecurrent());
-      }
-    }
-
-    if (key == 'o' || key == 'O') {
-      keepDirections = !keepDirections;
-      for (Solver solver : scene.treeSolvers()) {
-        if (solver instanceof TreeSolver) ((TreeSolver) solver).setKeepDirection(keepDirections);
-      }
-      System.out.println("Keep directions : " + (keepDirections ? "Enabled" : "Disabled"));
-    }
-
-    if (key == 'p' || key == 'P') {
-      fixTwisting = !fixTwisting;
-      for (Solver solver : scene.treeSolvers()) {
-        if (solver instanceof TreeSolver) ((TreeSolver) solver).setFixTwisting(fixTwisting);
       }
     }
 
@@ -468,27 +330,18 @@ public class SkeletonBuilder extends PApplet {
     } else {
       if (scene.node() != null) {
         solver = scene.registerTreeSolver(scene.node());
-        solver.setTimesPerFrame(1f); //TODO : Allow more times
       }
-    }
-    solver.setMaxIterations(50);
-    if (solver instanceof TreeSolver) {
-      ((TreeSolver) solver).setFixTwisting(fixTwisting);
-      ((TreeSolver) solver).setKeepDirection(keepDirections);
     }
 
     //add target
     //get leaf nodes
     ArrayList<Node> endEffectors = new ArrayList<Node>();
-    findEndEffectors(focus.node(), endEffectors);
+    findEndEffectors(scene.node(), endEffectors);
     for (Node endEffector : endEffectors) {
       endEffector.tagging = false;
-      Target target = new Target(scene, ((Joint) scene.node()).radius(), endEffector);
-      target.setReference(((Joint) scene.node()).reference());
-      //scene.addIKTarget(endEffector, target);
-      if (solver instanceof TreeSolver) ((TreeSolver) solver).addTarget(endEffector, target);
+      Target target = new Target(radius * 1.2f, endEffector.position().get(), endEffector.orientation().get());
+      target.setReference(scene.node().reference());
       if (solver instanceof Tree) ((Tree) solver).addTarget(endEffector, target);
-
       targets.add(target);
     }
   }
@@ -503,4 +356,3 @@ public class SkeletonBuilder extends PApplet {
   }
 }
 
-*/

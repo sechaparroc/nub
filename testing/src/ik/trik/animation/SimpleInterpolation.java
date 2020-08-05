@@ -1,4 +1,3 @@
-/*
 package ik.trik.animation;
 
 import nub.core.*;
@@ -44,7 +43,7 @@ public class SimpleInterpolation extends PApplet {
         scene.leftHanded = false;
         scene.fit(1);
         //Load Skeleton
-        skeleton = new Skeleton(scene, skeletonPath);
+        skeleton = new Skeleton(skeletonPath);
         skeleton.updateConstraints();
         //Enable IK
         skeleton.enableIK();
@@ -137,14 +136,14 @@ public class SimpleInterpolation extends PApplet {
                     }
                 };
                 current.setConstraint(fix);
-                if(current instanceof Joint) ((Joint) current).setColor(255,0,0);
+                current.configHint(Node.BONE, color(255,255,255));
             }
         }
         if(key == 'e' || key == 'E'){
             Node current = scene.node();
             if(current != null){
                 current.setConstraint(null);
-                if(current instanceof Joint) ((Joint) current).setColor((int)random(0,255),(int)random(0,255),(int)random(0,255));
+                current.configHint(Node.BONE, color(random(255), random(255), random(255)));
             }
         }
 
@@ -179,4 +178,3 @@ public class SimpleInterpolation extends PApplet {
     }
 
 }
-*/
