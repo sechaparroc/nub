@@ -76,12 +76,12 @@ public class BVHLoader {
         return _postures.size();
     }
 
-    public Skeleton root() {
-        return _skeleton;
-    }
-
     public int currentPosture() {
         return _currentPosture;
+    }
+
+    public Skeleton skeleton(){
+        return _skeleton;
     }
 
     protected void _setup(String path, Node reference) {
@@ -294,7 +294,7 @@ public class BVHLoader {
         return true;
     }
 
-    public void nextPose(boolean remove) {
+    public void nextPosture(boolean remove) {
         if (_currentPosture >= _postures.size()) {
             if (_loop) _currentPosture = 0;
             else return;
@@ -304,8 +304,8 @@ public class BVHLoader {
         if (!remove) _currentPosture++;
     }
 
-    public void nextPose() {
-        nextPose(false);
+    public void nextPosture() {
+        nextPosture(false);
     }
 
     public void postureAt(int idx) {
