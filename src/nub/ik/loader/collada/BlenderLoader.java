@@ -6,7 +6,6 @@ import nub.ik.loader.collada.data.Model;
 import nub.ik.loader.collada.data.SkinningData;
 import nub.ik.loader.collada.xml.XmlNode;
 import nub.ik.loader.collada.xml.XmlParser;
-import nub.ik.animation.Joint;
 import nub.primitives.Matrix;
 import nub.processing.Scene;
 import processing.core.PImage;
@@ -53,9 +52,7 @@ public class BlenderLoader {
 
     scene.setRadius(100);
     for (Node joint : scene.nodes()) {
-      if (joint instanceof Joint) {
-        ((Joint) joint).setRadius(scene.radius() * 0.03f);
-      }
+      joint._boneRadius = scene.radius() * 0.03f;
       joint.setBullsEyeSize(-0.03f);
     }
 

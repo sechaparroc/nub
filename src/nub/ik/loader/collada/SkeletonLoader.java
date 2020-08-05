@@ -3,10 +3,10 @@ package nub.ik.loader.collada;
 import nub.core.Node;
 import nub.ik.loader.collada.data.Model;
 import nub.ik.loader.collada.xml.XmlNode;
-import nub.ik.animation.Joint;
 import nub.primitives.Matrix;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
+import nub.processing.Scene;
 
 import java.util.List;
 
@@ -35,8 +35,7 @@ public class SkeletonLoader {
 
   public void extractBoneData(Model model, boolean blender) {
     XmlNode headNode = armatureData.getChild("node");
-    Joint root = loadJointData(headNode, model, null, blender);
-    root.setRoot(true);
+    Node root = loadJointData(headNode, model, null, blender);
     model.set_root(root);
     model.setJointCount(jointCount);
     model.setScaling(100 / max);
@@ -46,8 +45,8 @@ public class SkeletonLoader {
     }
   }
 
-  private Joint loadJointData(XmlNode jointNode, Model model, Joint parent, boolean blender) {
-    Joint joint = blender ? extractMainJointData(jointNode, model, parent) : extractMainJointTransformationData(jointNode, model, parent);
+  private Node loadJointData(XmlNode jointNode, Model model, Node parent, boolean blender) {
+    Node joint = blender ? extractMainJointData(jointNode, model, parent) : extractMainJointTransformationData(jointNode, model, parent);
     float mag = joint.position().magnitude();
     max = max < mag ? mag : max;
     for (XmlNode childNode : jointNode.getChildren("node")) {
@@ -56,12 +55,27 @@ public class SkeletonLoader {
     return joint;
   }
 
-  private Joint extractMainJointData(XmlNode jointNode, Model model, Joint parent) {
+  private Node extractMainJointData(XmlNode jointNode, Model model, Node parent) {
     String nameId = jointNode.getAttribute("sid");
     int index = boneOrder.indexOf(nameId);
 
-    Joint joint = new Joint(model.getScene().radius() * 0.01f);
-    if (parent != null) joint.setReference(parent);
+    Node joint = new Node();
+    joint.enableHint(Node.CONSTRAINT);
+    if(parent != null) {
+      joint.enableHint(Node.BONE, Scene.pApplet.color((float)Math.random() * 255, (float)Math.random() * 255, (float)Math.random() * 255), model.getScene().radius() * 0.01f);
+      joint.setReference(parent);
+    }
+    else{
+      joint.setShape(pg ->{
+        pg.pushStyle();
+        pg.noStroke();
+        pg.fill(-1);
+        if(pg.is3D()) pg.sphere(model.getScene().radius() * 0.01f);
+        else pg.ellipse(0,0, 2 * model.getScene().radius() * 0.01f, 2 * model.getScene().radius() * 0.01f);
+        pg.popStyle();
+      });
+    }
+
     //use bind matrix info
 
     //if is possible apply bind transformation
@@ -69,7 +83,7 @@ public class SkeletonLoader {
       Matrix mat = bindMatrices.get(index);
       joint.fromWorldMatrix(mat);
     }
-    //if not apply usual transfomation
+    //if not apply usual transformation
     else {
       String[] matrixRawData = jointNode.getChild("matrix").getData().split(" ");
       float[] matrixData = convertData(matrixRawData);
@@ -85,8 +99,11 @@ public class SkeletonLoader {
     return joint;
   }
 
-  private Joint extractMainJointTransformationData(XmlNode jointNode, Model model, Joint parent) {
-    Joint joint = new Joint(model.getScene().radius() * 0.01f);
+  private Node extractMainJointTransformationData(XmlNode jointNode, Model model, Node parent) {
+    Node joint = new Node();
+    joint.enableHint(Node.CONSTRAINT);
+    joint.enableHint(Node.BONE, Scene.pApplet.color((float)Math.random() * 255, (float)Math.random() * 255, (float)Math.random() * 255),  model.getScene().radius() * 0.01f);
+
     if (parent != null) joint.setReference(parent);
 
     String nameId = jointNode.getAttribute("sid");
