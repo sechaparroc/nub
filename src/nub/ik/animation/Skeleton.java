@@ -32,11 +32,11 @@ import java.util.*;
  * its manipulation and its animation.
  */
 public class Skeleton {
-  protected HashMap<String, Node> _joints;
-  protected HashMap<Node, String> _names;
-  protected HashMap<Node, Constraint> _constraints;
-  protected HashMap<Node, Solver> _solvers;
-  protected HashMap<String, Node> _targets;
+  protected HashMap<String, Node> _joints = new HashMap<String, Node>();
+  protected HashMap<Node, String> _names = new HashMap<Node, String>();
+  protected HashMap<Node, Constraint> _constraints = new HashMap<Node, Constraint>();
+  protected HashMap<Node, Solver> _solvers = new HashMap<Node, Solver>();
+  protected HashMap<String, Node> _targets = new HashMap<String, Node>();
 
   protected Node _reference;
   protected float _radius = 5,  _targetRadius = 7;
@@ -56,11 +56,6 @@ public class Skeleton {
    * is represented by default as a red ball.
    * */
   public Skeleton(Node reference, float radius, float targetRadius, int color, boolean depth){
-    _joints = new HashMap<String, Node>();
-    _names = new HashMap<Node, String>();
-    _targets = new HashMap<String, Node>();
-    _constraints = new HashMap<Node, Constraint>();
-    _solvers = new HashMap<Node, Solver>();
     if(reference == null){
       _reference = new Node();
       _reference.tagging = false;
@@ -95,6 +90,7 @@ public class Skeleton {
    * */
 
   public Skeleton(String file) {
+    this();
     _load(file);
   }
 
@@ -627,15 +623,14 @@ public class Skeleton {
       if (jsonJoint.getString("name").equals("")) continue;
       //add joint to the skeleton
       Node joint;
+      int col = jsonJoint.hasKey("color") ? jsonJoint.getInt("color") : _color;
+      float rad = jsonJoint.hasKey("radius") ? jsonJoint.getFloat("radius") : _radius;
+
       if (jsonJoint.getString("reference").equals("")) {
-        joint = addJoint(jsonJoint.getString("name"),
-            jsonJoint.getInt("color"),
-            jsonJoint.getFloat("radius"));
+        joint = addJoint(jsonJoint.getString("name"), col, rad);
       } else {
         joint = addJoint(jsonJoint.getString("name"),
-            jsonJoint.getString("reference"),
-            jsonJoint.getInt("color"),
-            jsonJoint.getFloat("radius"));
+            jsonJoint.getString("reference"), col, rad);
       }
       joint.setTranslation(jsonJoint.getFloat("x"), jsonJoint.getFloat("y"), jsonJoint.getFloat("z"));
       joint.setRotation(jsonJoint.getFloat("q_x"), jsonJoint.getFloat("q_y"), jsonJoint.getFloat("q_z"), jsonJoint.getFloat("q_w"));
