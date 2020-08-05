@@ -19,7 +19,7 @@ public class CombinedTRIK extends Heuristic{
     }
 
     public CombinedTRIK(Context context){
-        this(context, 0.4f, 2);
+        this(context, 0.3f, 2);
     }
 
     @Override

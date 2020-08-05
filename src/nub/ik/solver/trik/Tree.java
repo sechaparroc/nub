@@ -79,10 +79,10 @@ public class Tree extends Solver {
     //dummy must have only a child,
     this._root = dummy._children().get(0);
     this._root._parent = null;
-    this.setMaxIterations(10);
-    this.setTimesPerFrame(10);
-    this.setChainTimesPerFrame(3);
-    this.setChainMaxIterations(3);
+    this.setMaxIterations(8);
+    this.setTimesPerFrame(8);
+    this.setChainTimesPerFrame(5);
+    this.setChainMaxIterations(5);
   }
 
 
