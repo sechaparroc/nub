@@ -18,9 +18,10 @@ import nub.core.constraint.BallAndSocket;
 import nub.core.constraint.Constraint;
 import nub.core.constraint.Hinge;
 import nub.ik.solver.Solver;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
 import nub.processing.Scene;
-import processing.core.PGraphics;
+import processing.core.PConstants;
 import processing.data.JSONArray;
 import processing.data.JSONObject;
 
@@ -38,7 +39,9 @@ public class Skeleton {
   protected HashMap<String, Node> _targets;
 
   protected Node _reference;
-  protected float _targetRadius = 7;
+  protected float _radius = 5,  _targetRadius = 7;
+  protected int _color = -1;
+  protected boolean _depth = false;
 
   /**
    * Constructor for a Skeleton.
@@ -52,7 +55,7 @@ public class Skeleton {
    * you require to relate some targets with the appropiate end effectors. A Target
    * is represented by default as a red ball.
    * */
-  public Skeleton(Node reference) {
+  public Skeleton(Node reference, float radius, float targetRadius, int color, boolean depth){
     _joints = new HashMap<String, Node>();
     _names = new HashMap<Node, String>();
     _targets = new HashMap<String, Node>();
@@ -62,8 +65,23 @@ public class Skeleton {
       _reference = new Node();
       _reference.tagging = false;
     }
+    _radius = radius;
+    _targetRadius = targetRadius;
+    _color = color;
+    _depth = depth;
   }
 
+  public Skeleton(Node reference, float radius) {
+    this(reference, radius, radius * 1.2f, -1, false);
+  }
+
+  public Skeleton(Node reference, int color) {
+    this(reference, 5, 7, color, false);
+  }
+
+  public Skeleton(Node reference) {
+    this(reference, 5, 7, -1, false);
+  }
 
   public Skeleton() {
     this((Node) null);
@@ -95,13 +113,19 @@ public class Skeleton {
       Node node = _joints.remove(name);
       _names.remove(node);
     }
-    Node joint = new Node(pg -> {
+    Node joint = new Node();
+    joint._boneRadius = radius;
+    joint._boneColor = color;
+    joint._boneDepth = _depth;
+    joint.setShape(pg -> {
+      if(!joint._boneDepth) pg.hint(PConstants.DISABLE_DEPTH_TEST);
       pg.pushStyle();
       pg.noStroke();
-      pg.fill(color);
-      if(pg.is3D()) pg.sphere(radius);
-      else pg.ellipse(0,0, 2 * radius, 2 * radius);
+      pg.fill(joint._boneColor);
+      if(pg.is3D()) pg.sphere(joint._boneRadius);
+      else pg.ellipse(0,0, 2 * joint._boneRadius, 2 * joint._boneRadius);
       pg.popStyle();
+      if(!joint._boneDepth) pg.hint(PConstants.ENABLE_DEPTH_TEST);
     });
     joint.enableHint(Node.CONSTRAINT);
 
@@ -116,24 +140,23 @@ public class Skeleton {
    * Same as {@code return addJoint(name, color(255 * random(), 255 * random(), 255 * random()), radius)}
    */
   public Node addJoint(String name, float radius) {
-    return addJoint(name, Scene.pApplet.color(255 * (float) Math.random(), 255 * (float) Math.random(), 255 * (float) Math.random()), radius);
+    return addJoint(name, _color, radius);
   }
 
   /**
-   * Same as {@code return addJoint(name, color(255 * random(), 255 * random(), 255 * random()), 0)}
+   * Same as {@code return addJoint(name, color(255 * random(), 255 * random(), 255 * random()), _radius)}
    */
   public Node addJoint(String name) {
-    return addJoint(name, 5);
+    return addJoint(name, _radius);
   }
 
-  /**
-   * @param name    The name of the new Joint
-   * @param color   The rgb color of the joint
-   * @param radius  The radius of the ball that represents the Joint.
-   * @return the created {@link Joint}, use this reference to modify its position and orientation.
-   * Warning: you must not set explicitly the reference of the created Joint.
-   */
 
+  /**
+   * Same as {@code return addJoint(name, color, _radius)}
+   */
+  public Node addJoint(String name, int color) {
+    return addJoint(name, color, _radius);
+  }
 
   /**
    * Adds a Joint with the given name, color and radius to the skeleton as a child of the Joint related with
@@ -152,7 +175,7 @@ public class Skeleton {
 
     Node joint = new Node();
     joint.enableHint(Node.CONSTRAINT);
-    joint.enableHint(Node.BONE, color, radius, radius / 4f, false);
+    joint.enableHint(Node.BONE, color, radius, radius / 4f, _depth);
     _joints.put(name, joint);
     _names.put(joint, name);
     _constraints.put(joint, joint.constraint());
@@ -160,8 +183,16 @@ public class Skeleton {
     return joint;
   }
 
+  public Node addJoint(String name, String reference, float radius){
+    return addJoint(name, reference, _color, radius);
+  }
+
+  public Node addJoint(String name, String reference, int color){
+    return addJoint(name, reference, color, _radius);
+  }
+
   public Node addJoint(String name, String reference) {
-    return addJoint(name, reference, Scene.pApplet.color(255 * (float) Math.random(), 255 * (float) Math.random(), 255 * (float) Math.random()), 5);
+    return addJoint(name, reference, _color, _radius);
   }
 
   public void addJoint(String name, String reference, Node node) {
@@ -222,15 +253,12 @@ public class Skeleton {
   public Node addTarget(String name) {
     Node endEffector = _joints.get(name);
     //Create a Basic target
-    Node target = new Node() {
-      @Override
-      public void graphics(PGraphics pGraphics) {
-        pGraphics.noStroke();
-        pGraphics.fill(255, 0, 0);
-        if (pGraphics.is3D()) pGraphics.sphere(_targetRadius);
-        else pGraphics.ellipse(0, 0, 2 * _targetRadius, 2 * _targetRadius);
-      }
-    };
+    Node target = new Node( pg -> {
+        pg.noStroke();
+        pg.fill(255, 0, 0);
+        if (pg.is3D()) pg.sphere(_targetRadius);
+        else pg.ellipse(0, 0, 2 * _targetRadius, 2 * _targetRadius);
+    });
     _targets.put(name, target);
     target.setReference(_reference);
     target.setPosition(endEffector.position().get());
@@ -241,12 +269,40 @@ public class Skeleton {
   }
 
   /**
+   * Defines the radius of the joints.
+   * @param radius
+   */
+  public void setRadius(float radius) {
+    for(Node node : BFS()){
+      node._boneRadius = radius;
+    }
+    _radius = radius;
+  }
+
+
+  /**
    * Defines the radius of the targets.
    * @param radius
    */
   public void setTargetRadius(float radius) {
     _targetRadius = radius;
   }
+
+
+  public void setColor(int color){
+    for(Node node : BFS()){
+      node._boneColor = color;
+    }
+    _color = color;
+  }
+
+  public void setDepth(boolean depth){
+    for(Node node : BFS()){
+      node._boneDepth = depth;
+    }
+    _depth = depth;
+  }
+
 
   /**
    * Adds a target related with an end effector (leaf of the tree structure) related with the given name.
@@ -407,10 +463,14 @@ public class Skeleton {
     else disableIK();
   }
 
-  public void enableIK() {
+  public void enableIK(){
+    enableIK(IKSolver.HeuristicMode.COMBINED_TRIK);
+  }
+
+  public void enableIK(IKSolver.HeuristicMode mode) {
     for (Node child : _reference.children()) {
       if (!_solvers.containsKey(child)) {
-        Solver s = Graph.registerTreeSolver(child);
+        Solver s = Graph.registerTreeSolver(child, mode);
         _solvers.put(child, s);
       } else {
         Graph.executeSolver(_solvers.get(child));
@@ -503,6 +563,32 @@ public class Skeleton {
       entry.getValue().setPosition(eff);
       entry.getValue().setOrientation(eff);
     }
+  }
+
+  /**
+   * Performs a deep copy of this skeleton and returns it.
+   */
+  public Skeleton get(){
+    Skeleton copySkeleton = new Skeleton();
+    //copy the reference node
+    copySkeleton._reference.setPosition(this._reference.position());
+    copySkeleton._reference.setOrientation(this._reference.orientation());
+    copySkeleton._reference.setConstraint(this._reference.constraint());
+
+    for(Node node : BFS()){
+      Node copyNode;
+      if(node.reference() == _reference){
+        copyNode = copySkeleton.addJoint(jointName(node), node._boneColor, node._boneRadius);
+      } else{
+        copyNode = copySkeleton.addJoint(jointName(node), jointName(node.reference()),  node._boneColor, node._boneRadius);
+      }
+      copyNode._boneWidth = node._boneWidth;
+      copyNode._boneDepth = node._boneDepth;
+      copyNode.setTranslation(node.translation().get());
+      copyNode.setRotation(node.rotation().get());
+      copyNode.setConstraint(node.constraint());
+    }
+    return copySkeleton;
   }
 
   //Load and Save Skeleton model
