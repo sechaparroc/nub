@@ -50,7 +50,7 @@ public class BlenderLoader {
       model.mesh().setTexture(img);
     }
 
-    scene.setRadius(100);
+    scene.setBounds(100);
     for (Node joint : scene.nodes()) {
       joint._boneRadius = scene.radius() * 0.03f;
       joint.setBullsEyeSize(-0.03f);

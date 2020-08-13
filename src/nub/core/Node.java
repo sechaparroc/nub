@@ -183,13 +183,13 @@ public class Node {
   protected int _cameraStroke;
   protected float _cameraLength;
   // Constraint
-  protected float _constraintFactor = 0.5f;
-  protected int _constraintColor;
+  public float _constraintFactor = 0.5f;
+  public int _constraintColor;
   // Bone
-  protected boolean _boneDepth = false;
-  protected int _boneColor;
-  protected float _boneWidth = 0; //A radius greater than 0 will draw a bone as a Cylinder
-  protected float _boneRadius = 0; //A radius greater than 0 will draw a bone as a Cylinder
+  public boolean _boneDepth = false;
+  public int _boneColor;
+  public float _boneWidth = 0; //A radius greater than 0 will draw a bone as a Cylinder
+  public float _boneRadius = 0; //A radius greater than 0 will draw a bone as a Cylinder
 
 
   protected Consumer<processing.core.PGraphics> _imrHUD;

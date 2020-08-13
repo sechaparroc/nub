@@ -52,7 +52,7 @@ public class URDFLoader {
       });
     }
 
-    scene.setRadius(max * 5f);
+    scene.setBounds(max * 5f);
     for (Node joint : model.skeleton().values()) {
       joint._boneRadius = scene.radius() * 0.03f;
       joint.setBullsEyeSize(-0.03f);

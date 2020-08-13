@@ -4854,6 +4854,30 @@ public class Graph {
     return node._cameraLength;
   }
 
+  protected float _constraintFactor(Node node){
+    return node._constraintFactor;
+  }
+
+  protected int _constraintColor(Node node){
+    return node._constraintColor;
+  }
+
+  protected boolean _boneDepth(Node node){
+    return node._boneDepth;
+  }
+
+  protected int _boneColor(Node node){
+    return node._boneColor;
+  }
+
+  protected float _boneWidth(Node node){
+    return node._boneWidth;
+  }
+
+  protected float _boneRadius(Node node){
+    return node._boneRadius;
+  }
+
   protected Consumer<processing.core.PGraphics> _imrHUD(Node node) {
     return node._imrHUD;
   }
