@@ -45,7 +45,7 @@ public class OffsetCone extends PApplet {
   public void setup() {
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRadius(numJoints * boneLength * 2f);
+    scene.setBounds(numJoints * boneLength * 2f);
     scene.fit(1);
     Scene.leftHanded = false;
 

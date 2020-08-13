@@ -30,7 +30,7 @@ public class SimpleSkeleton extends PApplet {
     //Setting the scene
     scene = new Scene(this);
     if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRadius(100);
+    scene.setBounds(100);
     scene.fit(1);
     //1. Create the Skeleton
     Node root = createSkeleton(null);

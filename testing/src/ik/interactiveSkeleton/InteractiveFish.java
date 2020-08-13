@@ -45,7 +45,7 @@ public class InteractiveFish extends PApplet {
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
     scene.leftHanded = false;
-    scene.setRadius(200);
+    scene.setBounds(200);
     scene.fit(1);
     //2. Define the Skeleton
     //2.1 Define a reference node to the skeleton and the mesh

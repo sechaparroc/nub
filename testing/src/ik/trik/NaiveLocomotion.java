@@ -39,7 +39,7 @@ public class NaiveLocomotion extends PApplet {
   public void setup() {
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRadius(segments * 4 * boneLength);
+    scene.setBounds(segments * 4 * boneLength);
     scene.fit(1);
 
     scene.enableHint(Graph.BACKGROUND | Graph.AXES);

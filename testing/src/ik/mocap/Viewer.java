@@ -25,7 +25,7 @@ public class Viewer extends PApplet {
   public void setup() {
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRadius(200);
+    scene.setBounds(200);
     scene.eye().rotate(new Quaternion(0, 0, PI));
     scene.fit(1);
     scene.enableHint(Graph.BACKGROUND | Graph.AXES);

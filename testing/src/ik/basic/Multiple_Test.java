@@ -25,7 +25,7 @@ public class Multiple_Test extends PApplet {
     //Setting the scene
     scene = new Scene(this);
     if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRadius(2000);
+    scene.setBounds(2000);
     scene.fit(1);
 
     Node root = new Node(pg -> {

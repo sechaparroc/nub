@@ -25,7 +25,7 @@ public class SimpleCone extends PApplet {
   public void setup() {
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRadius(200);
+    scene.setBounds(200);
     scene.fit(1);
     scene.leftHanded = false;
 

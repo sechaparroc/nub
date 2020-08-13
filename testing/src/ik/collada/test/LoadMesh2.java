@@ -45,7 +45,7 @@ public class LoadMesh2 extends PApplet {
     model = BlenderLoader.loadColladaModel(sketchPath() + path, dae, tex, scene, 3);
 
     //3. Setup scene
-    scene.setRadius(model.mesh().getWidth() * 2);
+    scene.setBounds(model.mesh().getWidth() * 2);
     scene.eye().rotate(new Quaternion(new Vector(1, 0, 0), PI / 2));
     scene.eye().rotate(new Quaternion(new Vector(0, 0, 1), PI));
     scene.fit();

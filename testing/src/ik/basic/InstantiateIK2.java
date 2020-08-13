@@ -60,7 +60,7 @@ public class InstantiateIK2 extends PApplet {
     //Setting the scene
     scene = new Scene(this);
     if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRadius(280);
+    scene.setBounds(280);
     scene.fit(1);
     //1. Create the Skeletons (chain described above)
     skeleton1 = createSkeleton(new Vector(-scene.radius() / 2, -scene.radius() / 2, 0));

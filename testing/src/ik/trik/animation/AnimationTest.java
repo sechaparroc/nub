@@ -43,7 +43,7 @@ public class AnimationTest extends PApplet {
     skinning = new GPULinearBlendSkinning(skeleton, shapePath, texturePath, mainScene.radius());
     //Set the control scene
     controlScene = new Scene(createGraphics(width, (int) (height * 0.3), P2D)); //0, (int) (height * 0.7f)
-    controlScene.setRadius(height * 0.3f / 2.f);
+    controlScene.setBounds(height * 0.3f / 2.f);
     controlScene.fit();
     controlScene.enableHint(Graph.BACKGROUND, color(150));
 

@@ -24,7 +24,7 @@ public class LissajousViewer extends PApplet {
   public void setup(){
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRadius(100);
+    scene.setBounds(100);
     scene.enableHint(Graph.BACKGROUND | Graph.AXES);
     scene.setShape(pg ->{
       pg.pushStyle();

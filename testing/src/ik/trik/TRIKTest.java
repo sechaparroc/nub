@@ -38,7 +38,7 @@ public class TRIKTest extends PApplet {
     public void setup() {
         scene = new Scene(this);
         if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
-        scene.setRadius(280);
+        scene.setBounds(280);
         scene.fit(1);
         int red = (int) random(255);
         int green = (int) random(255);

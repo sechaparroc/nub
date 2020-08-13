@@ -164,7 +164,7 @@ public class SimpleTest extends PApplet {
         //Setting the scene
         scene = new Scene(this);
         if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
-        scene.setRadius(280);
+        scene.setBounds(280);
         scene.fit(1);
         //1. Create the Skeleton (chain described above)
         skeleton = generateChain();

@@ -54,7 +54,7 @@ public class RegisterIK extends PApplet {
     //Setting the scene
     scene = new Scene(this);
     if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRadius(200);
+    scene.setBounds(200);
     scene.fit(1);
     //1. Create the Skeleton (Y-Shape described above)
     skeleton[0] = createJoint(scene, null, new Vector(), jointRadius, false);

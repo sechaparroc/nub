@@ -128,7 +128,7 @@ public class UR10 extends PApplet {
 
     scene.eye().rotate(new Quaternion(new Vector(1, 0, 0), PI / 2));
     scene.eye().rotate(new Quaternion(new Vector(0, 0, 1), PI));
-    scene.setRadius(scene.radius() * 2f);
+    scene.setBounds(scene.radius() * 2f);
     scene.fit();
   }
 

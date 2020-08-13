@@ -85,7 +85,7 @@ public class Viewer extends PApplet {
         });
 
         //4. Set scene
-        scene.setRadius(height * 3);
+        scene.setBounds(height * 3);
         scene.fit(0);
         scene.enableHint(Graph.BACKGROUND | Graph.AXES);
 

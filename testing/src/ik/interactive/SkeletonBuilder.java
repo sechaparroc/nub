@@ -57,7 +57,7 @@ import java.util.List;
   public void setup() {
     scene = new Scene(this);
     if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRadius(800);
+    scene.setBounds(800);
     scene.fit();
     scene.enableHint(Graph.BACKGROUND | Graph.AXES);
 
@@ -152,7 +152,7 @@ import java.util.List;
         fitCurve.printCurves();
         fitCurve.getCatmullRomCurve(scene, scene.node(), 0);
         fitCurve._interpolator.run();
-        fitCurve._interpolator.enableHint(Interpolator.SPLINE | Interpolator.AXES);
+        fitCurve._interpolator.enableHint(Interpolator.SPLINE);
       }
   }
 

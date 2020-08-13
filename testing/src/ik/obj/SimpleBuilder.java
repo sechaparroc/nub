@@ -67,7 +67,7 @@ public class SimpleBuilder extends PApplet {
     //Scale scene
     float size = max(model.getHeight(), model.getWidth());
     scene.leftHanded = false;
-    scene.setRadius(size);
+    scene.setBounds(size);
     scene.fit();
     scene.enableHint(Graph.BACKGROUND | Graph.AXES);
     scene.enableHint(Graph.SHAPE);

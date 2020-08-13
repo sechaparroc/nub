@@ -30,7 +30,7 @@ public class LowerLimb extends PApplet {
   public void setup() {
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRadius(boneLength * numJoints);
+    scene.setBounds(boneLength * numJoints);
     scene.fit();
     //Create a kinematic chain
     target = createTarget(radius * 1.5f);

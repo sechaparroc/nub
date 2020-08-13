@@ -18,7 +18,7 @@ public class ConstraintHint extends PApplet {
 
     public void setup(){
         scene = new Scene(this);
-        scene.setRadius(100);
+        scene.setBounds(100);
         scene.fit(1);
 
         n1 = new Node(pg -> {

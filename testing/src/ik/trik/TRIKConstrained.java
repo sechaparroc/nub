@@ -25,7 +25,7 @@ public class TRIKConstrained extends PApplet {
     public void setup() {
         //Setting the scene
         scene = new Scene(this);
-        scene.setRadius(200);
+        scene.setBounds(200);
         scene.fit(1);
         //Create the Skeleton described above
         skeleton = new Skeleton();

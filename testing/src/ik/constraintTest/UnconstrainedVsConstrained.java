@@ -35,7 +35,7 @@ public class UnconstrainedVsConstrained extends PApplet {
     scene = new Scene(this);
     scene.leftHanded = false;
     if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRadius(length * 2);
+    scene.setBounds(length * 2);
     scene.fit(1);
     //1. Create the Skeleton (chain described above)
     skeleton.add(createJoint(scene, null, new Vector(-scene.radius() / 2, 0), jointRadius, false));

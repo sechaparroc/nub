@@ -35,7 +35,7 @@ public class LeapMotionTest2 extends PApplet {
     public void setup() {
         scene = new Scene(this);
         scene.setFOV(PI / 3);
-        scene.setRadius(1500);
+        scene.setBounds(1500);
         scene.setType(Graph.Type.ORTHOGRAPHIC);
         scene.fit(1);
         Node[] shapes = new Node[10];

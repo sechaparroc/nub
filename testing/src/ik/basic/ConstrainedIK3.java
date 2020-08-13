@@ -60,7 +60,7 @@ public class ConstrainedIK3 extends PApplet {
     //Setting the scene
     scene = new Scene(this);
     if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRadius(280);
+    scene.setBounds(280);
     scene.fit(1);
     //1. Create the Skeleton (chain described above)
     Node node0 = createJoint(scene, null, new Vector(0, -scene.radius() / 2), jointRadius, false);

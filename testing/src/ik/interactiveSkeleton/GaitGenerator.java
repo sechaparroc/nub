@@ -36,7 +36,7 @@ public class GaitGenerator extends PApplet {
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
     scene.setFOV(PI / 3);
-    scene.setRadius(boneLength * 5);
+    scene.setBounds(boneLength * 5);
     scene.eye().rotate(new Quaternion(new Vector(1, 0, 0), PI / 4));
     scene.fit();
 

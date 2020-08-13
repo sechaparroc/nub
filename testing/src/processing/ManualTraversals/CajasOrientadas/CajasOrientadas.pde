@@ -26,7 +26,7 @@ Sphere esfera;
 void setup() {
   size(800, 800, P3D);
   scene = new Scene(this);
-  scene.setRadius(200);
+  scene.setBounds(200);
   scene.fit();
   scene.setType(Graph.Type.ORTHOGRAPHIC);
   esfera = new Sphere();
