@@ -1,10 +1,7 @@
 package ik.basic;
 
 import nub.core.Node;
-import nub.core.constraint.BallAndSocket;
-import nub.core.constraint.Constraint;
-import nub.core.constraint.Hinge;
-import nub.core.constraint.PlanarPolygon;
+import nub.core.constraint.*;
 import nub.ik.solver.Solver;
 import nub.ik.solver.geometric.ChainSolver;
 import nub.ik.solver.trik.implementations.IKSolver;
@@ -311,18 +308,18 @@ public class Util {
           float right = radians((float) Math.min(Math.max(random.nextGaussian() * 30 + 30, 0), 80));
 
           //down = left = right = up = radians(40);
-          constraint = new BallAndSocket(down, up, left, right);
+          constraint = new SphericalPolygon(down, up, left, right);
           Quaternion rest = Quaternion.compose(structure.get(i).rotation().get(), offset);
-          ((BallAndSocket) constraint).setRestRotation(rest, new Vector(0, 1, 0), twist);
+          ((SphericalPolygon) constraint).setRestRotation(rest, new Vector(0, 1, 0), twist);
           break;
         }
         case CONE_CIRCLE: {
           if (!is3D) break;
           float r = radians((float) Math.min(Math.max(random.nextGaussian() * 30 + 30, 0), 80));
           //r = radians(40);
-          constraint = new BallAndSocket(r, r, r, r);
+          constraint = new SphericalPolygon(r, r, r, r);
           Quaternion rest = Quaternion.compose(structure.get(i).rotation().get(), offset);
-          ((BallAndSocket) constraint).setRestRotation(rest, new Vector(0, 1, 0), twist);
+          ((SphericalPolygon) constraint).setRestRotation(rest, new Vector(0, 1, 0), twist);
           break;
         }
 

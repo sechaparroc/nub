@@ -28,11 +28,17 @@ public class ContinuousTrajectoryExample {
   static int seed = 0; //Seed to use
   static float maxError = 0.1f;
 
-  static Util.ConstraintType constraintTypes[] = {Util.ConstraintType.HINGE_ALIGNED}; //Choose what kind of constraints apply to chain
-  static Util.SolverType solversType[] = {Util.SolverType.CCD_HEURISTIC, Util.SolverType.TRIANGULATION_HEURISTIC, Util.SolverType.COMBINED_HEURISTIC, Util.SolverType.COMBINED_EXPRESSIVE, Util.SolverType.FABRIK};
+  static Util.ConstraintType constraintTypes[] = {Util.ConstraintType.NONE}; //Choose what kind of constraints apply to chain
+  static Util.SolverType solversType[] = {
+      Util.SolverType.CCD_HEURISTIC,
+      //Util.SolverType.TRIANGULATION_HEURISTIC,
+      //Util.SolverType.COMBINED_HEURISTIC,
+      //Util.SolverType.COMBINED_EXPRESSIVE,
+      //Util.SolverType.FABRIK
+      };
   static List<Vector> targetPositions;
   static float[] lissajousPath = {1, 3, 3, boneLength * numJoints * 0.2f};
-  static boolean enableLissajous = true;
+  static boolean enableLissajous = false;
 
   public static void generateExperiment(Util.SolverType type, Util.ConstraintType constraintType, int iterations, JSONObject jsonSolver) {
     //1. Generate structure
@@ -121,6 +127,7 @@ public class ContinuousTrajectoryExample {
     JSONArray jsonPath = new JSONArray();
     PApplet pa = new PApplet();
     pa.randomSeed(0);
+    pa.noiseSeed(0);
     List<Node> chain = Util.generateDetachedChain(numJoints, boneLength, randRotation, randLength);
     Util.generateConstraints(chain, constraintType, 0, true);
     targetPositions = new ArrayList<Vector>();
@@ -261,7 +268,7 @@ public class ContinuousTrajectoryExample {
     }
 
     public float std(double mean) {
-      int sum = 0;
+      double sum = 0;
       for (Double value : _errorValues) {
         sum += (value - mean) * (value - mean);
       }

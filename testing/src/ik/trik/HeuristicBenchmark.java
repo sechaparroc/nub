@@ -27,7 +27,7 @@ public class HeuristicBenchmark extends PApplet {
   float boneLength = 50; //Define length of segments (bones)
 
   //Benchmark Parameters
-  Util.ConstraintType constraintType = Util.ConstraintType.NONE; //Choose what kind of constraints apply to chain
+  Util.ConstraintType constraintType = Util.ConstraintType.CONE_ELLIPSE; //Choose what kind of constraints apply to chain
   Random random = new Random();
   ArrayList<Solver> solvers; //Will store Solvers
   int randRotation = -1; //Set seed to generate initial random rotations, otherwise set to -1
@@ -180,8 +180,12 @@ public class HeuristicBenchmark extends PApplet {
     Node node = structure.get(structure.size() - 1);
     float maxDist = 0, minDist = Float.MAX_VALUE, meanDist = 0;
     Vector prev = node.position();
-    int n = 0;
-    for (float t = 0; t < 10.001; t += 0.05f) {
+    int n = 100;
+    float step = 0.01f;
+    float last = step * n;
+
+
+    for (float t = 0; t < last; t += step) {
       for (int i = 0; i < structure.size(); i++) {
         float angle = TWO_PI * noise(1000 * i + t) - PI;
         Vector dir = new Vector(noise(10000 * i + t), noise(20000 * i + t), noise(30000 * i + t));

@@ -16,9 +16,7 @@ import processing.data.TableRow;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class MoCapPerformance {
     static String dir = "C:/Users/olgaa/Desktop/Sebas/Thesis/Results/MoCapPerformance/";
@@ -31,19 +29,42 @@ public class MoCapPerformance {
             IKSolver.HeuristicMode.TRIK,
             IKSolver.HeuristicMode.BACK_AND_FORTH_TRIK,
             IKSolver.HeuristicMode.COMBINED,
+            IKSolver.HeuristicMode.COMBINED_TRIK,
             IKSolver.HeuristicMode.COMBINED_EXPRESSIVE,
     }; //Place Here Solvers that you want to compare
 
-    static int iterationsChain = 10;
-    static int iterations = 5;
+    static int iterationsChain = 5;
+    static int iterations = 3;
     static float maxError = 0.01f;
+    static int effs;
+
+    static String startAfterFile = "Stego";
+    static int n_packages = 1;
 
     public static List<BVHPackage> generateZooPackages(){
         List<BVHPackage> packages = new ArrayList<BVHPackage>();
         String zooInput = "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/";
-        String[] names = {"Parrot"};
-        for(String name : names){
-            packages.add(new BVHPackage(zooInput, name));
+        //Find all files
+        File[] directories = new File(zooInput).listFiles(File::isDirectory);
+
+        boolean start = false;
+        int n = 0;
+        for(File f : directories){
+            if(!start) {
+                if (f.getName().toUpperCase().equals(startAfterFile.toUpperCase())) {
+                    start = true;
+                }
+                continue;
+            }
+            if(n == n_packages) break;
+            System.out.println("Name " + f.getName());
+            BVHPackage bvhP = new BVHPackage(zooInput, f.getName());
+            if(bvhP.files.size() > 0) {
+                packages.add(bvhP);
+                n++;
+            } else{
+                System.err.println("Name " + f.getName() + " was excluded");
+            }
         }
         return packages;
     }
@@ -66,18 +87,43 @@ public class MoCapPerformance {
         loader.postureAt(0);
         //2. create the appropriate skeleton
         Skeleton skeleton = new Skeleton(loader, mode);
-        skeleton.createSolver(maxError, iterationsChain, iterations);
+        skeleton.createSolver(maxError, iterationsChain, iterations, height);
+        effs = skeleton.endEffectors.size();
         //3. Try to reach the desired postures and collect the statistics
         System.out.println("Solver" + mode.name() + " Current Pose " + loader.currentPosture() + " total : " + loader.postures());
+
+        HashMap<Node, Vector> prevPos = skeleton.obtainPositions(), nextPos;
+        HashMap<Node, Quaternion> prevOrs = skeleton.obtainOrientations(), nextOrs;
+        HashMap<Node, Quaternion> prevRots = skeleton.obtainRotations(), nextRots;
+
         while(loader.currentPosture() < loader.postures()){
             skeleton.readPosture();
             //solve and collect
             skeleton.solver.change(true);
             long start = System.nanoTime();
             skeleton.solver.solve();
-            stats.timeSt.addValue((System.nanoTime() - start) / 1000000.0);
-            stats.positionSt.addValue(skeleton.positionDistance(height));
-            stats.orientationSt.addValue(skeleton.orientationDistance());
+            double end = (System.nanoTime() - start) / 1000000.0;
+
+            stats.errorSt.addValue(skeleton.solver.error() / skeleton.endEffectors.size());
+            stats.iterationSt.addValue(skeleton.solver.lastIteration());
+            stats.timeSt.addValue(end);
+
+            nextPos = skeleton.obtainPositions();
+            stats.distancePosSt.addValue(distanceBetweenPostures(prevPos, nextPos));
+            prevPos = nextPos;
+
+            nextOrs = skeleton.obtainOrientations();
+            stats.distanceOrientationSt.addValue(distanceBetweenRotations(prevOrs, nextOrs));
+            prevOrs = nextOrs;
+
+            nextRots = skeleton.obtainRotations();
+            double distRot = distanceBetweenRotations(prevRots, nextRots);
+            stats.distanceRotationSt.addValue(distRot);
+            if(distRot > Float.MIN_VALUE) stats.motionSt.addValue(motionDistribution(prevRots, nextRots, distRot));
+            prevRots = nextRots;
+
+            stats.positionErrorSt.addValue(skeleton.positionDistance());
+            stats.rotationErrorSt.addValue(skeleton.rotationDistance());
             loader.nextPosture();
         }
     }
@@ -86,6 +132,7 @@ public class MoCapPerformance {
         //! generate BVH packages
         List<BVHPackage>  packages = generateZooPackages();
         for(BVHPackage bvhP : packages) {
+            System.out.println("On Package : " + bvhP.name);
             Table table = generateTablePerPackage();
             for(String bvhF : bvhP.files) {
                 List<BVHStats> statsList = new ArrayList<>();
@@ -100,7 +147,7 @@ public class MoCapPerformance {
                     stats.update();
                     statsList.add(stats);
                 }
-                addRow(bvhF, statsList, table);
+                addRow(bvhF, statsList, table, bvhP.height, effs);
             }
             //save all this in a cvs file
             try {
@@ -124,44 +171,148 @@ public class MoCapPerformance {
         Table table = new Table();
         table.addColumn("Animation");
         table.addColumn("Solver");
-        table.addColumn("Max pos.");
-        table.addColumn("Min pos.");
-        table.addColumn("Avg. pos.");
-        table.addColumn("Std. pos.");
+        table.addColumn("Height");
+        table.addColumn("Effs");
+        table.addColumn("Max error");
+        table.addColumn("Min error");
+        table.addColumn("Avg error");
+        table.addColumn("Std error");
+        table.addColumn("Med error");
+        table.addColumn("Med Std error");
 
-        table.addColumn("Max or.");
-        table.addColumn("Min or.");
-        table.addColumn("Avg. or.");
-        table.addColumn("Std. or.");
+        table.addColumn("Max iterations");
+        table.addColumn("Min iterations");
+        table.addColumn("Avg iterations");
+        table.addColumn("Std iterations");
+        table.addColumn("Med iterations");
+        table.addColumn("Med Std iterations");
 
         table.addColumn("Max time");
         table.addColumn("Min time");
-        table.addColumn("Avg. time");
-        table.addColumn("Std. time");
-        return table;
+        table.addColumn("Avg time");
+        table.addColumn("Std time");
+        table.addColumn("Med time");
+        table.addColumn("Med Std time");
 
+        table.addColumn("Max dist pos");
+        table.addColumn("Min dist pos");
+        table.addColumn("Avg dist pos");
+        table.addColumn("Std dist pos");
+        table.addColumn("Med dist pos");
+        table.addColumn("Med Std dist pos");
+
+        table.addColumn("Max dist rot");
+        table.addColumn("Min dist rot");
+        table.addColumn("Avg dist rot");
+        table.addColumn("Std dist rot");
+        table.addColumn("Med dist rot");
+        table.addColumn("Med Std dist rot");
+
+        table.addColumn("Max dist ors");
+        table.addColumn("Min dist ors");
+        table.addColumn("Avg dist ors");
+        table.addColumn("Std dist ors");
+        table.addColumn("Med dist ors");
+        table.addColumn("Med Std dist ors");
+
+        table.addColumn("Max motion");
+        table.addColumn("Min motion");
+        table.addColumn("Avg motion");
+        table.addColumn("Std motion");
+        table.addColumn("Med motion");
+        table.addColumn("Med Std motion");
+
+        table.addColumn("Max pos error");
+        table.addColumn("Min pos error");
+        table.addColumn("Avg pos error");
+        table.addColumn("Std pos error");
+        table.addColumn("Med pos error");
+        table.addColumn("Med Std pos error");
+
+
+        table.addColumn("Max rot error");
+        table.addColumn("Min rot error");
+        table.addColumn("Avg rot error");
+        table.addColumn("Std rot error");
+        table.addColumn("Med rot error");
+        table.addColumn("Med Std rot error");
+
+        return table;
     }
 
 
-    public static void addRow(String bvhName, List<BVHStats> stats, Table table){
+    public static void addRow(String bvhName, List<BVHStats> stats, Table table, double height, int n){
         for(BVHStats stat : stats ){
             TableRow row = table.addRow();
             row.setString("Animation", bvhName);
             row.setString("Solver", stat.name);
-            row.setDouble("Max pos.", stat.positionSt._max);
-            row.setDouble("Min pos.", stat.positionSt._min);
-            row.setDouble("Avg. pos.", stat.positionSt._mean);
-            row.setDouble("Std. pos.", stat.positionSt._std);
+            row.setDouble("Height", height);
+            row.setInt("Effs", n);
 
-            row.setDouble("Max or.", stat.orientationSt._max);
-            row.setDouble("Min or.", stat.orientationSt._min);
-            row.setDouble("Avg. or.", stat.orientationSt._mean);
-            row.setDouble("Std. or.", stat.orientationSt._std);
+            row.setDouble("Max error", stat.errorSt._max);
+            row.setDouble("Min error", stat.errorSt._min);
+            row.setDouble("Avg error", stat.errorSt._mean);
+            row.setDouble("Std error", stat.errorSt._std);
+            row.setDouble("Med error", stat.errorSt._median);
+            row.setDouble("Med Std error", stat.errorSt._stdMedian);
+
+            row.setDouble("Max iterations", stat.iterationSt._max);
+            row.setDouble("Min iterations", stat.iterationSt._min);
+            row.setDouble("Avg iterations", stat.iterationSt._mean);
+            row.setDouble("Std iterations", stat.iterationSt._std);
+            row.setDouble("Med iterations", stat.iterationSt._median);
+            row.setDouble("Med Std iterations", stat.iterationSt._stdMedian);
+
 
             row.setDouble("Max time", stat.timeSt._max);
             row.setDouble("Min time", stat.timeSt._min);
-            row.setDouble("Avg. time", stat.timeSt._mean);
-            row.setDouble("Std. time", stat.timeSt._std);
+            row.setDouble("Avg time", stat.timeSt._mean);
+            row.setDouble("Std time", stat.timeSt._std);
+            row.setDouble("Med time", stat.timeSt._median);
+            row.setDouble("Med Std time", stat.timeSt._stdMedian);
+
+            row.setDouble("Max dist pos", stat.distancePosSt._max);
+            row.setDouble("Min dist pos", stat.distancePosSt._min);
+            row.setDouble("Avg dist pos", stat.distancePosSt._mean);
+            row.setDouble("Std dist pos", stat.distancePosSt._std);
+            row.setDouble("Med dist pos", stat.distancePosSt._median);
+            row.setDouble("Med Std dist pos", stat.distancePosSt._stdMedian);
+
+            row.setDouble("Max dist rot", stat.distanceRotationSt._max);
+            row.setDouble("Min dist rot", stat.distanceRotationSt._min);
+            row.setDouble("Avg dist rot", stat.distanceRotationSt._mean);
+            row.setDouble("Std dist rot", stat.distanceRotationSt._std);
+            row.setDouble("Med dist rot", stat.distanceRotationSt._median);
+            row.setDouble("Med Std dist rot", stat.distanceRotationSt._stdMedian);
+
+            row.setDouble("Max dist ors", stat.distanceOrientationSt._max);
+            row.setDouble("Min dist ors", stat.distanceOrientationSt._min);
+            row.setDouble("Avg dist ors", stat.distanceOrientationSt._mean);
+            row.setDouble("Std dist ors", stat.distanceOrientationSt._std);
+            row.setDouble("Med dist ors", stat.distanceOrientationSt._median);
+            row.setDouble("Med Std dist ors", stat.distanceOrientationSt._stdMedian);
+
+            row.setDouble("Max motion", stat.motionSt._max);
+            row.setDouble("Min motion", stat.motionSt._min);
+            row.setDouble("Avg motion", stat.motionSt._mean);
+            row.setDouble("Std motion", stat.motionSt._std);
+            row.setDouble("Med motion", stat.motionSt._median);
+            row.setDouble("Med Std motion", stat.motionSt._stdMedian);
+
+            row.setDouble("Max pos error", stat.positionErrorSt._max);
+            row.setDouble("Min pos error", stat.positionErrorSt._min);
+            row.setDouble("Avg pos error", stat.positionErrorSt._mean);
+            row.setDouble("Std pos error", stat.positionErrorSt._std);
+            row.setDouble("Med pos error", stat.positionErrorSt._median);
+            row.setDouble("Med Std pos error", stat.positionErrorSt._stdMedian);
+
+            row.setDouble("Max rot error", stat.rotationErrorSt._max);
+            row.setDouble("Min rot error", stat.rotationErrorSt._min);
+            row.setDouble("Avg rot error", stat.rotationErrorSt._mean);
+            row.setDouble("Std rot error", stat.rotationErrorSt._std);
+            row.setDouble("Med rot error", stat.rotationErrorSt._median);
+            row.setDouble("Med Std rot error", stat.rotationErrorSt._stdMedian);
+
         }
     }
 
@@ -202,13 +353,13 @@ public class MoCapPerformance {
             root = pairs.get(loader.skeleton().reference().children().get(0));
         }
 
-        void createSolver(float maxError, int iterationsChain, int iterations){
+        void createSolver(float maxError, int iterationsChain, int iterations, float height){
             solver = new Tree(root, mode);
             //define attributes
-            solver.setMaxError(maxError);
+            solver.setMaxError(maxError * height); //1% of the skeleton height
             solver.setTimesPerFrame(iterations);
             solver.setMaxIterations(iterations);
-            solver.setChainTimesPerFrame(iterationsChain);
+            solver.setChainTimesPerFrame(1);
             solver.setChainMaxIterations(iterationsChain);
             targets = new HashMap<>();
             //Create a target per end effector
@@ -240,24 +391,46 @@ public class MoCapPerformance {
             }
         }
 
-        double positionDistance(float height){
+        double positionDistance(){
             double rms = 0;
             for(Node joint : structure.values()){
                 rms += Vector.distance(joint.position(), jointToNode.get(joint).position());
             }
             rms /= structure.size();
-            rms /= height;
             return rms;
         }
 
-        double orientationDistance(){
+        double rotationDistance(){
             double dist = 0;
             for (Node joint : structure.values()) {
-                dist += Math.toRadians(Context.orientationError(joint.rotation(), jointToNode.get(joint).rotation(), true));
+                dist += quaternionDistance(joint.rotation(), jointToNode.get(joint).rotation());
             }
             return dist / structure.size();
         }
 
+        public HashMap<Node, Vector> obtainPositions() {
+            HashMap<Node, Vector> positions = new HashMap<Node, Vector>();
+            for (Node node : structure.values()) {
+                positions.put(node, node.position().get());
+            }
+            return positions;
+        }
+
+        public HashMap<Node, Quaternion> obtainRotations() {
+            HashMap<Node, Quaternion> rotations = new HashMap<Node, Quaternion>();
+            for (Node node : structure.values()) {
+                rotations.put(node, node.rotation().get());
+            }
+            return rotations;
+        }
+
+        public HashMap<Node, Quaternion> obtainOrientations() {
+            HashMap<Node, Quaternion> rotations = new HashMap<Node, Quaternion>();
+            for (Node node : structure.values()) {
+                rotations.put(node, node.orientation().get());
+            }
+            return rotations;
+        }
     }
 
     public static class BVHPackage{
@@ -270,6 +443,7 @@ public class MoCapPerformance {
             path = p;
             name = n;
             getFilesFromPath();
+            if(files.size() == 0) return;
             calculateHeight();
             System.out.println("Height " + height);
         }
@@ -324,20 +498,62 @@ public class MoCapPerformance {
 
     public static class BVHStats{
         String name;
-        Statistics positionSt = new Statistics(), orientationSt = new Statistics(), timeSt = new Statistics();
+        Statistics errorSt = new Statistics(), iterationSt = new Statistics(), timeSt = new Statistics();
+        Statistics distancePosSt = new Statistics(), distanceOrientationSt = new Statistics(), distanceRotationSt = new Statistics(), motionSt = new Statistics();
+        Statistics positionErrorSt = new Statistics(), rotationErrorSt = new Statistics();
 
         void update(){
-            positionSt.updateStatistics();
-            orientationSt.updateStatistics();
+            errorSt.updateStatistics();
+            iterationSt.updateStatistics();
             timeSt.updateStatistics();
+            distancePosSt.updateStatistics();
+            distanceOrientationSt.updateStatistics();
+            distanceRotationSt.updateStatistics();
+            motionSt.updateStatistics();
+            positionErrorSt.updateStatistics();
+            rotationErrorSt.updateStatistics();
         }
     }
 
+    public static double distanceBetweenPostures(HashMap<Node, Vector> prev, HashMap<Node, Vector> cur) {
+        double dist = 0;
+        for (Node node  : prev.keySet()) {
+            dist += Vector.distance(prev.get(node), cur.get(node));
+        }
+        return dist / prev.size();
+    }
+
+    public static double distanceBetweenRotations(HashMap<Node, Quaternion> prev, HashMap<Node, Quaternion> cur) {
+        double dist = 0;
+        for (Node node  : prev.keySet()) {
+            dist += quaternionDistance(prev.get(node), cur.get(node));
+        }
+        return dist / prev.size();
+    }
+
+    public static double motionDistribution(HashMap<Node, Quaternion> prev, HashMap<Node, Quaternion> cur, double dist) {
+        double distrib = 0;
+        for (Node node  : prev.keySet()) {
+            distrib += Math.min(quaternionDistance(prev.get(node), cur.get(node)) / dist, 1);
+        }
+        return distrib / prev.size();
+    }
+
+
+
+    public static double quaternionDistance(Quaternion a, Quaternion b) {
+        double s1 = 1, s2 = 1;
+        if (a.w() < 0) s1 = -1;
+        if (b.w() < 0) s2 = -1;
+        double dot = s1 * a._quaternion[0] * s2 * b._quaternion[0] + s1 * a._quaternion[1] * s2 * b._quaternion[1] + s1 * a._quaternion[2] * s2 * b._quaternion[2] + s1 * a._quaternion[3] * s2 * b._quaternion[3];
+        dot = Math.max(Math.min(dot, 1), -1);
+        return Math.acos(2 * Math.pow(dot, 2) - 1);
+    }
 
     public static class Statistics {
         protected List<Double> _values = new ArrayList<Double>();
 
-        protected double _min = Float.MAX_VALUE, _max = Float.MIN_VALUE, _mean, _std;
+        protected double _min = Float.MAX_VALUE, _max = Float.MIN_VALUE, _mean, _std, _median, _stdMedian;
 
         public double min() {
             return _min;
@@ -353,6 +569,14 @@ public class MoCapPerformance {
 
         public double std() {
             return _std;
+        }
+
+        public double median(){
+          return _median;
+        }
+
+        public double stdMedian(){
+          return _stdMedian;
         }
 
         public float std(double mean) {
@@ -375,6 +599,14 @@ public class MoCapPerformance {
             }
             _mean = _mean / _values.size();
             _std = std(_mean);
+            ArrayList<Double> copy = new ArrayList<Double>(_values);
+            Collections.sort(copy);
+            int n = copy.size();
+            if (n % 2 == 0)
+                _median = (copy.get(n/2) + copy.get(n/2 - 1))/2.;
+            else
+                _median = copy.get(n/2);
+            _stdMedian = std(_median);
         }
 
         public JSONObject save(){

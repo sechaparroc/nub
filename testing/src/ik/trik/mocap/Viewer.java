@@ -19,7 +19,7 @@ import java.util.Map;
 public class Viewer extends PApplet {
     String[] paths = new String[]{
             "/testing/data/bvh/0007_Cartwheel001.bvh",
-            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__SlowFly.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Trex/__Big_roar_step.bvh",
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/cmu-mocap-master/data/001/01_02.bvh",
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Horse/__SlowWalk.bvh"
     };
@@ -57,6 +57,7 @@ public class Viewer extends PApplet {
         IKSkeleton1.setDepth(true);
         IKSkeleton1.setTargetRadius(scene.radius() * 0.01f);
         IKSkeleton1.enableIK(IKSolver.HeuristicMode.COMBINED_TRIK);
+        IKSkeleton1.setMaxError(0.01f);
         IKSkeleton1.addTargets();
         skeletons.add(IKSkeleton1);
 
@@ -65,6 +66,8 @@ public class Viewer extends PApplet {
         IKSkeleton2.setDepth(true);
         IKSkeleton2.setTargetRadius(scene.radius() * 0.01f);
         IKSkeleton2.enableIK(IKSolver.HeuristicMode.CCD);
+        IKSkeleton2.setMaxError(0.01f * height);
+        println("Height : " + height + " Max error " + 0.01f * height);
         IKSkeleton2.addTargets();
         skeletons.add(IKSkeleton2);
 
@@ -72,6 +75,14 @@ public class Viewer extends PApplet {
         loader.skeleton().reference().translate(0,0,-height * 2f);
         IKSkeleton2.reference().translate(0,0,height * 2f);
 
+
+        scene.setHUD(pg -> {
+            pg.pushStyle();
+            pg.text("# End Effectors " + IKSkeleton1.endEffectors().size(), 50 , 50);
+            pg.text("S1 error " + IKSkeleton1.solvers().get(0).error() / IKSkeleton1.endEffectors().size(), 50 , 100);
+            pg.text("S2 error " + IKSkeleton2.solvers().get(0).error() / IKSkeleton2.endEffectors().size(), 50 , 150);
+            pg.popStyle();
+        });
 
         //4. Set scene
         scene.setRadius(height * 3);
