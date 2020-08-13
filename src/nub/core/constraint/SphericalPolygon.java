@@ -140,7 +140,7 @@ public class SphericalPolygon extends ConeConstraint {
         return  i;
       }
     }
-    return -1;
+    return 0;
   }
 
   protected Vector _closestPoint(Vector point) {
