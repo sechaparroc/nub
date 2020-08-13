@@ -79,10 +79,10 @@ public class Tree extends Solver {
     //dummy must have only a child,
     this._root = dummy._children().get(0);
     this._root._parent = null;
-    this.setMaxIterations(8);
-    this.setTimesPerFrame(8);
-    this.setChainTimesPerFrame(5);
-    this.setChainMaxIterations(5);
+    this.setMaxIterations(5);
+    this.setTimesPerFrame(5);
+    this.setChainTimesPerFrame(1);
+    this.setChainMaxIterations(3);
   }
 
 
@@ -125,8 +125,8 @@ public class Tree extends Solver {
     Node node = treeNode._solver.context().chain().get(treeNode._solver.context().endEffectorId());
     for(TreeNode leaf : treeNode._reachableLeafNodes){
       Vector eff = node.location(leaf._solver.context().chain().get(leaf._solver.context().endEffectorId()));
-      Vector target = node.location(leaf._solver.target());
       if(eff.magnitude() < 0.1) continue; //Too near from current node
+      Vector target = node.location(leaf._solver.target());
       effs.add(eff);
       targets.add(target);
       effs_centroid.add(eff);
@@ -368,7 +368,8 @@ public class Tree extends Solver {
 
   protected void _setChainTimesPerFrame(float timesPerFrame, TreeNode node) {
     if (node == null) return;
-    node._solver().setTimesPerFrame(timesPerFrame);
+    node._solver().setTimesPerFrame(1);
+    node._solver().setMaxIterations((int) timesPerFrame);
     for (TreeNode child : node._children()) {
       _setChainTimesPerFrame(timesPerFrame, child);
     }
@@ -380,6 +381,7 @@ public class Tree extends Solver {
 
   protected void _setChainMaxIterations(int maxIterations, TreeNode node) {
     if (node == null) return;
+    node._solver().setTimesPerFrame(1);
     node._solver().setMaxIterations(maxIterations);
     for (TreeNode child : node._children()) {
       _setChainMaxIterations(maxIterations, child);

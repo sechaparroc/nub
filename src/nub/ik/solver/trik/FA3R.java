@@ -59,7 +59,7 @@ public class FA3R {
 
         double k;
 
-        for(int i = 0; i < 15; ++i)
+        for(int i = 0; i < 10; ++i)
         {
             k = 2.0 / (hx[0] * hx[0] + hx[1] * hx[1] + hx[2] * hx[2] +
                     hy[0] * hy[0] + hy[1] * hy[1] + hy[2] * hy[2] +

@@ -22,6 +22,10 @@ public class CombinedTRIK extends Heuristic{
         this(context, 0.3f, 2);
     }
 
+    public void setTRIKFraction(float fraction){
+        _trikFraction = fraction;
+    }
+
     @Override
     public void prepare() {
         //Update cache of usable chain

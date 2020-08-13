@@ -103,6 +103,10 @@ public class Context {
     return _lockTimesCriteria;
   }
 
+  public void setDelegationIterationsRatio(float r){
+    _delegationIterationsRatio = r;
+  }
+
   public void setLockTimesCriteria(int times){
     _lockTimesCriteria = times;
   }
