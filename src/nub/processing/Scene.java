@@ -23,10 +23,7 @@ import nub.timing.TimingHandler;
 import processing.core.*;
 import processing.data.JSONArray;
 import processing.data.JSONObject;
-import processing.opengl.PGL;
-import processing.opengl.PGraphics3D;
-import processing.opengl.PGraphicsOpenGL;
-import processing.opengl.PShader;
+import processing.opengl.*;
 
 import java.nio.FloatBuffer;
 import java.util.Arrays;
@@ -82,18 +79,6 @@ import java.util.function.Consumer;
  * Another scene's eye (different than the graph {@link Graph#eye()}) can be drawn with
  * {@link #drawFrustum(Graph)}. Typical usage include interactive minimaps and
  * visibility culling visualization and debugging.
- * <p>
- * An {@link Interpolator} path may be drawn with code like this:
- * <pre>
- * {@code
- * void draw() {
- *   scene.render();
- *   scene._drawSpline(interpolator, 5);
- * }
- * }
- * </pre>
- * while {@link #render()} will draw the animated node(s), {@link #_drawSpline(Interpolator)}
- * will draw the interpolated path too.
  * <h1>Picking and interaction</h1>
  * Refer to the {@link Graph} documentation for details about how picking and interaction works
  * in nub.
@@ -129,22 +114,8 @@ public class Scene extends Graph {
   // CONSTRUCTORS
 
   /**
-   * Constructor that defines an on-screen Processing scene. Same as
-   * {@code this(pApplet.g)}.
-   *
-   * @see #Scene(PGraphics)
-   * @see #Scene(PApplet, Node)
-   * @see #Scene(PGraphics, Node)
-   */
-  public Scene(PApplet pApplet) {
-    this(pApplet.g);
-  }
-
-  /**
    * Same as {@code this(pApplet.g, eye)}.
    *
-   * @see #Scene(PApplet)
-   * @see #Scene(PGraphics)
    * @see #Scene(PGraphics, Node)
    */
   public Scene(PApplet pApplet, Node eye) {
@@ -152,30 +123,152 @@ public class Scene extends Graph {
   }
 
   /**
-   * Same as {@code this(pGraphics, null)}.
+   * Same as {@code super(pGraphics, pGraphics.width, pGraphics.height, eye)}.
    *
-   * @see #Scene(PApplet)
-   * @see #Scene(PApplet, Node)
-   * @see #Scene(PGraphics, Node)
-   */
-  public Scene(PGraphics pGraphics) {
-    this(pGraphics, null);
-  }
-
-  /**
-   * Main constructor defining a left-handed Processing compatible scene.
-   * <p>
-   * An off-screen Processing scene is created if {@code pGraphics} is different
-   * than the main PApplet context, otherwise it creates an on-screen Processing
-   * scene. To display an off-screen scene call {@link #display(Node, int, int)}.
-   *
-   * @see Graph#Graph(Object, nub.core.Graph.Type, int, int)
-   * @see #Scene(PApplet)
-   * @see #Scene(PGraphics)
+   * @see Graph#Graph(Object, int, int, Node)
    * @see #Scene(PApplet, Node)
    */
   public Scene(PGraphics pGraphics, Node eye) {
-    super(pGraphics, eye, pGraphics instanceof PGraphics3D ? Type.PERSPECTIVE : Type.TWO_D, pGraphics.width, pGraphics.height);
+    super(pGraphics, pGraphics.width, pGraphics.height, eye);
+    _init(pGraphics);
+  }
+
+  /**
+   * Same as {@code this(pApplet.g)}.
+   *
+   * @see #Scene(PGraphics)
+   */
+  public Scene(PApplet pApplet) {
+    this(pApplet.g);
+  }
+
+  /**
+   * Same as {@code this(pGraphics, new Vector(), 100)}.
+   *
+   * @see #Scene(PApplet, Vector, float)
+   */
+  public Scene(PGraphics pGraphics) {
+    //super(pGraphics, pGraphics.width, pGraphics.height, pGraphics instanceof PGraphics2D ? Type.TWO_D : Type.PERSPECTIVE);
+    this(pGraphics, new Vector(), 100);
+  }
+
+  /**
+   * Same as {this(pApplet.g, new Vector(), radius)}.
+   *
+   * @see Scene#Scene(PGraphics, Vector, float)
+   */
+  public Scene(PApplet pApplet, float radius) {
+    this(pApplet.g, new Vector(), radius);
+  }
+
+  /**
+   * Same as {@code this(pApplet.g, center, radius)}.
+   *
+   * @see #Scene(PGraphics, Vector, float)
+   */
+  public Scene(PApplet pApplet, Vector center, float radius) {
+    this(pApplet.g, center, radius);
+  }
+
+  /**
+   * Same as {@code this(pGraphics, new Vector(), radius)}.
+   *
+   * @see #Scene(PGraphics, Vector, float)
+   */
+  public Scene(PGraphics pGraphics, float radius) {
+    this(pGraphics, new Vector(), radius);
+  }
+
+  /**
+   * Same as {@code super(pGraphics, pGraphics.width, pGraphics.height, pGraphics instanceof PGraphics2D ? Type.TWO_D : Type.PERSPECTIVE, center, radius)},
+   * and then sets {@link #leftHanded} to {@code true}.
+   *
+   * @see Graph#Graph(Object, int, int, Type, Vector, float)
+   */
+  public Scene(PGraphics pGraphics, Vector center, float radius) {
+    super(pGraphics, pGraphics.width, pGraphics.height, pGraphics instanceof PGraphics2D ? Type.TWO_D : Type.PERSPECTIVE, center, radius);
+    _init(pGraphics);
+  }
+
+  /**
+   * Same as {@code this(pApplet, eye, new Vector(), radius)}.
+   *
+   * @see Scene#Scene(PApplet, Node, Vector, float)
+   */
+  public Scene(PApplet pApplet, Node eye, float radius) {
+    this(pApplet, eye, new Vector(), radius);
+  }
+
+  /**
+   * Same as {@code this(pApplet.g, eye, center, rdius)}.
+   *
+   * @see #Scene(PGraphics, Node, Vector, float)
+   */
+  public Scene(PApplet pApplet, Node eye, Vector center, float radius) {
+    this(pApplet.g, eye, center, radius);
+  }
+
+  /**
+   * Same as {@code this(pGraphics, eye, new Vector(), radius)}.
+   *
+   * @see #Scene(PGraphics, Node, Vector, float)
+   */
+  public Scene(PGraphics pGraphics, Node eye, float radius) {
+    this(pGraphics, eye, new Vector(), radius);
+  }
+
+  /**
+   * Same as {@code super(pGraphics, pGraphics.width, pGraphics.height, eye, type, center, radius)},
+   * and then sets {@link #leftHanded} to {@code true}.
+   *
+   * @see Graph#Graph(Object, int, int, Node, Type, Vector, float)
+   */
+  public Scene(PGraphics pGraphics, Node eye, Vector center, float radius) {
+    super(pGraphics, pGraphics.width, pGraphics.height, eye, pGraphics instanceof PGraphics2D ? Type.TWO_D : Type.PERSPECTIVE, center, radius);
+    _init(pGraphics);
+  }
+
+  /**
+   * Same as {@code this(pApplet.g, zNear, zFar)}.
+   *
+   * @see #Scene(PGraphics, float, float)
+   */
+  public Scene(PApplet pApplet, float zNear, float zFar) {
+    this(pApplet.g, zNear, zFar);
+  }
+
+  /**
+   * Same as {@code super(pGraphics, pGraphics.width, pGraphics.height, pGraphics instanceof PGraphics2D ? Type.TWO_D : Type.PERSPECTIVE, zNear, zFar)},
+   * and then sets {@link #leftHanded} to {@code true}.
+   *
+   * @see Graph#Graph(Object, int, int, Type, float, float)
+   */
+  public Scene(PGraphics pGraphics, float zNear, float zFar) {
+    super(pGraphics, pGraphics.width, pGraphics.height, pGraphics instanceof PGraphics2D ? Type.TWO_D : Type.PERSPECTIVE, zNear, zFar);
+    _init(pGraphics);
+  }
+
+  /**
+   * Same as {@code this(pApplet.g, eye, zNear, zFar)}.
+   *
+   * @see #Scene(PGraphics, Node, float, float)
+   */
+  public Scene(PApplet pApplet, Node eye, float zNear, float zFar) {
+    this(pApplet.g, eye, zNear, zFar);
+  }
+
+  /**
+   * Same as {@code super(pGraphics, pGraphics.width, pGraphics.height, eye, type, zNear, zFar)},
+   * and then sets {@link #leftHanded} to {@code true}.
+   *
+   * @see Graph#Graph(Object, int, int, Node, Type, float, float)
+   */
+  public Scene(PGraphics pGraphics, Node eye, float zNear, float zFar) {
+    super(pGraphics, pGraphics.width, pGraphics.height, eye, pGraphics instanceof PGraphics2D ? Type.TWO_D : Type.PERSPECTIVE, zNear, zFar);
+    _init(pGraphics);
+  }
+
+  protected void _init(PGraphics pGraphics) {
     // 1. P5 objects
     if (pApplet == null) pApplet = pGraphics.parent;
     _offscreen = pGraphics != pApplet.g;
@@ -189,9 +282,9 @@ public class Scene extends Graph {
       _onscreenGraph = this;
     // 2. Back buffer
     if (_backBuffer() != null) _backBuffer().noSmooth();
-    _triangleShader = pApplet.loadShader("PickingBuffer.frag");
-    _lineShader = pApplet.loadShader("PickingBuffer.frag");
-    _pointShader = pApplet.loadShader("PickingBuffer.frag");
+    _triangleShader = pApplet.loadShader("Picking.frag");
+    _lineShader = pApplet.loadShader("Picking.frag", "LinePicking.vert");
+    _pointShader = pApplet.loadShader("Picking.frag", "PointPicking.vert");
     // 3. Register P5 methods
     pApplet.registerMethod("pre", this);
     pApplet.registerMethod("draw", this);
@@ -265,9 +358,11 @@ public class Scene extends Graph {
    * {@code false} if none was found (in this case no {@link #center()} is set).
    */
   public boolean setCenter(int pixelX, int pixelY) {
+    if (_fixed)
+      return false;
     Vector pup = location(pixelX, pixelY);
     if (pup != null) {
-      setCenter(pup);
+      _center = pup;
       return true;
     }
     return false;
@@ -360,15 +455,17 @@ public class Scene extends Graph {
   // 3. Drawing methods
 
   /**
-   * The {@link #anchor()} is set to the point located under {@code pixel} on screen.
+   * The {@link #center()} is set to the point located under {@code pixel} on screen.
    * <p>
    * Returns {@code true} if a point was found under {@code pixel} and
-   * {@code false} if none was found (in this case no {@link #anchor()} is set).
+   * {@code false} if none was found (in this case no {@link #center()} is set).
    */
-  public boolean setAnchorFromPixel(int pixelX, int pixelY) {
+  public boolean setCenterFromPixel(int pixelX, int pixelY) {
+    if (_fixed)
+      return false;
     Vector pup = location(pixelX, pixelY);
     if (pup != null) {
-      setAnchor(pup);
+      _center = pup;
       // new animation
       //TODO restore
       //anchorFlag = true;
@@ -573,7 +670,7 @@ public class Scene extends Graph {
   }
 
   /**
-   * Saves the {@link #eye()}, the {@link #radius()} and the {@link #type()} into {@code fileName}.
+   * Saves the {@link #eye()}, the {@link #radius()} and the {@link #_type} into {@code fileName}.
    *
    * @see #saveConfig()
    * @see #loadConfig()
@@ -581,8 +678,8 @@ public class Scene extends Graph {
    */
   public void saveConfig(String fileName) {
     JSONObject json = new JSONObject();
-    json.setFloat("radius", radius());
-    json.setString("type", type().name());
+    json.setFloat("radius", _radius);
+    json.setString("type", _type.name());
     json.setJSONObject("eye", _toJSONObject(eye()));
 
     //TODO restore
@@ -618,7 +715,7 @@ public class Scene extends Graph {
   }
 
   /**
-   * Loads the {@link #eye()}, the {@link #radius()} and the {@link #type()} from {@code fileName}.
+   * Loads the {@link #eye()}, the {@link #radius()} and the {@link #_type} from {@code fileName}.
    *
    * @see #saveConfig()
    * @see #saveConfig(String)
@@ -632,7 +729,8 @@ public class Scene extends Graph {
       System.out.println("No such " + fileName + " found!");
     }
     if (json != null) {
-      setRadius(json.getFloat("radius"));
+      // TODO pending
+      _radius = json.getFloat("radius");
       String type = json.getString("type");
       setType(type.equals("PERSPECTIVE") ? Type.PERSPECTIVE :
           type.equals("ORTHOGRAPHIC") ? Type.ORTHOGRAPHIC : type.equals("TWO_D") ? Type.TWO_D : Type.CUSTOM);
@@ -787,11 +885,11 @@ public class Scene extends Graph {
           Vector location = screenLocation(node);
           if (location != null) {
             _backBuffer().translate(location.x(), location.y());
-            if (node._imrHUD != null) {
-              node._imrHUD.accept(_backBuffer());
+            if (_imrHUD(node) != null) {
+              _imrHUD(node).accept(_backBuffer());
             }
-            if (node._rmrHUD != null) {
-              _backBuffer().shape(node._rmrHUD);
+            if (_rmrHUD(node) != null) {
+              _backBuffer().shape(_rmrHUD(node));
             }
           }
           _backBuffer().popMatrix();
@@ -847,11 +945,11 @@ public class Scene extends Graph {
           Vector location = screenLocation(node);
           if (location != null) {
             context().translate(location.x(), location.y());
-            if (node._imrHUD != null) {
-              node._imrHUD.accept(context());
+            if (_imrHUD(node) != null) {
+              _imrHUD(node).accept(context());
             }
-            if (node._rmrHUD != null) {
-              context().shape(node._rmrHUD);
+            if (_rmrHUD(node) != null) {
+              context().shape(_rmrHUD(node));
             }
           }
           context().popMatrix();
@@ -891,10 +989,10 @@ public class Scene extends Graph {
       context().stroke(_gridStroke);
       if (_gridType == GridType.DOTS) {
         context().strokeWeight(5);
-        drawDottedGrid(radius(), _gridSubDiv);
+        drawDottedGrid(_radius, _gridSubDiv);
       } else {
         context().strokeWeight(1);
-        drawGrid(radius(), _gridSubDiv);
+        drawGrid(_radius, _gridSubDiv);
       }
       context().popStyle();
     }
@@ -938,38 +1036,36 @@ public class Scene extends Graph {
       drawTorusSolenoid(pg, _torusFaces(node), 5);
       pg.popStyle();
     }
-    if (node.isHintEnable(Node.FRUSTUM)) {
-      pg.pushStyle();
-      pg.colorMode(PApplet.RGB, 255);
-      pg.stroke(_frustumColor(node));
-      pg.fill(_frustumColor(node));
-      if (_frustumGraph(node) instanceof Graph) {
-        drawFrustum(pg, _frustumGraph(node));
+    if (node.isHintEnable(Node.BOUNDS)) {
+      for (Graph graph : _frustumGraphs(node)) {
+        if (graph != this) {
+          pg.pushStyle();
+          pg.colorMode(PApplet.RGB, 255);
+          // 2113928960: yellow (with alpha: color(255, 255, 0, 125)) encoded as a processing int rgb color
+          pg.stroke(isNumInstance(_background(graph)) ? castToInt(_background(graph)) : 2113928960);
+          pg.fill(isNumInstance(_background(graph)) ? castToInt(_background(graph)) : 2113928960);
+          drawFrustum(pg, graph);
+          pg.popStyle();
+        }
       }
-      else if (_eyeBuffer(node) instanceof PGraphics) {
-        drawFrustum(pg, (PGraphics) _eyeBuffer(node), node, _frustumType(node), _zNear(node), _zFar(node));
-      }
-      pg.popStyle();
     }
     if (node.isHintEnable(Node.AXES)) {
       pg.pushStyle();
-      // TODO debug
-      //pg.strokeWeight(5);
-      //pg.line(0, 0, 0, 0, 0, node._axesLength == 0 ? radius() / 5 : node._axesLength);
-      drawAxes(pg, node._axesLength == 0 ? radius() / 5 : node._axesLength);
+      drawAxes(pg, _axesLength(node) == 0 ? _radius / 5 : _axesLength(node));
       pg.popStyle();
     }
     if (node.isHintEnable(Node.CAMERA)) {
       pg.pushStyle();
       pg.colorMode(PApplet.RGB, 255);
-      pg.stroke(node._cameraStroke);
-      _drawEye(node._cameraLength == 0 ? radius() : node._cameraLength);
+      pg.stroke(_cameraStroke(node));
+      pg.fill(_cameraStroke(node));
+      _drawEye(pg, _cameraLength(node) == 0 ? _radius : _cameraLength(node));
       pg.popStyle();
     }
-    if (node.isHintEnable(Node.BULLSEYE) && node.isPickingModeEnable(Node.BULLSEYE)) {
+    if (node.isHintEnable(Node.BULLSEYE)) {
       pg.pushStyle();
       pg.colorMode(PApplet.RGB, 255);
-      pg.stroke(node._bullsEyeStroke);
+      pg.stroke(_bullsEyeStroke(node));
       _drawBullsEye(node);
       pg.popStyle();
     }
@@ -997,15 +1093,22 @@ public class Scene extends Graph {
     if (node.isHintEnable(Node.TORUS) && node.isPickingModeEnable(Node.TORUS)) {
       drawTorusSolenoid(pg, _torusFaces(node), 5);
     }
-    if (node.isHintEnable(Node.FRUSTUM) && node.isPickingModeEnable(Node.FRUSTUM)) {
-      if (_frustumGraph(node) instanceof Graph) {
-        drawFrustum(pg, _frustumGraph(node));
-      }
-      else if (_eyeBuffer(node) instanceof PGraphics) {
-        drawFrustum(pg, (PGraphics) _eyeBuffer(node), node, _frustumType(node), _zNear(node), _zFar(node));
+    if (node.isHintEnable(Node.BOUNDS) && node.isPickingModeEnable(Node.BOUNDS)) {
+      for (Graph graph : _frustumGraphs(node)) {
+        if (graph != this) {
+          drawFrustum(pg, graph);
+        }
       }
     }
-
+    if (node.isHintEnable(Node.AXES) && node.isPickingModeEnable(Node.AXES)) {
+      pg.pushStyle();
+      pg.strokeWeight(6);
+      drawAxes(pg, _axesLength(node) == 0 ? _radius / 5 : _axesLength(node));
+      pg.popStyle();
+    }
+    if (node.isHintEnable(Node.CAMERA) && node.isPickingModeEnable(Node.CAMERA)) {
+      _drawEye(pg, _cameraLength(node) == 0 ? _radius : _cameraLength(node));
+    }
     if (node.isHintEnable(Node.CONSTRAINT) && node.isPickingModeEnable(Node.CONSTRAINT)){
       drawConstraint(pg, node, node._constraintFactor, node._constraintColor);
     }
@@ -1013,27 +1116,6 @@ public class Scene extends Graph {
     if(node.isHintEnable(Node.BONE) && node.isPickingModeEnable(Node.BONE)){
       drawBone(pg, node);
     }
-
-    pg.pushStyle();
-    pg.strokeWeight(5);
-    if (node.isHintEnable(Node.AXES) && node.isPickingModeEnable(Node.AXES)) {
-      //TODO debug
-      //pg.line(0, 0, 0, 0, 0, node._axesLength == 0 ? radius() / 5 : node._axesLength);
-      drawAxes(pg, node._axesLength == 0 ? radius() / 5 : node._axesLength);
-    }
-    if (node.isHintEnable(Node.CAMERA) && node.isPickingModeEnable(Node.CAMERA)) {
-      _drawEye(node._cameraLength == 0 ? radius() : node._cameraLength);
-    }
-    pg.popStyle();
-  }
-
-  /**
-   * Same as {@code return screenLocation(vector, node, projectionView, pGraphics.width, pGraphics.height)}.
-   *
-   * @see #screenLocation(Vector, Node, Matrix, int, int)
-   */
-  public static Vector screenLocation(PGraphics pGraphics, Vector vector, Node node, Matrix projectionView) {
-    return screenLocation(vector, node, projectionView, pGraphics.width, pGraphics.height);
   }
 
   // drawing
@@ -1240,13 +1322,12 @@ public class Scene extends Graph {
    */
   protected void _drawSpline(Interpolator interpolator) {
     if (interpolator.hint() != 0) {
-      context().pushStyle();
-      context().noFill();
-      List<Node> path = interpolator.path();
+      List<Node> path = _path(interpolator);
       if (interpolator.isHintEnable(Interpolator.SPLINE) && path.size() > 1) {
         context().pushStyle();
+        context().noFill();
         context().colorMode(PApplet.RGB, 255);
-        context().strokeWeight(3);
+        context().strokeWeight(_splineWeight(interpolator));
         context().stroke(_splineStroke(interpolator));
         context().beginShape();
         for (Node node : path) {
@@ -1256,40 +1337,32 @@ public class Scene extends Graph {
         context().endShape();
         context().popStyle();
       }
-      if (interpolator.isHintEnable(Interpolator.AXES) || interpolator.isHintEnable(Interpolator.CAMERA)) {
-        int nbSteps = 30;
+      if (interpolator.isHintEnable(Interpolator.STEPS)) {
+        context().pushStyle();
         int count = 0;
         float goal = 0.0f;
         for (Node node : path) {
-          if ((count++) >= goal) {
-            goal += nbSteps / (float) interpolator.steps();
-            _matrixHandler.pushMatrix();
-            _matrixHandler.applyTransformation(node);
-            if (interpolator.isHintEnable(Interpolator.AXES)) {
-              // TODO test
-              drawAxes(_axesLength(interpolator) == 0 ? radius() / 5 : _axesLength(interpolator));
+          if (count >= goal) {
+            goal += Interpolator.maxSteps / ((float) interpolator.steps() + 1);
+            if (count % Interpolator.maxSteps != 0) {
+              _matrixHandler.pushMatrix();
+              _matrixHandler.applyTransformation(node);
+              _displayFrontHint(node);
+              _matrixHandler.popMatrix();
             }
-            if (interpolator.isHintEnable(Interpolator.CAMERA)) {
-              // TODO test
-              context().pushStyle();
-              context().colorMode(PApplet.RGB, 255);
-              context().stroke(_cameraStroke(interpolator));
-              _drawEye(_cameraLength(interpolator) == 0 ? radius() : _cameraLength(interpolator));
-              context().popStyle();
-            }
-            _matrixHandler.popMatrix();
           }
+          count++;
         }
+        context().popStyle();
       }
-      context().popStyle();
     }
   }
 
   /**
    * Internal use.
    */
-  protected void _drawEye(float scale) {
-    context().pushStyle();
+  protected void _drawEye(PGraphics pg, float scale) {
+    pg.pushStyle();
     float halfHeight = scale * (is2D() ? 1.2f : 0.07f);
     float halfWidth = halfHeight * 1.3f;
     float dist = halfHeight / (float) Math.tan(PApplet.PI / 8.0f);
@@ -1300,56 +1373,61 @@ public class Scene extends Graph {
     float baseHalfWidth = 0.3f * halfWidth;
 
     // Frustum outline
-    context().noFill();
-    context().beginShape();
-    vertex(-halfWidth, halfHeight, -dist);
-    vertex(-halfWidth, -halfHeight, -dist);
-    vertex(0.0f, 0.0f, 0.0f);
-    vertex(halfWidth, -halfHeight, -dist);
-    vertex(-halfWidth, -halfHeight, -dist);
-    context().endShape();
-    context().noFill();
-    context().beginShape();
-    vertex(halfWidth, -halfHeight, -dist);
-    vertex(halfWidth, halfHeight, -dist);
-    vertex(0.0f, 0.0f, 0.0f);
-    vertex(-halfWidth, halfHeight, -dist);
-    vertex(halfWidth, halfHeight, -dist);
-    context().endShape();
+    /*
+    if (pg == context()) {
+      pg.pushStyle();
+      pg.noFill();
+    }
+    */
+    pg.pushStyle();
+    pg.noFill();
+
+    pg.beginShape(PApplet.TRIANGLE_FAN);
+    vertex(pg, 0.0f, 0.0f, 0.0f);
+    vertex(pg, -halfWidth, -halfHeight, -dist);
+    vertex(pg, halfWidth, -halfHeight, -dist);
+    vertex(pg, halfWidth, halfHeight, -dist);
+    vertex(pg, -halfWidth, halfHeight, -dist);
+    vertex(pg, -halfWidth, -halfHeight, -dist);
+    pg.endShape(PApplet.CLOSE);
+    /*
+    if (pg == context()) {
+      pg.popStyle();
+    }
+    */
+    pg.popStyle();
 
     // Up arrow
-    context().noStroke();
-    context().fill(context().strokeColor);
+    pg.noStroke();
     // Base
-    context().beginShape(PApplet.QUADS);
+    pg.beginShape(PApplet.QUADS);
 
     if (leftHanded) {
-      vertex(baseHalfWidth, -halfHeight, -dist);
-      vertex(-baseHalfWidth, -halfHeight, -dist);
-      vertex(-baseHalfWidth, -baseHeight, -dist);
-      vertex(baseHalfWidth, -baseHeight, -dist);
+      vertex(pg, baseHalfWidth, -halfHeight, -dist);
+      vertex(pg, -baseHalfWidth, -halfHeight, -dist);
+      vertex(pg, -baseHalfWidth, -baseHeight, -dist);
+      vertex(pg, baseHalfWidth, -baseHeight, -dist);
     } else {
-      vertex(-baseHalfWidth, halfHeight, -dist);
-      vertex(baseHalfWidth, halfHeight, -dist);
-      vertex(baseHalfWidth, baseHeight, -dist);
-      vertex(-baseHalfWidth, baseHeight, -dist);
+      vertex(pg, -baseHalfWidth, halfHeight, -dist);
+      vertex(pg, baseHalfWidth, halfHeight, -dist);
+      vertex(pg, baseHalfWidth, baseHeight, -dist);
+      vertex(pg, -baseHalfWidth, baseHeight, -dist);
     }
 
-    context().endShape();
+    pg.endShape();
     // Arrow
-    context().beginShape(PApplet.TRIANGLES);
-
+    pg.beginShape(PApplet.TRIANGLES);
     if (leftHanded) {
-      vertex(0.0f, -arrowHeight, -dist);
-      vertex(arrowHalfWidth, -baseHeight, -dist);
-      vertex(-arrowHalfWidth, -baseHeight, -dist);
+      vertex(pg, 0.0f, -arrowHeight, -dist);
+      vertex(pg, arrowHalfWidth, -baseHeight, -dist);
+      vertex(pg, -arrowHalfWidth, -baseHeight, -dist);
     } else {
-      vertex(0.0f, arrowHeight, -dist);
-      vertex(-arrowHalfWidth, baseHeight, -dist);
-      vertex(arrowHalfWidth, baseHeight, -dist);
+      vertex(pg, 0.0f, arrowHeight, -dist);
+      vertex(pg, -arrowHalfWidth, baseHeight, -dist);
+      vertex(pg, arrowHalfWidth, baseHeight, -dist);
     }
-    context().endShape();
-    context().popStyle();
+    pg.endShape();
+    pg.popStyle();
   }
 
   /**
@@ -1431,7 +1509,7 @@ public class Scene extends Graph {
    * @see #drawCylinder(PGraphics, float, float)
    */
   public void drawCylinder(PGraphics pGraphics) {
-    drawCylinder(pGraphics, radius() / 6, radius() / 3);
+    drawCylinder(pGraphics, _radius / 6, _radius / 3);
   }
 
   /**
@@ -1609,7 +1687,7 @@ public class Scene extends Graph {
    * @see #drawCone(PGraphics, int, float, float, float, float)
    */
   public void drawCone(PGraphics pGraphics) {
-    float radius = radius() / 4;
+    float radius = _radius / 4;
     drawCone(pGraphics, 12, 0, 0, radius, (float) Math.sqrt((float) 3) * radius);
   }
 
@@ -1730,7 +1808,7 @@ public class Scene extends Graph {
    * @see #drawAxes(float)
    */
   public void drawAxes() {
-    drawAxes(radius());
+    drawAxes(_radius);
   }
 
   /**
@@ -1748,7 +1826,7 @@ public class Scene extends Graph {
    * @see #drawAxes(PGraphics, float)
    */
   public void drawAxes(PGraphics pGraphics) {
-    drawAxes(pGraphics, radius());
+    drawAxes(pGraphics, _radius);
   }
 
   /**
@@ -1835,7 +1913,7 @@ public class Scene extends Graph {
    * @see #drawGrid(float, int)
    */
   public void drawGrid() {
-    drawGrid(radius(), 10);
+    drawGrid(_radius, 10);
   }
 
   /**
@@ -1853,7 +1931,7 @@ public class Scene extends Graph {
    * @see #drawGrid(float, int)
    */
   public void drawGrid(int subdivisions) {
-    drawGrid(radius(), subdivisions);
+    drawGrid(_radius, subdivisions);
   }
 
   /**
@@ -1873,7 +1951,7 @@ public class Scene extends Graph {
    * @see #drawAxes(float)
    */
   public void drawGrid(PGraphics pGraphics) {
-    drawGrid(pGraphics, radius(), 10);
+    drawGrid(pGraphics, _radius, 10);
   }
 
   /**
@@ -1900,7 +1978,7 @@ public class Scene extends Graph {
    * @see #drawDottedGrid(float, int)
    */
   public void drawDottedGrid() {
-    drawDottedGrid(radius(), 10);
+    drawDottedGrid(_radius, 10);
   }
 
   /**
@@ -1918,7 +1996,7 @@ public class Scene extends Graph {
    * @see #drawDottedGrid(float, int)
    */
   public void drawDottedGrid(int subdivisions) {
-    drawDottedGrid(radius(), subdivisions);
+    drawDottedGrid(_radius, subdivisions);
   }
 
   /**
@@ -1936,7 +2014,7 @@ public class Scene extends Graph {
    * @see #drawDottedGrid(PGraphics, float, int)
    */
   public void drawDottedGrid(PGraphics pGraphics) {
-    drawDottedGrid(pGraphics, radius(), 10);
+    drawDottedGrid(pGraphics, _radius, 10);
   }
 
   /**
@@ -1993,7 +2071,7 @@ public class Scene extends Graph {
 
   /**
    * Draws a representation of the viewing frustum onto {@code pGraphics} according to
-   * {@code graph.eye()} and {@code graph.type()}.
+   * {@code graph.eye()} and {@code graph._type}.
    * <p>
    * Note that if {@code pGraphics == graph.context()} this method has not effect at all.
    *
@@ -2344,7 +2422,7 @@ public class Scene extends Graph {
    * @see #drawCross(float, float, float)
    */
   public void drawCross(float x, float y) {
-    drawCross(x, y, radius() / 5);
+    drawCross(x, y, _radius / 5);
   }
 
   /**
@@ -2413,7 +2491,7 @@ public class Scene extends Graph {
    * @see #drawCircledBullsEye(float, float, float)
    */
   public void drawSquaredBullsEye(float x, float y) {
-    drawSquaredBullsEye(x, y, radius() / 5);
+    drawSquaredBullsEye(x, y, _radius / 5);
   }
 
   /**
@@ -2487,7 +2565,7 @@ public class Scene extends Graph {
    * @see #drawSquaredBullsEye(float, float, float)
    */
   public void drawCircledBullsEye(float x, float y) {
-    drawCircledBullsEye(x, y, radius() / 5);
+    drawCircledBullsEye(x, y, _radius / 5);
   }
 
   /**
@@ -2522,7 +2600,7 @@ public class Scene extends Graph {
    * @see #drawTorusSolenoid(int, float)
    */
   public void drawTorusSolenoid(int faces) {
-    drawTorusSolenoid(faces, 0.07f * radius());
+    drawTorusSolenoid(faces, 0.07f * _radius);
   }
 
   /**
@@ -2790,7 +2868,7 @@ public class Scene extends Graph {
    * @see #mouseRADX(float)
    */
   public float mouseRADX() {
-    return mouseRADX(PApplet.HALF_PI / width());
+    return mouseRADX(PApplet.HALF_PI / (float) width());
   }
 
   /**
@@ -2814,7 +2892,7 @@ public class Scene extends Graph {
    * @see #mouseRADY(float)
    */
   public float mouseRADY() {
-    return mouseRADY(PApplet.HALF_PI / height());
+    return mouseRADY(PApplet.HALF_PI / (float) height());
   }
 
   /**

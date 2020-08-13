@@ -27,8 +27,7 @@ String renderer = P3D;
 
 void setup() {
   size(1000, 700, renderer);
-  scene = new Scene(this);
-  scene.setRadius(150);
+  scene = new Scene(this, 150);
   scene.fit(1);
   PShape pshape;
   if (scene.is2D()) {
@@ -92,16 +91,11 @@ void keyPressed() {
     if (edit) {
       shapeInterpolator.enableHint(Interpolator.SPLINE | Interpolator.AXES);
       eyeInterpolator.enableHint(Interpolator.SPLINE | Interpolator.CAMERA);
-      shapeInterpolator.edit();
-      eyeInterpolator.edit();
     } else {
       shapeInterpolator.disableHint(Interpolator.SPLINE | Interpolator.AXES);
       eyeInterpolator.disableHint(Interpolator.SPLINE | Interpolator.CAMERA);
-      shapeInterpolator.keep();
-      eyeInterpolator.keep();
     }
   }
-
   if (key == '-' || key == '+') {
     shapeInterpolator.increaseSpeed(key == '+' ? 0.25 : -0.25);
   }

@@ -97,15 +97,27 @@ public class Interpolator {
     protected Vector _tangentVector;
     protected float _time;
     protected Node _node;
+    protected int _hint;
+    protected int _cacheHint;
 
     KeyFrame(Node node, float time) {
-      _time = time;
+      this(node, node.hint(), time);
+    }
+
+    KeyFrame(Node node, int hint, float time) {
       _node = node;
+      _cacheHint = node.hint();
+      _hint = hint;
+      _time = time;
+      if (isHintEnable(SPLINE) && _hint != _cacheHint)
+        _node._mask = _hint;
     }
 
     protected KeyFrame(KeyFrame other) {
       this._time = other._time;
       this._node = other._node.get();
+      this._hint = other._hint;
+      this._cacheHint = other._cacheHint;
     }
 
     public KeyFrame get() {
@@ -164,6 +176,7 @@ public class Interpolator {
   // Attention: We should go like this: protected Map<Float, Node> _list;
   // but Java doesn't allow to iterate backwards a map
   protected List<KeyFrame> _list;
+  public static int maxSteps = 30;
   protected ListIterator<KeyFrame> _backwards;
   protected ListIterator<KeyFrame> _forwards;
   protected List<Node> _path;
@@ -188,14 +201,12 @@ public class Interpolator {
 
   // Visual hint
   protected int _mask;
-  public final static int CAMERA = Node.CAMERA;
-  public final static int AXES = Node.AXES;
-  public final static int SPLINE = 1 << 2;
-  protected float _axesLength;
-  protected int _cameraStroke;
-  protected float _cameraLength;
+  public final static int SPLINE = 1 << 0;
+  public final static int STEPS = 1 << 1;
   protected int _splineStroke;
+  protected int _splineWeight;
   protected int _steps;
+  protected int _stepsHint;
 
   /**
    * Creates an interpolator, with {@code node} as associated {@link #node()}.
@@ -226,11 +237,24 @@ public class Interpolator {
     _backwards = _list.listIterator();
     _forwards = _list.listIterator();
     // hints
-    // green (color(0, 255, 0)) encoded as a processing int rgb color
-    _cameraStroke = -16711936;
     // magenta (color(255, 0, 255)) encoded as a processing int rgb color
     _splineStroke = -65281;
+    _splineWeight = 3;
     _steps = 3;
+
+    // TODO deprecated
+    // hack (refer to Node.get())
+    if (node().isHintEnable(Node.SHAPE) && node()._imrShape != null || node()._rmrShape != null) {
+      //if (node()._imrShape != null || node()._rmrShape != null) {
+      _stepsHint = Node.SHAPE;
+    }
+    else {
+      if (node().isEye()) {
+        _stepsHint = Node.CAMERA;
+      } else {
+        _stepsHint = Node.AXES;
+      }
+    }
   }
 
   protected Interpolator(Interpolator other) {
@@ -260,13 +284,11 @@ public class Interpolator {
     this._splineCacheIsValid = false;
     this._backwards = _list.listIterator();
     this._forwards = _list.listIterator();
-    // TODO decide this and make consistent with Node.get()
     // hints
-    this._cameraStroke = other._cameraStroke;
-    this._cameraLength = other._cameraLength;
     this._splineStroke = other._splineStroke;
+    this._splineWeight = other._splineWeight;
     this._steps = other._steps;
-    this._axesLength = other._axesLength;
+    this._stepsHint = other._stepsHint;
   }
 
   /**
@@ -290,7 +312,10 @@ public class Interpolator {
     if (node == null) {
       throw new RuntimeException("Interpolator node should be non-null!");
     }
-    _node = node;
+    if (_node != node) {
+      _node = node;
+      _pathIsValid = false;
+    }
   }
 
   /**
@@ -586,16 +611,75 @@ public class Interpolator {
   }
 
   /**
-   * Appends a new keyframe one second after the previously added one.
+   * Same as {@code addKeyFrame(1)}.
    *
+   * @see #addKeyFrame(Node, int, float)
    * @see #addKeyFrame(Node, float)
+   * @see #addKeyFrame(int, float)
+   * @see #addKeyFrame(float)
+   * @see #addKeyFrame(Node)
+   */
+  public void addKeyFrame() {
+    addKeyFrame(1);
+  }
+
+  /**
+   * Same as
+   * {@code addKeyFrame(node().isEye() ? (Node.CAMERA | Node.BULLSEYE) : node().hint() == 0 ? (Node.AXES | Node.BULLSEYE) : node().hint(), time)}.
+   *
+   * @see #addKeyFrame(Node, int, float)
+   * @see #addKeyFrame(Node, float)
+   * @see #addKeyFrame(int, float)
+   * @see #addKeyFrame(float)
+   * @see #addKeyFrame(Node)
+   */
+  public void addKeyFrame(float time) {
+    addKeyFrame(node().isEye() ? (Node.CAMERA | Node.BULLSEYE) : node().hint() == 0 ? (Node.AXES | Node.BULLSEYE) : node().hint(), time);
+  }
+
+  /**
+   * Same as {@code addKeyFrame(node().get(), hint, time)}.
+   *
+   * @see #addKeyFrame(Node, int, float)
+   * @see #addKeyFrame(Node)
+   * @see #addKeyFrame(int, float)
+   * @see #addKeyFrame(float)
+   * @see #addKeyFrame()
+   */
+  public void addKeyFrame(int hint, float time) {
+    addKeyFrame(node().get(), hint, time);
+  }
+
+  /**
+   * Same as {@code addKeyFrame(node, _list.isEmpty() ? 0.0f : 1.0f)}.
+   *
+   * @see #addKeyFrame(Node, int, float)
+   * @see #addKeyFrame(Node, float)
+   * @see #addKeyFrame(int, float)
+   * @see #addKeyFrame(float)
+   * @see #addKeyFrame()
    */
   public void addKeyFrame(Node node) {
     addKeyFrame(node, _list.isEmpty() ? 0.0f : 1.0f);
   }
 
   /**
-   * Appends a new keyframe {@code time} seconds after the previously added one.
+   * Same as
+   * {@code addKeyFrame(node, node.isEye() ? (Node.CAMERA | Node.BULLSEYE) : node.hint() == 0 ? (Node.AXES | Node.BULLSEYE) : node().hint(), time)}.
+   *
+   * @see #addKeyFrame(Node, int, float)
+   * @see #addKeyFrame(Node)
+   * @see #addKeyFrame(int, float)
+   * @see #addKeyFrame(float)
+   * @see #addKeyFrame()
+   */
+  public void addKeyFrame(Node node, float time) {
+    addKeyFrame(node, node.isEye() ? (Node.CAMERA | Node.BULLSEYE) : node.hint() == 0 ? (Node.AXES | Node.BULLSEYE) : node().hint(), time);
+  }
+
+  /**
+   * Appends a new keyframe which will display the node {@code hint} when the interpolator
+   * {@link #SPLINE} hint is enabled, {@code time} seconds after the previously added one.
    * <p>
    * Note that when {@code node} is modified, the interpolator path is updated accordingly.
    * This allows for dynamic paths, where keyframes can be edited, even during the
@@ -603,9 +687,13 @@ public class Interpolator {
    * <p>
    * {@code null} node references are silently ignored.
    *
+   * @see #addKeyFrame(Node, float)
    * @see #addKeyFrame(Node)
+   * @see #addKeyFrame(int, float)
+   * @see #addKeyFrame(float)
+   * @see #addKeyFrame()
    */
-  public void addKeyFrame(Node node, float time) {
+  public void addKeyFrame(Node node, int hint, float time) {
     if (_list.size() == 0) {
       if (time < 0)
         return;
@@ -613,7 +701,7 @@ public class Interpolator {
       return;
     if (node == null)
       return;
-    _list.add(new KeyFrame(node, _list.isEmpty() ? time : _list.get(_list.size() - 1)._time + time));
+    _list.add(new KeyFrame(node, hint, _list.isEmpty() ? time : _list.get(_list.size() - 1)._time + time));
     _valuesAreValid = false;
     _pathIsValid = false;
     _currentKeyFrameValid = false;
@@ -621,29 +709,44 @@ public class Interpolator {
   }
 
   /**
-   * Remove keyframe according to {@code time}. Calls {@link Task#stop()}
-   * and returns {@code true} if the deletion was successful and returns
-   * {@code false} otherwise.
+   * Remove the closest keyframe to {@code time} and returns it.
+   * May return {@code null} is the interpolator is empty.
    */
-  // TODO needs testing
-  public boolean removeKeyFrame(float time) {
-    boolean result = false;
-    ListIterator<KeyFrame> listIterator = _list.listIterator();
-    while (listIterator.hasNext()) {
-      KeyFrame keyFrame = listIterator.next();
-      if (keyFrame._time == time) {
-        _valuesAreValid = false;
-        _pathIsValid = false;
-        _currentKeyFrameValid = false;
-        if (_task.isActive())
-          _task.stop();
-        Graph.prune(keyFrame._node);
-        setTime(firstTime());
-        listIterator.remove();
-        result = true;
+  public Node removeKeyFrame(float time) {
+    if (_list.isEmpty())
+      return null;
+    int index = 0;
+    if (_list.size() > 1 && time >= 0) {
+      float previousTime = firstTime();
+      float currentTime;
+      while (index < _list.size()) {
+        currentTime = _list.get(index)._time;
+        if (currentTime < time) {
+          previousTime = currentTime;
+        } else {
+          if (time - previousTime < currentTime - time & index > 0)
+            index--;
+          break;
+        }
+        index++;
       }
     }
-    return result;
+    if (index == _list.size())
+      index--;
+    KeyFrame keyFrame = _list.get(index);
+    keyFrame._node._mask = keyFrame._cacheHint;
+    _valuesAreValid = false;
+    _pathIsValid = false;
+    _currentKeyFrameValid = false;
+    boolean rerun = _task.isActive();
+    if (rerun) {
+      _task.stop();
+    }
+    _list.remove(index);
+    setTime(firstTime());
+    if (rerun /* && _list.size() > 1 */)
+      _task.run();
+    return keyFrame._node;
   }
 
   /**
@@ -752,7 +855,7 @@ public class Interpolator {
    * <p>
    * Use it in your interpolator path drawing routine.
    */
-  public List<Node> path() {
+  protected List<Node> _path() {
     _updatePath();
     return _path;
   }
@@ -764,13 +867,13 @@ public class Interpolator {
     _checkValidity();
     if (!_pathIsValid) {
       _path.clear();
-      int nbSteps = 30;
       if (_list.isEmpty())
         return;
       if (!_valuesAreValid)
         _updateModifiedKeyFrames();
-      if (_list.get(0) == _list.get(_list.size() - 1))
+      if (_list.get(0) == _list.get(_list.size() - 1)) {
         _path.add(Node.detach(_list.get(0)._node.position(), _list.get(0)._node.orientation(), _list.get(0)._node.magnitude()));
+      }
       else {
         KeyFrame[] keyFrames = new KeyFrame[4];
         keyFrames[0] = _list.get(0);
@@ -785,13 +888,24 @@ public class Interpolator {
           pvec1 = Vector.subtract(pvec1, keyFrames[2]._tangentVector());
           Vector pvec2 = Vector.add(Vector.multiply(pdiff, (-2.0f)), keyFrames[1]._tangentVector());
           pvec2 = Vector.add(pvec2, keyFrames[2]._tangentVector());
-          for (int step = 0; step < nbSteps; ++step) {
-            float alpha = step / (float) nbSteps;
-            _path.add(Node.detach(
+          for (int step = 0; step < maxSteps; ++step) {
+            float alpha = step / (float) maxSteps;
+            Node node = Node.detach(
                 Vector.add(keyFrames[1]._node.position(), Vector.multiply(Vector.add(keyFrames[1]._tangentVector(), Vector.multiply(Vector.add(pvec1, Vector.multiply(pvec2, alpha)), alpha)), alpha)),
                 Quaternion.squad(keyFrames[1]._node.orientation(), keyFrames[1]._tangentQuaternion(), keyFrames[2]._tangentQuaternion(), keyFrames[2]._node.orientation(), alpha),
-                Vector.lerp(keyFrames[1]._node.magnitude(), keyFrames[2]._node.magnitude(), alpha))
-            );
+                Vector.lerp(keyFrames[1]._node.magnitude(), keyFrames[2]._node.magnitude(), alpha));
+            if (step % Interpolator.maxSteps != 0) {
+              node._mask = _stepsHint;
+              if (node.isHintEnable(Node.SHAPE) && (node()._imrShape != null || node()._rmrShape != null)) {
+                node.setShape(node());
+              }
+            }
+            node._torusFaces = node()._torusFaces;
+            node._torusColor = node()._torusColor;
+            node._bullsEyeStroke = node()._bullsEyeStroke;
+            node._cameraStroke = node()._cameraStroke;
+            node._axesLength = node()._axesLength;
+            _path.add(node);
           }
           // Shift
           keyFrames[0] = keyFrames[1];
@@ -877,12 +991,9 @@ public class Interpolator {
    * single visual hints available the interpolator:
    * <p>
    * <ol>
-   * <li>{@link #CAMERA} which displays a camera hint for each interpolator key-frame
-   * centered at the screen projection of its {@link Node#position()}.</li>
-   * <li>{@link #AXES} which displays an axes hint for each key-frame centered at
-   * the screen projection of its {@link Node#position()}.</li>
    * <li>{@link #SPLINE} which displays a Catmull-Rom spline having the key-frames
    * as its control points.</li>
+   * <li>{@link #STEPS} which defines what to draw between consecutive key-frames.</li>
    * </ol>
    * Displaying the hint requires first to enabling it (see {@link #enableHint(int)}) and then
    * calling either {@link Graph#render(Node)} or {@link Graph#render()}.
@@ -930,8 +1041,7 @@ public class Interpolator {
    */
   public void disableHint(int hint) {
     _mask &= ~hint;
-    if (_mask == 0)
-      Graph._interpolators.remove(this);
+    if (_mask == 0) _disabled();
   }
 
   /**
@@ -963,8 +1073,23 @@ public class Interpolator {
    */
   public void enableHint(int hint) {
     _mask |= hint;
-    if (_mask != 0)
-      Graph._interpolators.add(this);
+    if (_mask != 0) _enabled();
+  }
+
+  protected void _enabled() {
+    for (KeyFrame keyFrame : _list) {
+      if (keyFrame._hint != keyFrame._cacheHint)
+        keyFrame._node._mask = keyFrame._hint;
+    }
+    Graph._interpolators.add(this);
+  }
+
+  protected void _disabled() {
+    for (KeyFrame keyFrame : _list) {
+      if (keyFrame._hint != keyFrame._cacheHint)
+        keyFrame._node._mask = keyFrame._cacheHint;
+    }
+    Graph._interpolators.remove(this);
   }
 
   /**
@@ -981,21 +1106,22 @@ public class Interpolator {
   public void toggleHint(int hint) {
     _mask ^= hint;
     if (_mask != 0)
-      Graph._interpolators.add(this);
+      _enabled();
+    else
+      _disabled();
   }
 
   /**
    * Configures the hint using varargs as follows:
    * <p>
    * <ol>
-   * <li>{@link #CAMERA} hint: {@code configHint(Interpolator.CAMERA, cameraStroke)}
-   * or {@code configHint(Interpolator.CAMERA, cameraStroke, cameraLength)}.</li>
-   * <li>{@link #AXES} hint: {@code configHint(Interpolator.AXES, axesLength)}.</li>
    * <li>{@link #SPLINE} hint: {@code configHint(Interpolator.SPLINE, splineStroke)}.</li>
+   * <li>{@link #SPLINE} hint: {@code configHint(Interpolator.SPLINE, splineStroke, splineWeight)}.</li>
+   * <li>{@link #STEPS} hint: {@code configHint(Interpolator.STEPS, hint)}.</li>
    * </ol>
-   * Note that the {@code cameraStroke} and {@code splineStroke} are color {@code int}
-   * vars; and, {@code cameraLength} and {@code exesLength} are world magnitude
-   * numerical values.
+   * Note that the {@code splineStroke} is a color {@code int} var;{@code splineWeight}
+   * is a stroke weight int var; and, {@code hint} is a node {@link Node#hint()} defining
+   * what to draw between two consecutives key-frames. See also {@link #setSteps(int)}.
    *
    * @see #hint()
    * @see #enableHint(int)
@@ -1013,78 +1139,23 @@ public class Interpolator {
             _splineStroke = Graph.castToInt(params[0]);
             return;
           }
-          if (hint == AXES) {
-            _axesLength = Graph.castToFloat(params[0]);
-            return;
-          }
-          if (hint == CAMERA) {
-            _cameraStroke = Graph.castToInt(params[0]);
+          if (hint == STEPS) {
+             _stepsHint = Graph.castToInt(params[0]);
             return;
           }
         }
         break;
       case 2:
-        if (hint == CAMERA) {
-          if (Graph.isNumInstance(params[0]) && Graph.isNumInstance(params[1])) {
-            _cameraStroke = Graph.castToInt(params[0]);
-            _cameraLength = Graph.castToFloat(params[1]);
+        if (Graph.isNumInstance(params[0]) && Graph.isNumInstance(params[1])) {
+          if (hint == SPLINE) {
+            _splineStroke = Graph.castToInt(params[0]);
+            _splineWeight = Graph.castToInt(params[1]);
             return;
           }
         }
         break;
     }
     System.out.println("Warning: some params in Interpolator.configHint(hint, params) couldn't be parsed!");
-  }
-
-  /**
-   * Allows edition of the interpolator by enabling the {@link Node#BULLSEYE},
-   * {@link Node#AXES} and {@link Node#CAMERA} hints for each ot its key-frames.
-   * Note that {@link #keep()} does the opposite.
-   *
-   * @see #keep()
-   * @see Node#hint()
-   */
-  public void edit() {
-    for (Node node : keyFrames().values()) {
-      // TODO readd condition when Node.graphics is removed
-      //if (!node.isHintEnable(Node.SHAPE)) {
-        node.enableHint(Node.BULLSEYE);
-        if (!node.tagging) {
-          node.tagging = true;
-        }
-      //}
-      if (isHintEnable(Interpolator.AXES)) {
-        node.enableHint(Node.AXES);
-      }
-      if (isHintEnable(Interpolator.CAMERA)) {
-        node.enableHint(Node.CAMERA);
-      }
-    }
-  }
-
-  /**
-   * Disallows edition of the interpolator by disabling the {@link Node#BULLSEYE},
-   * {@link Node#AXES} and {@link Node#CAMERA} hints for each ot its key-frames.
-   * Note that {@link #edit()} does the opposite.
-   *
-   * @see #edit()
-   * @see Node#hint()
-   */
-  public void keep() {
-    for (Node node : keyFrames().values()) {
-      //if (!node.isHintEnable(Node.SHAPE)) {
-        node.disableHint(Node.BULLSEYE);
-        //if (node.isTaggingEnabled()) {
-          node.tagging = false;
-        //}
-      //}
-      if (!isHintEnable(Interpolator.AXES)) {
-        node.disableHint(Node.AXES);
-      }
-      if (!isHintEnable(Interpolator.CAMERA)) {
-        node.disableHint(Node.CAMERA);
-      }
-    }
   }
 
   /**
@@ -1105,9 +1176,18 @@ public class Interpolator {
    * @see #hint()
    */
   public void setSteps(int steps) {
-    if (1 <= steps && steps <= 30)
+    if (0 <= steps && steps < maxSteps)
       _steps = steps;
     else
-      System.out.println("Warning: spline steps should be in [1..30]. Nothing done!");
+      System.out.println("Warning: spline steps should be in [0..maxSteps-1]. Nothing done!");
+  }
+
+  /**
+   * Clear every key-frame cache hint.
+   */
+  public void clearKeyFrameCacheHint() {
+    for (KeyFrame keyFrame : _list) {
+      keyFrame._hint = keyFrame._cacheHint;
+    }
   }
 }

@@ -1,9 +1,9 @@
 package intellij;
 
-import nub.core.Graph;
 import nub.core.Node;
 import nub.processing.Scene;
 import processing.core.PApplet;
+import processing.core.PGraphics;
 import processing.core.PShape;
 import processing.event.MouseEvent;
 
@@ -29,11 +29,13 @@ public class AuxViewers extends PApplet {
     scene1.enableHint(Scene.BACKGROUND, color(75, 25, 15));
     scene1.enableHint(Scene.GRID, color(0, 225, 15));
     scene1.eye().tagging = false;
-    scene1.setRadius(1000);
+    scene1.setBounds(1000);
     scene1.fit(1);
     shapes = new Node[15];
     for (int i = 0; i < shapes.length; i++) {
       shapes[i] = new Node(boxShape());
+      shapes[i].setHUD(this::hud);
+      shapes[i].disablePickingMode(Node.SHAPE);
       //shapes[i].enableHint(Node.BULLSEYE);
       //shapes[i].disablePickingMode(Node.SHAPE);
       scene1.randomize(shapes[i]);
@@ -56,7 +58,7 @@ public class AuxViewers extends PApplet {
     //scene2.configHint(Scene.BACKGROUND, color(75, 25, 175, 100));
     scene2.configHint(Scene.BACKGROUND, color(75, 25, 175));
     scene2.eye().tagging = false;
-    scene2.setRadius(1000);
+    scene2.setBounds(1000);
     scene2.fit(1);
 
     // idem here
@@ -65,8 +67,16 @@ public class AuxViewers extends PApplet {
     //scene3.configHint(Scene.BACKGROUND, color(175, 200, 20, 170));
     scene3.configHint(Scene.BACKGROUND, color(175, 200, 20));
     scene3.eye().tagging = false;
-    scene3.setRadius(1000);
+    scene3.setBounds(1000);
     scene3.fit(1);
+  }
+
+  public void hud(PGraphics pg) {
+    pg.pushStyle();
+    pg.rectMode(CENTER);
+    pg.fill(255, 0, 255, 125);
+    pg.rect(0,0, 20, 20);
+    pg.popStyle();
   }
 
   PShape boxShape() {
@@ -83,11 +93,7 @@ public class AuxViewers extends PApplet {
     if (key == 't') {
       if (focus == null)
         return;
-      if (focus.type() == Graph.Type.PERSPECTIVE) {
-        focus.setType(Graph.Type.ORTHOGRAPHIC);
-      } else {
-        focus.setType(Graph.Type.PERSPECTIVE);
-      }
+      focus.togglePerspective();
     }
   }
 

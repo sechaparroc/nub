@@ -1,6 +1,5 @@
 package intellij;
 
-import nub.core.Graph;
 import nub.core.Node;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -13,17 +12,15 @@ import processing.opengl.PShader;
 import java.nio.file.Paths;
 
 public class ShadowMap extends PApplet {
-  Graph.Type shadowMapType = Graph.Type.ORTHOGRAPHIC;
   Scene scene;
-  //Scene shadowMapScene;
-  ShadowScene shadowMapScene;
+  Scene shadowMapScene;
   Node[] shapes;
   PGraphics shadowMap;
   PShader depthShader;
   float zNear = 50;
   float zFar = 700;
-  int w = 700;
-  int h = 700;
+  int w = 1400;
+  int h = 1400;
 
   public void settings() {
     size(w, h, P3D);
@@ -35,30 +32,24 @@ public class ShadowMap extends PApplet {
     depthShader.set("near", zNear);
     depthShader.set("far", zFar);
     shadowMap.shader(depthShader);
-    scene = new Scene(this);
+    scene = new Scene(this, max(w, h));
     scene.enableHint(Scene.BACKGROUND, color(75, 25, 15));
-    scene.setRadius(max(w, h));
     scene.fit(1);
     shapes = new Node[20];
     for (int i = 0; i < shapes.length; i++) {
       shapes[i] = new Node(this::cube);
-      shapes[i].configHint(Node.FRUSTUM, shadowMap, shadowMapType, zNear, zFar);
       scene.randomize(shapes[i]);
       shapes[i].setHighlight(0);
     }
     scene.tag("light", shapes[(int) random(0, shapes.length - 1)]);
-    scene.node("light").toggleHint(Node.SHAPE | Node.FRUSTUM | Node.AXES);
+    scene.node("light").toggleHint(Node.SHAPE | Node.AXES | Node.BOUNDS);
     scene.node("light").setOrientation(Quaternion.from(Vector.plusK, scene.node("light").position()));
     // scene.enablePicking(false);
-    ///*
-    //shadowMapScene = new Scene(this, shadowMap, light);
-    shadowMapScene = new ShadowScene(shadowMap, scene.node("light"));
-    shadowMapScene.resetHint();
+    shadowMapScene = new Scene(shadowMap, scene.node("light"), zNear, zFar);
+    shadowMapScene.togglePerspective();
+    shadowMapScene.enableHint(Scene.AXES);
     shadowMapScene.enableHint(Scene.BACKGROUND, color(140, 160, 125));
     shadowMapScene.picking = false;
-    //shadowMapScene.setRadius(300);
-    shadowMapScene.setType(shadowMapType);
-    // */
     frameRate(1000);
   }
 
@@ -82,19 +73,18 @@ public class ShadowMap extends PApplet {
     if (scene.isTagValid("light")) {
       shadowMapScene.display(w / 2, h / 2);
     }
-    //println("frameCount: " + Scene.TimingHandler.frameCount + " (nub) " + frameCount + " (p5) ");
-    println("-> frameRate: " + Scene.TimingHandler.frameRate + " (nub) " + frameRate + " (p5)");
   }
 
   public void mouseMoved(MouseEvent event) {
     if (event.isShiftDown()) {
-      if (scene.isTagValid("light"))
-        scene.node("light").toggleHint(Node.SHAPE | Node.FRUSTUM | Node.AXES);
+      if (scene.isTagValid("light")) {
+        scene.node("light").toggleHint(Node.SHAPE | Node.AXES | Node.BOUNDS);
+      }
       // no calling mouseTag since we need to immediately update the tagged node
       scene.updateMouseTag("light");
       if (scene.isTagValid("light")) {
-        scene.node("light").toggleHint(Node.SHAPE | Node.FRUSTUM | Node.AXES);
         shadowMapScene.setEye(scene.node("light"));
+        scene.node("light").toggleHint(Node.SHAPE | Node.AXES | Node.BOUNDS);
       }
     } else
       scene.mouseTag();
@@ -112,7 +102,7 @@ public class ShadowMap extends PApplet {
   public void mouseWheel(MouseEvent event) {
     if (event.isShiftDown() && scene.isTagValid("light")) {
       depthShader.set("far", zFar += event.getCount() * 20);
-      scene.node("light").configHint(Node.FRUSTUM, shadowMap, shadowMapType, zNear, zFar);
+      shadowMapScene.setBounds(zNear, zFar);
     }
     else
       scene.scale(event.getCount() * 20);
@@ -120,27 +110,10 @@ public class ShadowMap extends PApplet {
 
   public void keyPressed() {
     if (key == ' ' && scene.isTagValid("light")) {
-      shadowMapType = shadowMapType == Scene.Type.ORTHOGRAPHIC ? Scene.Type.PERSPECTIVE : Scene.Type.ORTHOGRAPHIC;
-      scene.node("light").configHint(Node.FRUSTUM, shadowMap, shadowMapType, zNear, zFar);
+      shadowMapScene.togglePerspective();
     }
     if (key == 'p')
       scene.togglePerspective();
-  }
-
-  public class ShadowScene extends Scene {
-    public ShadowScene(PGraphics pGraphics, Node eye) {
-      super(pGraphics, eye);
-    }
-
-    @Override
-    public float zNear() {
-      return zNear;
-    }
-
-    @Override
-    public float zFar() {
-      return zFar;
-    }
   }
 
   public static void main(String[] args) {

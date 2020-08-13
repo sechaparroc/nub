@@ -1,6 +1,6 @@
 package intellij;
 
-import nub.core.Graph;
+import nub.core.Node;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import processing.core.PApplet;
@@ -13,8 +13,8 @@ public class ViewingVolume extends PApplet {
 
   //Choose one of P3D for a 3D scene, or P2D or JAVA2D for a 2D scene
   String renderer = P3D;
-  int w = 1200;
-  int h = 1600;
+  int w = 700;
+  int h = 700;
 
   public void settings() {
     size(w, h, renderer);
@@ -22,23 +22,22 @@ public class ViewingVolume extends PApplet {
 
   @Override
   public void setup() {
-    scene1 = new Scene(createGraphics(w, h / 2, P3D));
+    scene1 = new Scene(createGraphics(w, h / 2, P3D), 150);
     scene1.enableHint(Scene.BACKGROUND, color(125));
     scene1.enableHint(Scene.AXES | Scene.SHAPE);
     scene1.setShape(this::draw1);
     //scene1.togglePerspective();
-    scene1.setRadius(150);
     scene1.fit();
     //scene1.eye().setMagnitude(1);
 
     // Note that we pass the upper left corner coordinates where the scene
     // is to be drawn (see drawing code below) to its constructor.
-    scene2 = new Scene(createGraphics(w, h / 2, P3D));
-    scene2.enableHint(Scene.FRUSTUM, scene1);
+    scene2 = new Scene(createGraphics(w, h / 2, P3D), 600);
+    scene2.enableHint(Scene.BACKGROUND, color(85));
+    scene1.eye().enableHint(Node.BOUNDS);
     scene2.enableHint(Scene.SHAPE);
     scene2.setShape(this::draw2);
-    scene2.setType(Graph.Type.ORTHOGRAPHIC);
-    scene2.setRadius(600);
+    scene2.togglePerspective();
     scene2.fit();
 
     point = new Vector(50, 50, 50);
@@ -100,10 +99,7 @@ public class ViewingVolume extends PApplet {
 
   public void keyPressed() {
     if (key == ' ')
-      if (focus.type() == Graph.Type.PERSPECTIVE)
-        focus.setType(Graph.Type.ORTHOGRAPHIC);
-      else
-        focus.setType(Graph.Type.PERSPECTIVE);
+      focus.togglePerspective();
     if (key == 'f') {
       Scene.leftHanded = !Scene.leftHanded;
     }

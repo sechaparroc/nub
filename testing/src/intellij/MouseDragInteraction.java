@@ -25,9 +25,7 @@ public class MouseDragInteraction extends PApplet {
 
   public void setup() {
     rectMode(CENTER);
-    scene = new Scene(this);
-    //scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRadius(1000);
+    scene = new Scene(this, 1000);
     scene.fit(1);
 
     shape1 = new Node() {
@@ -119,10 +117,7 @@ public class MouseDragInteraction extends PApplet {
     if (key == 'r')
       Scene.leftHanded = !Scene.leftHanded;
     if (key == 'p')
-      if (scene.type() == Graph.Type.PERSPECTIVE)
-        scene.setType(Graph.Type.ORTHOGRAPHIC);
-      else
-        scene.setType(Graph.Type.PERSPECTIVE);
+      scene.togglePerspective();
   }
 
   @Override

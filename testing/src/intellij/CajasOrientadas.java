@@ -20,8 +20,7 @@ public class CajasOrientadas extends PApplet {
 
   public void setup() {
     // Set the inertia for all interactivity methods to 0.85. Default is 0.8.
-    scene = new Scene(this);
-    scene.setRadius(200);
+    scene = new Scene(this, 200);
     scene.togglePerspective();
     scene.fit();
     esfera = new Sphere(color(random(0, 255), random(0, 255), random(0, 255)), 10);
@@ -68,14 +67,11 @@ public class CajasOrientadas extends PApplet {
   }
 
   public void keyPressed() {
-    /*
     if (key == ' ')
-      for (Box caja : cajas)
-        caja.setPickingPolicy(caja.pickingPolicy() == Node.PickingPolicy.PRECISE ?
-                Node.PickingPolicy.BULLSEYE :
-                Node.PickingPolicy.PRECISE);
-
-     */
+      for (Box caja : cajas) {
+        caja.toggleHint(Node.BULLSEYE);
+        caja.togglePickingMode(Node.SHAPE);
+      }
     if (key == 'c') {
       for (Box caja : cajas)
         if (caja.bullsEyeSize() < 1)
@@ -129,11 +125,6 @@ public class CajasOrientadas extends PApplet {
       setBullsEyeSize(max(_w, _h, _d) / scene.radius());
       scene.randomize(this);
       enableHint(Node.AXES);
-      if (isHintEnable(Node.AXES))
-        println("Node.AXES hint");
-      if (isPickingModeEnable(Node.AXES))
-        println("Node.AXES picking");
-      //enableHint(Node.AXES | Node.BULLSEYE);
     }
 
     // geometry is defined at the node local coordinate system
@@ -145,7 +136,8 @@ public class CajasOrientadas extends PApplet {
       pg.popStyle();
     }
 
-    @Override
+    // TODO restore
+    //@Override
     public void visit() {
       updateCajaOrientation(this);
     }
@@ -169,7 +161,8 @@ public class CajasOrientadas extends PApplet {
       pg.popStyle();
     }
 
-    @Override
+    // TODO restore
+    //@Override
     public void visit() {
       for (Box caja : cajas)
         updateCajaOrientation(caja);

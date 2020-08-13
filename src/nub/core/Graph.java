@@ -22,19 +22,17 @@ import nub.timing.TimingHandler;
 import processing.core.PShape;
 
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
  * A 2D or 3D scene-graph providing eye, input and timing handling to a raster or ray-tracing
  * renderer.
  * <h1>1. Types and dimensions</h1>
- * To set the viewing volume use {@link #setFrustum(Vector, float)} or {@link #setFrustum(Vector, Vector)}.
- * Both call {@link #setCenter(Vector)} and {@link #setRadius(float)} which defined a viewing ball
- * with {@link #center()} and {@link #radius()} parameters. See also {@link #setZClippingCoefficient(float)}
- * and {@link #setZNearCoefficient(float)} for a 3d graph.
+ * To set the viewing volume use {@link #setBounds(Vector, float)} or {@link #setBounds(float, float)}.
  * <p>
  * The way the projection matrix is computed (see
- * {@link #projection(Node, Type, float, float, float, float)}), defines the type of the
+ * {@link #projection()}), defines the type of the
  * graph as: {@link Type#PERSPECTIVE}, {@link Type#ORTHOGRAPHIC} for 3d graphs and {@link Type#TWO_D}
  * for a 2d graph.
  * <h1>2. Scene-graph handling</h1>
@@ -110,18 +108,14 @@ import java.util.function.Consumer;
  * Refer to the {@link Interpolator} documentation for details.
  * <h1>5. Visual hints</h2>
  * The world space visual representation may be configured using the following hints:
- * {@link #AXES}, {@link #HUD}, {@link #FRUSTUM}, {@link #GRID}, {@link #BACKGROUND},
- * {@link #SHAPE}.
+ * {@link #AXES}, {@link #HUD}, {@link #GRID}, {@link #BACKGROUND} and {@link #SHAPE}.
  * <p>
  * See {@link #hint()}, {@link #configHint(int, Object...)} {@link #enableHint(int)},
  * {@link #enableHint(int, Object...)}, {@link #disableHint(int)}, {@link #toggleHint(int)}
  * and {@link #resetHint()}.
  * <h1>6. Visibility and culling techniques</h1>
  * Geometry may be culled against the viewing volume by calling {@link #isPointVisible(Vector)},
- * {@link #ballVisibility(Vector, float)} or {@link #boxVisibility(Vector, Vector)}. Make sure
- * to call {@link #enableBoundaryEquations()} first, since update of the viewing volume
- * boundary equations are disabled by default (see {@link #enableBoundaryEquations()} and
- * {@link #areBoundaryEquationsEnabled()}).
+ * {@link #ballVisibility(Vector, float)} or {@link #boxVisibility(Vector, Vector)}.
  * <h1>7. Matrix handling</h1>
  * The graph performs matrix handling through a matrix-handler. Refer to the {@link MatrixHandler}
  * documentation for details.
@@ -142,9 +136,8 @@ public class Graph {
   public final static int GRID = 1 << 0;
   public final static int AXES = 1 << 1;
   public final static int HUD = 1 << 2;
-  public final static int FRUSTUM = 1 << 3;
-  public final static int SHAPE = 1 << 4;
-  public final static int BACKGROUND = 1 << 5;
+  public final static int SHAPE = 1 << 3;
+  public final static int BACKGROUND = 1 << 4;
   protected Consumer<processing.core.PGraphics> _imrHUD;
   protected processing.core.PShape _rmrHUD;
   protected Consumer<processing.core.PGraphics> _imrShape;
@@ -154,11 +147,14 @@ public class Graph {
   }
   protected GridType _gridType;
   protected int _gridStroke;
+  protected int _centerStroke;
   protected int _gridSubDiv;
   protected Object _background;
   protected static HashSet<Interpolator> _interpolators = new HashSet<Interpolator>();
   protected static HashSet<Node> _hudSet = new HashSet<Node>();
-  protected Node _frustumEye;
+
+  // Custom render
+  protected HashMap<Integer, BiConsumer<Graph, Node>> _functors;
 
   // offscreen
   protected int _upperLeftCornerX, _upperLeftCornerY;
@@ -172,7 +168,8 @@ public class Graph {
   protected long _lastEqUpdate;
   protected Vector _center;
   protected float _radius;
-  protected Vector _anchor;
+  protected boolean _fixed;
+  protected float _zNear, _zFar;
   // Inertial stuff
   public static float inertia = 0.8f;
   protected InertialTask _translationTask;
@@ -182,9 +179,8 @@ public class Graph {
 
   //Interpolator
   protected Interpolator _interpolator;
-  //boundary eqns
+  //bounds eqns
   protected float[][] _coefficients;
-  protected boolean _coefficientsUpdate;
   protected Vector[] _normal;
   protected float[] _distance;
   // handed
@@ -194,14 +190,13 @@ public class Graph {
   protected int _renderCount;
   protected int _width, _height;
   protected MatrixHandler _matrixHandler, _bbMatrixHandler;
-  public boolean visit;
   // _bb : picking buffer
   public boolean picking;
   protected long _bbNeed, _bbCount;
   protected Matrix _projection, _view, _projectionView, _projectionViewInverse;
-  protected boolean _isProjectionViewInverseCached;
+  protected long _cacheProjectionViewInverse;
 
-  // TODO these three to are not only related to Quaternion.from but mainly to hint stuff
+  // TODO these three are not only related to Quaternion.from but mainly to hint stuff
   /**
    * Returns {@code true} if {@code o} is instance of {@link Boolean} and {@code false} otherwise.
    */
@@ -296,8 +291,7 @@ public class Graph {
   // 7. Visibility
 
   /**
-   * Enumerates the different visibility states an object may have respect to the eye
-   * boundary.
+   * Enumerates the different visibility states an object may have respect to the bounding volume.
    */
   public enum Visibility {
     VISIBLE, SEMIVISIBLE, INVISIBLE
@@ -305,7 +299,7 @@ public class Graph {
 
   // 8. Projection stuff
 
-  Type _type;
+  protected Type _type;
 
   // 9. Inverse Kinematics solvers
   protected static List<Solver> _solvers = new ArrayList<Solver>();
@@ -324,50 +318,158 @@ public class Graph {
   private float _zClippingCoefficient;
 
   /**
-   * Same as {@code this(Type.PERSPECTIVE, null, w, h)}.
+   * Same as {@code this(context, width, height, eye, Type.PERSPECTIVE)}.
    *
-   * @see #Graph(Object, Node, Type, int, int)
+   * @see #Graph(Object, int, int, Node, Type)
+   */
+  public Graph(Object context, int width, int height, Node eye) {
+    this(context, width, height, eye, Type.PERSPECTIVE);
+  }
+
+  /**
+   * Same as {@code this(context, width, height, eye, type, new Vector(), 100)}.
+   *
+   * @see #Graph(Object, int, int, Node, Type, Vector, float)
+   */
+  protected Graph(Object context, int width, int height, Node eye, Type type) {
+    this(context, width, height, eye, type, new Vector(), 100);
+  }
+
+  /**
+   * Same as {@code this(context, width, height, Type.PERSPECTIVE)}.
+   *
+   * @see #Graph(Object, int, int, Type)
    */
   public Graph(Object context, int width, int height) {
-    this(context, null, Type.PERSPECTIVE, width, height);
+    this(context, width, height, Type.PERSPECTIVE);
   }
 
   /**
-   * Same as {@code this(context, null, Type.PERSPECTIVE, eye, width, height)}.
+   * Same as {@code this(context, width, height, type, new Vector(), 100)}.
    *
-   * @see #Graph(Object, Node, Type, int, int)
+   * @see #Graph(Object, int, int, Type, Vector, float)
    */
-  public Graph(Object context, Node eye, int width, int height) {
-    this(context, eye, Type.PERSPECTIVE, width, height);
+  protected Graph(Object context, int width, int height, Type type) {
+    this(context, width, height, type, new Vector(), 100);
   }
 
   /**
-   * Same as {@code this(context, null, type, width, height)}.
+   * Defines a right-handed graph with the specified {@code width} and {@code height}
+   * screen window dimensions. Creates and {@link #eye()} node, sets its {@link #fov()} to
+   * {@code PI/3}. Calls {@link #setBounds(float, float)} on {@code zNear} and
+   * {@code zFar} to set up the scene frustum and {@link #fit()} to display the
+   * whole scene.
+   * <p>
+   * The constructor also instantiates the graph main {@link #context()} and
+   * {@code back-buffer} matrix-handlers (see {@link MatrixHandler}) and
+   * {@link #TimingHandler}.
    *
-   * @see #Graph(Object, Node, Type, int, int)
-   */
-  public Graph(Object context, Type type, int width, int height) {
-    this(context, null, type, width, height);
-  }
-
-  /**
-   * Default constructor defines a right-handed graph with the specified {@code width} and
-   * {@code height} screen window dimensions. The graph {@link #center()} and
-   * {@link #anchor()} are set to {@code (0,0,0)} and its {@link #radius()} to {@code 100}.
-   * <p>
-   * The constructor sets a {@link Node} instance as the graph {@link #eye()} and then
-   * calls {@link #fit()}, so that the entire scene fits the screen dimensions.
-   * <p>
-   * The constructor also instantiates the graph main {@link #context()} and {@code back-buffer}
-   * matrix-handlers (see {@link MatrixHandler}) and {@link #TimingHandler}.
-   * <p>
-   * Same as {@code this(context, null, type, eye, width, height)}.
-   *
+   * @see #setBounds(float, float)
+   * @see #Graph(Object, int, int, Type, Vector, float)
    * @see #TimingHandler
-   * @see #setEye(Node)
-   * @see #Graph(Object, Type, int, int)
+   * @see MatrixHandler
    */
-  public Graph(Object context, Node eye, Type type, int width, int height) {
+  protected Graph(Object context, int width, int height, Type type, float zNear, float zFar) {
+    _init(context, width, height, new Node(), type);
+    if (is3D())
+      setFOV((float) Math.PI / 3);
+    setBounds(zNear, zFar);
+    fit();
+  }
+
+  /**
+   * Same as {@code this(context, width, height, type, new Vector(), radius)}.
+   *
+   * @see #Graph(Object, int, int, Type, Vector, float)
+   */
+  protected Graph(Object context, int width, int height, Type type, float radius) {
+    this(context, width, height, type, new Vector(), radius);
+  }
+
+  /**
+   * Defines a right-handed graph with the specified {@code width} and {@code height}
+   * screen window dimensions. Creates and {@link #eye()} node, sets its {@link #fov()} to
+   * {@code PI/3}. Calls {@link #setBounds(Vector, float)} on {@code center} and
+   * {@code radius} to set up the scene frustum and {@link #fit()} to display the
+   * whole scene.
+   * <p>
+   * The constructor also instantiates the graph main {@link #context()} and
+   * {@code back-buffer} matrix-handlers (see {@link MatrixHandler}) and
+   * {@link #TimingHandler}.
+   *
+   * @see #setBounds(float, float)
+   * @see #Graph(Object, int, int, Type, float, float)
+   * @see #TimingHandler
+   * @see MatrixHandler
+   */
+  protected Graph(Object context, int width, int height, Type type, Vector center, float radius) {
+    _init(context, width, height, new Node(), type);
+    if (is3D())
+      setFOV((float) Math.PI / 3);
+    setBounds(center, radius);
+    fit();
+  }
+
+  /**
+   * Same as {@code this(context, width, height, eye, type, new Vector(), radius)}.
+   *
+   * @see #Graph(Object, int, int, Node, Type, Vector, float)
+   */
+  protected Graph(Object context, int width, int height, Node eye, Type type, float radius) {
+    this(context, width, height, eye, type, new Vector(), radius);
+  }
+
+  /**
+   * Defines a right-handed graph with the specified {@code width} and {@code height}
+   * screen window dimensions. Calls {@link #setBounds(Vector, float)}
+   * on {@code center} and {@code radius} to set up the scene frustum.
+   * <p>
+   * The constructor also instantiates the graph main {@link #context()} and
+   * {@code back-buffer} matrix-handlers (see {@link MatrixHandler}) and
+   * {@link #TimingHandler}.
+   *
+   * @see #setBounds(Vector, float)
+   * @see #Graph(Object, int, int, Node, Type, float, float)
+   * @see #TimingHandler
+   * @see MatrixHandler
+   */
+  protected Graph(Object context, int width, int height, Node eye, Type type, Vector center, float radius) {
+    _init(context, width, height, eye, type);
+    setBounds(center, radius);
+  }
+
+  /**
+   * Same as {@code this(context, width, height, eye, Type.PERSPECTIVE, zNear, zFar)}.
+   *
+   * @see #Graph(Object, int, int, Node, Type, float, float)
+   */
+  public Graph(Object context, int width, int height, Node eye, float zNear, float zFar) {
+    this(context, width, height, eye, Type.PERSPECTIVE, zNear, zFar);
+  }
+
+  /**
+   * Defines a right-handed graph with the specified {@code width} and {@code height}
+   * screen window dimensions. Calls {@link #setBounds(float, float)}
+   * on {@code zNear} and {@code zFar} to set up the scene frustum.
+   * <p>
+   * The constructor also instantiates the graph main {@link #context()} and
+   * {@code back-buffer} matrix-handlers (see {@link MatrixHandler}) and
+   * {@link #TimingHandler}.
+   *
+   * @see #setBounds(Vector, float)
+   * @see #Graph(Object, int, int, Node, Type, Vector, float)
+   * @see #TimingHandler
+   * @see MatrixHandler
+   */
+  protected Graph(Object context, int width, int height, Node eye, Type type, float zNear, float zFar) {
+    _init(context, width, height, eye, type);
+    setBounds(zNear, zFar);
+  }
+
+  /**
+   * Used internally by several constructors.
+   */
+  protected void _init(Object context, int width, int height, Node eye, Type type) {
     if (!_seeded) {
       _seededGraph = true;
       _seeded = true;
@@ -388,9 +490,10 @@ public class Graph {
     setHeight(height);
     _tags = new HashMap<String, Node>();
     _rays = new ArrayList<Ray>();
-    cacheProjectionViewInverse(false);
-    setFrustum(new Vector(), 100);
-    setEye(eye == null ? new Node() : eye);
+    _functors = new HashMap<Integer, BiConsumer<Graph, Node>>();
+    if (eye == null)
+      throw new RuntimeException("Error eye shouldn't be null");
+    setEye(eye);
     _translationTask = new InertialTask() {
       @Override
       public void action() {
@@ -410,17 +513,12 @@ public class Graph {
       }
     };
     setType(type);
-    if (is3D())
-      setFOV((float) Math.PI / 3);
-    fit();
-    enableBoundaryEquations(false);
-    setZNearCoefficient(0.005f);
-    setZClippingCoefficient((float) Math.sqrt(3.0f));
     enableHint(HUD | SHAPE);
     picking = true;
-    visit = true;
     // middle grey encoded as a processing int rgb color
     _gridStroke = -8553091;
+    // green encoded as a processing int rgb color
+    _centerStroke = -16711936;
     _gridType = GridType.DOTS;
     _gridSubDiv = 10;
     _background = -16777216;
@@ -442,7 +540,7 @@ public class Graph {
    * @see Node#randomize(Vector, float, boolean)
    */
   public void randomize(Node node) {
-    node.randomize(center(), radius(), is3D());
+    node.randomize(center(), _radius, is3D());
   }
 
   // Dimensions stuff
@@ -500,7 +598,7 @@ public class Graph {
   }
 
   /**
-   * Defines the graph {@link #type()} according to the projection of the scene.
+   * Defines the graph {@link #_type} according to the projection of the scene.
    * Either {@link Type#PERSPECTIVE}, {@link Type#ORTHOGRAPHIC}, {@link Type#TWO_D}
    * or {@link Type#CUSTOM}.
    * <p>
@@ -513,18 +611,20 @@ public class Graph {
    * nodes will be constrained so that they will remain at the x-y plane. See
    * {@link nub.core.constraint.Constraint}.
    *
-   * @see #projection(Node, Type, float, float, float, float)
    * @see Node#magnitude()
    */
   public void setType(Type type) {
-    if (type != type()) {
+    if (_type == Type.TWO_D) {
+      return;
+    }
+    if (type != _type && type != null) {
       _modified();
       this._type = type;
     }
   }
 
   /**
-   * Shifts the graph {@link #type()} between {@link Type#PERSPECTIVE} and {@link Type#ORTHOGRAPHIC} while trying
+   * Shifts the graph {@link #_type} between {@link Type#PERSPECTIVE} and {@link Type#ORTHOGRAPHIC} while trying
    * to keep the {@link #fov()}. Only meaningful if graph {@link #is3D()}.
    *
    * @see #setType(Type)
@@ -536,22 +636,21 @@ public class Graph {
   public void togglePerspective() {
     if (is3D()) {
       float fov = fov();
-      setType(type() == Type.PERSPECTIVE ? Type.ORTHOGRAPHIC : Type.PERSPECTIVE);
+      setType(_type == Type.PERSPECTIVE ? Type.ORTHOGRAPHIC : Type.PERSPECTIVE);
       setFOV(fov);
     }
   }
 
   /**
-   * Sets the {@link #eye()} {@link Node#magnitude()} (which is used to compute the
-   * {@link #projection(Node, Type, float, float, float, float)} matrix),
-   * according to {@code fov} (field-of-view) which is expressed in radians. Meaningless
-   * if the graph {@link #is2D()}. If the graph {@link #type()} is {@link Type#ORTHOGRAPHIC}
-   * it will match the perspective projection obtained using {@code fov} of an image
-   * centered at the world XY plane from the eye current position.
+   * Sets the {@link #eye()} {@link Node#magnitude()}, according to {@code fov} (field-of-view)
+   * which is expressed in radians. Meaningless if the graph {@link #is2D()}.
+   * If the graph {@link #_type} is {@link Type#ORTHOGRAPHIC} it will match the perspective
+   * projection obtained using {@code fov} of an image centered at the world XY plane from
+   * the eye current position.
    * <p>
    * Computed as as {@code Math.tan(fov/2)} if the graph type is {@link Type#PERSPECTIVE} and as
    * {@code Math.tan(fov / 2) * 2 * Math.abs(Vector.scalarProjection(Vector.subtract(eye().position(), center()), eye().zAxis())) / width()}
-   * if the graph {@link #type()} is {@link Type#ORTHOGRAPHIC}.
+   * if the graph {@link #_type} is {@link Type#ORTHOGRAPHIC}.
    *
    * @see #fov()
    * @see #hfov()
@@ -563,9 +662,9 @@ public class Graph {
       System.out.println("Warning: setFOV() is meaningless in 2D. Use eye().setMagnitude() instead");
       return;
     }
-    float magnitude = type() == Type.PERSPECTIVE ?
+    float magnitude = _type == Type.PERSPECTIVE ?
         (float) Math.tan(fov / 2) :
-        (float) Math.tan(fov / 2) * 2 * Math.abs(Vector.scalarProjection(Vector.subtract(eye().position(), center()), eye().zAxis())) / width();
+        (float) Math.tan(fov / 2) * 2 * Math.abs(Vector.scalarProjection(Vector.subtract(eye().position(), center()), eye().zAxis())) / (float) width();
     if (magnitude > 0)
       eye().setMagnitude(magnitude);
   }
@@ -573,19 +672,17 @@ public class Graph {
   /**
    * Retrieves the graph field-of-view in radians. Meaningless if the graph {@link #is2D()}.
    * See {@link #setFOV(float)} for details. The value is related to the {@link #eye()}
-   * {@link Node#magnitude()} (which in turn is used to compute the
-   * {@link #projection(Node, Type, float, float, float, float)} matrix) as follows:
+   * {@link Node#magnitude()} as follows:
    * <p>
    * <ol>
    * <li>It returns {@code 2 * Math.atan(eye().magnitude())}, when the
-   * graph {@link #type()} is {@link Type#PERSPECTIVE}.</li>
+   * graph {@link #_type} is {@link Type#PERSPECTIVE}.</li>
    * <li>It returns {@code 2 * Math.atan(eye().magnitude() * width() / (2 * Math.abs(Vector.scalarProjection(Vector.subtract(eye().position(), center()), eye().zAxis()))))},
-   * if the graph {@link #type()} is {@link Type#ORTHOGRAPHIC}.</li>
+   * if the graph {@link #_type} is {@link Type#ORTHOGRAPHIC}.</li>
    * </ol>
    * Set this value with {@link #setFOV(float)} or {@link #setHFOV(float)}.
    *
    * @see Node#magnitude()
-   * @see #perspective(Node, float, float, float)
    * @see #setType(Type)
    * @see #setHFOV(float)
    * @see #hfov()
@@ -596,9 +693,9 @@ public class Graph {
       System.out.println("Warning: fov() is meaningless in 2D. Use eye().magnitude() instead");
       return 1;
     }
-    return type() == Type.PERSPECTIVE ?
+    return _type == Type.PERSPECTIVE ?
         2 * (float) Math.atan(eye().magnitude()) :
-        2 * (float) Math.atan(eye().magnitude() * width() / (2 * Math.abs(Vector.scalarProjection(Vector.subtract(eye().position(), center()), eye().zAxis()))));
+        2 * (float) Math.atan(eye().magnitude() * (float) width() / (2 * Math.abs(Vector.scalarProjection(Vector.subtract(eye().position(), center()), eye().zAxis()))));
   }
 
   /**
@@ -618,9 +715,9 @@ public class Graph {
   }
 
   /**
-   * Same as {@code return type() == Type.PERSPECTIVE ? radians(eye().magnitude() * aspectRatio()) : eye().magnitude()}.
+   * Same as {@code return _type == Type.PERSPECTIVE ? radians(eye().magnitude() * aspectRatio()) : eye().magnitude()}.
    * <p>
-   * Returns the {@link #eye()} horizontal field-of-view in radians if the graph {@link #type()} is
+   * Returns the {@link #eye()} horizontal field-of-view in radians if the graph {@link #_type} is
    * {@link Type#PERSPECTIVE}, or the {@link #eye()} {@link Node#magnitude()} otherwise.
    *
    * @see #fov()
@@ -632,38 +729,32 @@ public class Graph {
       System.out.println("Warning: hfov() is meaningless in 2D. Use eye().magnitude() instead");
       return 1;
     }
-    return type() == Type.PERSPECTIVE ?
+    return _type == Type.PERSPECTIVE ?
         2 * (float) Math.atan(eye().magnitude() * aspectRatio()) :
-        2 * (float) Math.atan(eye().magnitude() * aspectRatio() * width() / (2 * Math.abs(Vector.scalarProjection(Vector.subtract(eye().position(), center()), eye().zAxis()))));
+        2 * (float) Math.atan(eye().magnitude() * aspectRatio() * (float) width() / (2 * Math.abs(Vector.scalarProjection(Vector.subtract(eye().position(), center()), eye().zAxis()))));
   }
 
   /**
-   * Returns the near clipping plane distance used by the eye node
-   * {@link #projection(Node, Type, float, float, float, float)} matrix in
-   * world units.
+   * Returns the near clipping plane distance used to compute the {@link #projection()} matrix.
    * <p>
    * The clipping planes' positions depend on the {@link #radius()} and {@link #center()}
    * rather than being fixed small-enough and large-enough values. A good approximation will
    * hence result in an optimal precision of the z-buffer.
    * <p>
    * The near clipping plane is positioned at a distance equal to
-   * {@link #zClippingCoefficient()} * {@link #radius()} in front of the
+   * {@code zClippingCoefficient} * {@link #radius()} in front of the
    * {@link #center()}: {@code Vector.scalarProjection(
    * Vector.subtract(eye().position(), center()), eye().zAxis()) - zClippingCoefficient() * radius()}
    * <p>
    * In order to prevent negative or too small {@link #zNear()} values (which would
-   * degrade the z precision), {@link #zNearCoefficient()} is used when the eye is
+   * degrade the z precision), {@code zNearCoefficient} is used when the eye is
    * inside the {@link #radius()} ball:
    * <p>
    * {@code zMin = zNearCoefficient() * zClippingCoefficient() * radius();} <br>
    * {@code zNear = zMin;}<br>
    * {@code With an ORTHOGRAPHIC and TWO_D types, the value is simply clamped to 0}<br>
    * <p>
-   * See also the {@link #zFar()}, {@link #zClippingCoefficient()} and
-   * {@link #zNearCoefficient()} documentations.
-   * <p>
-   * If you need a completely different zNear computation, overload the {@link #zNear()}
-   * and {@link #zFar()} methods.
+   * See also the {@link #zFar()} documentation.
    *
    * <b>Attention:</b> The value is always positive, although the clipping plane is
    * positioned at a negative z value in the eye coordinate system.
@@ -671,11 +762,13 @@ public class Graph {
    * @see #zFar()
    */
   public float zNear() {
-    float z = Vector.scalarProjection(Vector.subtract(eye().position(), center()), eye().zAxis()) - zClippingCoefficient() * radius();
+    if (_fixed)
+      return _zNear;
+    float z = Vector.scalarProjection(Vector.subtract(eye().position(), center()), eye().zAxis()) - _zClippingCoefficient * _radius;
     // Prevents negative or null zNear values.
-    float zMin = zNearCoefficient() * zClippingCoefficient() * radius();
+    float zMin = _zNearCoefficient * _zClippingCoefficient * _radius;
     if (z < zMin)
-      switch (type()) {
+      switch (_type) {
         case PERSPECTIVE:
           z = zMin;
           break;
@@ -688,8 +781,8 @@ public class Graph {
   }
 
   /**
-   * Returns the far clipping plane distance used by the
-   * {@link #projection(Node, Type, float, float, float, float) matrix in world units.
+   * Returns the far clipping plane distance used to compute the
+   * {@link #projection()} matrix in world units.
    * <p>
    * The far clipping plane is positioned at a distance equal to
    * {@code zClippingCoefficient() * radius()} behind the {@link #center()}:
@@ -700,60 +793,7 @@ public class Graph {
    * @see #zNear()
    */
   public float zFar() {
-    return Vector.scalarProjection(Vector.subtract(eye().position(), center()), eye().zAxis()) + zClippingCoefficient() * radius();
-  }
-
-  /**
-   * Returns the coefficient used to set {@link #zNear()} when the {@link #eye()} is
-   * inside the ball defined by {@link #center()} and {@link #zClippingCoefficient()} * {@link #radius()}.
-   * <p>
-   * In that case, the {@link #zNear()} value is set to
-   * {@code zNearCoefficient() * zClippingCoefficient() * radius()}. See the
-   * {@code zNear()} documentation for details.
-   * <p>
-   * Default value is 0.005, which is appropriate for most applications. In case you need
-   * a high dynamic ZBuffer precision, you can increase this value (~0.1). A lower value
-   * will prevent clipping of very close objects at the expense of a worst Z precision.
-   * <p>
-   * Only meaningful when the graph type is PERSPECTIVE.
-   */
-  public float zNearCoefficient() {
-    return _zNearCoefficient;
-  }
-
-  /**
-   * Sets the {@link #zNearCoefficient()} value.
-   */
-  public void setZNearCoefficient(float coefficient) {
-    if (coefficient != _zNearCoefficient)
-      _modified();
-    _zNearCoefficient = coefficient;
-  }
-
-  /**
-   * Returns the coefficient used to position the near and far clipping planes.
-   * <p>
-   * The near (resp. far) clipping plane is positioned at a distance equal to
-   * {@code zClippingCoefficient() * radius()} in front of (resp. behind) the
-   * {@link #center()}. This guarantees an optimal use of the z-buffer range and
-   * minimizes aliasing. See the {@link #zNear()} and {@link #zFar()} documentations.
-   * <p>
-   * Default value is square root of 3 (so that a cube of edge size 2*{@link #radius()}
-   * is not clipped).
-   *
-   * @see #zNearCoefficient()
-   */
-  public float zClippingCoefficient() {
-    return _zClippingCoefficient;
-  }
-
-  /**
-   * Sets the {@link #zClippingCoefficient()} value.
-   */
-  public void setZClippingCoefficient(float coefficient) {
-    if (coefficient != _zClippingCoefficient)
-      _modified();
-    _zClippingCoefficient = coefficient;
+    return _fixed ? _zFar: Vector.scalarProjection(Vector.subtract(eye().position(), center()), eye().zAxis()) + _zClippingCoefficient * _radius;
   }
 
   // Graph and nodes stuff
@@ -984,7 +1024,7 @@ public class Graph {
   // Eye stuff
 
   /**
-   * Checks wheter or not the given node is the {@link #eye()}.
+   * Checks whether or not the given node is the {@link #eye()}.
    */
   public boolean isEye(Node node) {
     return _eye == node;
@@ -1012,7 +1052,11 @@ public class Graph {
       untag(eye);
       System.out.println("Warning: node was untagged since it was set as the eye");
     }
+    if (_eye != null) {
+      _eye._frustumGraphs.remove(this);
+    }
     _eye = eye;
+    _eye._frustumGraphs.add(this);
     if (_interpolator == null)
       _interpolator = new Interpolator(_eye);
     else
@@ -1030,27 +1074,21 @@ public class Graph {
   }
 
   /**
-   * Returns {@code true} if {@code point} is visible (i.e, lies within the eye boundary)
+   * Returns {@code true} if {@code point} is visible (i.e, lies within the eye bounds)
    * and {@code false} otherwise.
    *
-   * <b>Attention:</b> The eye boundary plane equations should be updated before calling
-   * this method. You may compute them explicitly (by calling {@link #updateBoundaryEquations()})
-   * or enable them to be automatic updated in your graph setup (with
-   * {@link Graph#enableBoundaryEquations()}).
-   *
-   * @see #distanceToBoundary(int, Vector)
+   * @see #distanceToBound(int, Vector)
    * @see #ballVisibility(Vector, float)
    * @see #boxVisibility(Vector, Vector)
-   * @see #updateBoundaryEquations()
-   * @see #boundaryEquations()
-   * @see #enableBoundaryEquations()
+   * @see #bounds()
    */
   public boolean isPointVisible(Vector point) {
-    if (!areBoundaryEquationsEnabled())
-      throw new RuntimeException("The frustum plane equations (needed by isPointVisible) may be outdated. Please "
-          + "enable automatic updates of the equations in your PApplet.setup " + "with Scene.enableBoundaryEquations()");
+    if (eye().lastUpdate() > _lastEqUpdate || _lastEqUpdate == 0) {
+      _updateBounds();
+      _lastEqUpdate = TimingHandler.frameCount;
+    }
     for (int i = 0; i < (is3D() ? 6 : 4); ++i)
-      if (distanceToBoundary(i, point) > 0)
+      if (distanceToBound(i, point) > 0)
         return false;
     return true;
   }
@@ -1060,25 +1098,20 @@ public class Graph {
    * {@link Visibility#SEMIVISIBLE}, depending whether the ball (of radius {@code radius}
    * and center {@code center}) is visible, invisible, or semi-visible, respectively.
    *
-   * <b>Attention:</b> The eye boundary plane equations should be updated before calling
-   * this method. You may compute them explicitly (by calling
-   * {@link #updateBoundaryEquations()} ) or enable them to be automatic updated in your
-   * graph setup (with {@link Graph#enableBoundaryEquations()}).
-   *
-   * @see #distanceToBoundary(int, Vector)
+   * @see #distanceToBound(int, Vector)
    * @see #isPointVisible(Vector)
    * @see #boxVisibility(Vector, Vector)
-   * @see #updateBoundaryEquations()
-   * @see #boundaryEquations()
-   * @see Graph#enableBoundaryEquations()
+   * @see #bounds()
+   * @see #_updateBounds()
    */
   public Visibility ballVisibility(Vector center, float radius) {
-    if (!areBoundaryEquationsEnabled())
-      throw new RuntimeException("The frustum plane equations (needed by ballVisibility) may be outdated. Please "
-          + "enable automatic updates of the equations in your PApplet.setup " + "with Scene.enableBoundaryEquations()");
+    if (eye().lastUpdate() > _lastEqUpdate || _lastEqUpdate == 0) {
+      _updateBounds();
+      _lastEqUpdate = TimingHandler.frameCount;
+    }
     boolean allInForAllPlanes = true;
     for (int i = 0; i < (is3D() ? 6 : 4); ++i) {
-      float d = distanceToBoundary(i, center);
+      float d = distanceToBound(i, center);
       if (d > radius)
         return Visibility.INVISIBLE;
       if ((d > 0) || (-d < radius))
@@ -1095,29 +1128,24 @@ public class Graph {
    * (defined by corners {@code p1} and {@code p2}) is visible, invisible,
    * or semi-visible, respectively.
    *
-   * <b>Attention:</b> The eye boundary plane equations should be updated before calling
-   * this method. You may compute them explicitly (by calling
-   * {@link #updateBoundaryEquations()} ) or enable them to be automatic updated in your
-   * graph setup (with {@link Graph#enableBoundaryEquations()}).
-   *
-   * @see #distanceToBoundary(int, Vector)
+   * @see #distanceToBound(int, Vector)
    * @see #isPointVisible(Vector)
    * @see #ballVisibility(Vector, float)
-   * @see #updateBoundaryEquations()
-   * @see #boundaryEquations()
-   * @see Graph#enableBoundaryEquations()
+   * @see #bounds()
+   * @see #_updateBounds()
    */
   public Visibility boxVisibility(Vector corner1, Vector corner2) {
-    if (!areBoundaryEquationsEnabled())
-      throw new RuntimeException("The frustum plane equations (needed by boxVisibility) may be outdated. Please "
-          + "enable automatic updates of the equations in your PApplet.setup " + "with Scene.enableBoundaryEquations()");
+    if (eye().lastUpdate() > _lastEqUpdate || _lastEqUpdate == 0) {
+      _updateBounds();
+      _lastEqUpdate = TimingHandler.frameCount;
+    }
     boolean allInForAllPlanes = true;
     for (int i = 0; i < (is3D() ? 6 : 4); ++i) {
       boolean allOut = true;
       for (int c = 0; c < 8; ++c) {
         Vector pos = new Vector(((c & 4) != 0) ? corner1._vector[0] : corner2._vector[0], ((c & 2) != 0) ? corner1._vector[1] : corner2._vector[1],
             ((c & 1) != 0) ? corner1._vector[2] : corner2._vector[2]);
-        if (distanceToBoundary(i, pos) > 0.0)
+        if (distanceToBound(i, pos) > 0.0)
           allInForAllPlanes = false;
         else
           allOut = false;
@@ -1133,10 +1161,10 @@ public class Graph {
   }
 
   /**
-   * Returns the 4 or 6 plane equations of the eye boundary.
+   * Updates the 4 or 6 plane equations of the eye bounds.
    * <p>
    * In 2D the four 4-component vectors, respectively correspond to the
-   * left, right, top and bottom eye boundary lines. Each vector holds a plane equation
+   * left, right, top and bottom eye bounds lines. Each vector holds a plane equation
    * of the form:
    * <p>
    * {@code a*x + b*y + c = 0} where {@code a}, {@code b} and {@code c} are the 3
@@ -1150,15 +1178,13 @@ public class Graph {
    * <p>
    * where {@code a}, {@code b}, {@code c} and {@code d} are the 4 components of each
    * vector, in that order.
-   *
-   * <b>Attention:</b> You should not call this method explicitly, unless you need the
-   * frustum equations to be updated only occasionally (rare). Use
-   * {@link Graph#enableBoundaryEquations()} which automatically update the frustum equations
-   * every frame instead.
    */
-  public float[][] updateBoundaryEquations() {
+  protected void _updateBounds() {
     _initCoefficients();
-    return is3D() ? _updateBoundaryEquations3() : _updateBoundaryEquations2();
+    if (is3D())
+      _updateBoundaryEquations3();
+    else
+      _updateBoundaryEquations2();
   }
 
   protected void _initCoefficients() {
@@ -1182,14 +1208,14 @@ public class Graph {
       _distance = new float[rows];
   }
 
-  protected float[][] _updateBoundaryEquations3() {
+  protected void _updateBoundaryEquations3() {
     // Computed once and for all
     Vector pos = eye().position();
     Vector viewDir = viewDirection();
     Vector up = upVector();
     Vector right = rightVector();
     float posViewDir = Vector.dot(pos, viewDir);
-    switch (type()) {
+    switch (_type) {
       case PERSPECTIVE: {
         // horizontal fov: radians(eye().magnitude() * aspectRatio())
         float hhfov = 2 * (float) Math.atan(eye().magnitude() * aspectRatio()) / 2.0f;
@@ -1231,8 +1257,8 @@ public class Graph {
         _normal[1] = right;
         _normal[4] = up;
         _normal[5] = Vector.multiply(up, -1);
-        float wh0 = eye().magnitude() * width() / 2;
-        float wh1 = eye().magnitude() * height() / 2;
+        float wh0 = eye().magnitude() * (float) width() / 2;
+        float wh1 = eye().magnitude() * (float) height() / 2;
         _distance[0] = Vector.dot(Vector.subtract(pos, Vector.multiply(right, wh0)), _normal[0]);
         _distance[1] = Vector.dot(Vector.add(pos, Vector.multiply(right, wh0)), _normal[1]);
         _distance[4] = Vector.dot(Vector.add(pos, Vector.multiply(up, wh1)), _normal[4]);
@@ -1250,10 +1276,9 @@ public class Graph {
       _coefficients[i][2] = _normal[i]._vector[2];
       _coefficients[i][3] = _distance[i];
     }
-    return _coefficients;
   }
 
-  protected float[][] _updateBoundaryEquations2() {
+  protected void _updateBoundaryEquations2() {
     // Computed once and for all
     Vector pos = eye().position();
     Vector up = upVector();
@@ -1262,8 +1287,8 @@ public class Graph {
     _normal[1] = right;
     _normal[2] = up;
     _normal[3] = Vector.multiply(up, -1);
-    float wh0 = eye().magnitude() * width() / 2;
-    float wh1 = eye().magnitude() * height() / 2;
+    float wh0 = eye().magnitude() * (float) width() / 2;
+    float wh1 = eye().magnitude() * (float) height() / 2;
     _distance[0] = Vector.dot(Vector.subtract(pos, Vector.multiply(right, wh0)), _normal[0]);
     _distance[1] = Vector.dot(Vector.add(pos, Vector.multiply(right, wh0)), _normal[1]);
     _distance[2] = Vector.dot(Vector.add(pos, Vector.multiply(up, wh1)), _normal[2]);
@@ -1274,69 +1299,20 @@ public class Graph {
       // Change respect to Camera occurs here:
       _coefficients[i][2] = -_distance[i];
     }
-    return _coefficients;
   }
 
   /**
-   * Disables automatic update of the frustum plane equations every frame.
-   * Computation of the equations is expensive and hence is disabled by default.
-   *
-   * @see #areBoundaryEquationsEnabled()
-   * @see #enableBoundaryEquations()
-   * @see #enableBoundaryEquations(boolean)
-   * @see #updateBoundaryEquations()
-   */
-  public void disableBoundaryEquations() {
-    enableBoundaryEquations(false);
-  }
-
-  /**
-   * Enables automatic update of the frustum plane equations every frame.
-   * Computation of the equations is expensive and hence is disabled by default.
-   *
-   * @see #areBoundaryEquationsEnabled()
-   * @see #disableBoundaryEquations()
-   * @see #enableBoundaryEquations(boolean)
-   * @see #updateBoundaryEquations()
-   */
-  public void enableBoundaryEquations() {
-    enableBoundaryEquations(true);
-  }
-
-  /**
-   * Enables or disables automatic update of the eye boundary plane equations every frame
-   * according to {@code flag}. Computation of the equations is expensive and hence is
-   * disabled by default.
-   *
-   * @see #updateBoundaryEquations()
-   */
-  public void enableBoundaryEquations(boolean flag) {
-    _coefficientsUpdate = flag;
-  }
-
-  /**
-   * Returns {@code true} if automatic update of the eye boundary plane equations is
-   * enabled and {@code false} otherwise. Computation of the equations is expensive and
-   * hence is disabled by default.
-   *
-   * @see #updateBoundaryEquations()
-   */
-  public boolean areBoundaryEquationsEnabled() {
-    return _coefficientsUpdate;
-  }
-
-  /**
-   * Returns the boundary plane equations.
+   * Returns the bounds plane equations.
    * <p>
    * In 2D the four 4-component vectors, respectively correspond to the
-   * left, right, top and bottom eye boundary lines. Each vector holds a plane equation
+   * left, right, top and bottom eye bounds lines. Each vector holds a plane equation
    * of the form:
    * <p>
    * {@code a*x + b*y + c = 0} where {@code a}, {@code b} and {@code c} are the 3
    * components of each vector, in that order.
    * <p>
    * In 3D the six 4-component vectors returned by this method, respectively correspond to the
-   * left, right, near, far, top and bottom eye boundary planes. Each vector holds a plane
+   * left, right, near, far, top and bottom eye bounding planes. Each vector holds a plane
    * equation of the form:
    * <p>
    * {@code a*x + b*y + c*z + d = 0}
@@ -1344,52 +1320,41 @@ public class Graph {
    * where {@code a}, {@code b}, {@code c} and {@code d} are the 4 components of each
    * vector, in that order.
    *
-   * <b>Attention:</b> The eye boundary plane equations should be updated before calling
-   * this method. You may compute them explicitly (by calling
-   * {@link #updateBoundaryEquations()}) or enable them to be automatic updated in your
-   * graph setup (with {@link #enableBoundaryEquations()}).
-   *
-   * @see #distanceToBoundary(int, Vector)
+   * @see #distanceToBound(int, Vector)
    * @see #isPointVisible(Vector)
    * @see #ballVisibility(Vector, float)
    * @see #boxVisibility(Vector, Vector)
-   * @see #updateBoundaryEquations()
-   * @see #enableBoundaryEquations()
+   * @see #_updateBounds()
    */
-  public float[][] boundaryEquations() {
-    if (!areBoundaryEquationsEnabled())
-      throw new RuntimeException("The graph boundary equations may be outdated. Please "
-          + "enable automatic updates of the equations in your setup with enableBoundaryEquations()");
+  public float[][] bounds() {
+    if (eye().lastUpdate() > _lastEqUpdate || _lastEqUpdate == 0) {
+      _updateBounds();
+      _lastEqUpdate = TimingHandler.frameCount;
+    }
     return _coefficients;
   }
 
   /**
    * Returns the signed distance between point {@code position} and plane {@code index}
-   * in world units. The distance is negative if the point lies in the planes's boundary
+   * in world units. The distance is negative if the point lies in the planes's bounding
    * halfspace, and positive otherwise.
    * <p>
    * In 2D {@code index} is a value between {@code 0} and {@code 3} which respectively
-   * correspond to the left, right, top and bottom eye boundary planes.
+   * correspond to the left, right, top and bottom eye bounding planes.
    * <p>
    * In 3D {@code index} is a value between {@code 0} and {@code 5} which respectively
-   * correspond to the left, right, near, far, top and bottom eye boundary planes.
-   *
-   * <b>Attention:</b> The eye boundary plane equations should be updated before calling
-   * this method. You may compute them explicitly (by calling
-   * {@link #updateBoundaryEquations()}) or enable them to be automatic updated in your
-   * graph setup (with {@link #enableBoundaryEquations()}).
+   * correspond to the left, right, near, far, top and bottom eye bounding planes.
    *
    * @see #isPointVisible(Vector)
    * @see #ballVisibility(Vector, float)
    * @see #boxVisibility(Vector, Vector)
-   * @see #updateBoundaryEquations()
-   * @see #boundaryEquations()
-   * @see #enableBoundaryEquations()
+   * @see #bounds()
    */
-  public float distanceToBoundary(int index, Vector position) {
-    if (!areBoundaryEquationsEnabled())
-      throw new RuntimeException("The viewpoint boundary equations (needed by distanceToBoundary) may be outdated. Please "
-          + "enable automatic updates of the equations in your PApplet.setup " + "with Scene.enableBoundaryEquations()");
+  public float distanceToBound(int index, Vector position) {
+    if (eye().lastUpdate() > _lastEqUpdate || _lastEqUpdate == 0) {
+      _updateBounds();
+      _lastEqUpdate = TimingHandler.frameCount;
+    }
     Vector myVector = new Vector(_coefficients[index][0], _coefficients[index][1], _coefficients[index][2]);
     if (is3D())
       return Vector.dot(position, myVector) - _coefficients[index][3];
@@ -1429,9 +1394,9 @@ public class Graph {
    * {@code endShape();}<br>
    */
   public float sceneToPixelRatio(Vector position) {
-    switch (type()) {
+    switch (_type) {
       case PERSPECTIVE:
-        return 2.0f * Math.abs((eye().location(position))._vector[2] * eye().magnitude()) * (float) Math.tan(fov() / 2.0f) / height();
+        return 2.0f * Math.abs((eye().location(position))._vector[2] * eye().magnitude()) * (float) Math.tan(fov() / 2.0f) / (float) height();
       case TWO_D:
       case ORTHOGRAPHIC:
         return eye().magnitude();
@@ -1569,7 +1534,7 @@ public class Graph {
     // more or less inspired by this:
     // http://en.wikipedia.org/wiki/Back-face_culling (perspective case :P)
     Vector camAxis;
-    if (type() == Type.ORTHOGRAPHIC)
+    if (_type == Type.ORTHOGRAPHIC)
       camAxis = viewDirection();
     else {
       camAxis = Vector.subtract(vertex, eye().position());
@@ -1587,16 +1552,12 @@ public class Graph {
   }
 
   /**
-   * Returns the radius of the graph observed by the eye in world units.
-   * <p>
-   * In 3D you need to provide such an approximation of the graph dimensions so
-   * that the it can adapt its {@link #zNear()} and {@link #zFar()} values. See the {@link #center()}
-   * documentation.
-   * <p>
-   * Note that {@link Graph#radius()} (resp. {@link Graph#setRadius(float)} simply call this
-   * method on its associated eye.
+   * Returns the radius of the graph observed by the eye in world units. Set it with
+   * {@link #setBounds(Vector, float)} or {@link #setBounds(float, float)}.
    *
-   * @see #setFrustum(Vector, Vector)
+   * @see #setBounds(Vector, float)
+   * @see #setBounds(float, float)
+   * @see #center()
    */
   public float radius() {
     return _radius;
@@ -1604,81 +1565,105 @@ public class Graph {
 
   /**
    * Returns the position of the graph center, defined in the world coordinate system.
-   * <p>
-   * The graph observed by the eye should be roughly centered on this position, and
-   * included in a {@link #radius()} ball.
-   * <p>
-   * Default value is the world origin. Use {@link #setCenter(Vector)} to change it.
+   * Set it with {@link #setBounds(Vector, float)} or {@link #setBounds(float, float)}.
    *
-   * @see #setCenter(Vector)
-   * @see #setRadius(float)
-   * @see #setFrustum(Vector, Vector)
+   * @see #setBounds(Vector, float)
+   * @see #setBounds(float, float)
    * @see #zNear()
    * @see #zFar()
    */
   public Vector center() {
-    return _center;
+    return _fixed ? eye().worldLocation(new Vector(0, 0, -(zNear() + zFar()) / (eye().magnitude() * 2) )) : _center;
   }
 
   /**
-   * The point the eye revolves around with a ROTATE gesture. Defined in world
-   * coordinate system.
+   * Same as {@code setBounds(new Vector(), radius)}.
+   *
+   * @see #setBounds(float, float)
+   * @see #setBounds(Vector, float, float, float)
+   * @see #setBounds(float, float)
+   */
+  public void setBounds(float radius) {
+    setBounds(new Vector(), radius);
+  }
+
+  /**
+   * Same as {@code setBounds(center, radius, 0.005f, (float) Math.sqrt(3.0f))}.
+   *
+   * @see #setBounds(float, float)
+   * @see #setBounds(Vector, float, float, float)
+   * @see #setBounds(float)
+   */
+  public void setBounds(Vector center, float radius) {
+    setBounds(center, radius, 0.005f, (float) Math.sqrt(3.0f));
+  }
+
+  /**
+   * Sets the scene bounding sphere, defined by {@code center} and {@code radius}) in the
+   * world coordinate system. The {@link #zNear()} and {@link #zFar()} computation is performed
+   * so that it adapts to best fit this bounding sphere. To set fixed {@link #zNear()} and
+   * {@link #zFar()} values use {@link #setBounds(float, float)} instead.
    * <p>
-   * Default value is the {@link #center()}. Use {@link #setAnchor(Vector)} to change it.
+   * The {@code zNearCoefficient} (only meaningful for perspective projections) is used to set
+   * the {@link #zNear()} when the {@link #eye()} is
+   * inside the ball defined by {@code #center} and zClippingCoefficient * {@code #radius}.
+   * In that case, the {@link #zNear()} value is set to
+   * {@code zNearCoefficient * zClippingCoefficient * radius}. Default value is 0.005, which
+   * is appropriate for most applications. In case you need a high dynamic ZBuffer precision,
+   * you can increase this value (~0.1). A lower value will prevent clipping of very close
+   * objects at the expense of a worst Z precision.
    * <p>
+   * The {@code zClippingCoefficient} is used to position the near and far clipping planes.
+   * The near (resp. far) clipping plane is positioned at a distance equal to
+   * {@code zClippingCoefficient * radius()} in front of (resp. behind) the {@code center}.
+   * This guarantees an optimal use of the z-buffer range and minimizes aliasing. Default
+   * value is square root of 3 (so that a cube of edge size 2*{@link #radius()} is not clipped).
+   * <p>
+   * See the {@link #zNear()} and {@link #zFar()} documentations.
    *
-   * @see #setAnchor(Vector)
+   * @see #setBounds(float)
+   * @see #setBounds(Vector, float)
+   * @see #setBounds(float, float)
+   * @see #zNear()
+   * @see #zFar()
    */
-  public Vector anchor() {
-    return _anchor;
-  }
-
-  /**
-   * Sets the {@link #anchor()}, defined in the world coordinate system.
-   */
-  public void setAnchor(Vector anchor) {
-    _anchor = anchor;
-  }
-
-  /**
-   * Sets the {@link #radius()} value in world units.
-   *
-   * @see #setCenter(Vector)
-   */
-  public void setRadius(float radius) {
-    _radius = radius;
-  }
-
-  /**
-   * Sets the {@link #center()} of the graph.
-   *
-   * @see #setRadius(float)
-   */
-  public void setCenter(Vector center) {
+  public void setBounds(Vector center, float radius, float zNearCoefficient, float zClippingCoefficient) {
+    _fixed = false;
     _center = center;
+    _radius = Math.abs(radius);
+    _zNearCoefficient = zNearCoefficient;
+    _zClippingCoefficient = zClippingCoefficient;
+    _modified();
   }
 
   /**
-   * Same as {@code setCenter(center); setRadius(radius)}.
+   * Sets fixed {@link #zNear()} and {@link #zFar()} values. Use
+   * {@link #setBounds(Vector, float, float, float)} to make them fit a
+   * bounding sphere defined in the world coordinate system instead.
+   * <p>
+   * Note that the {@link #center()} is computed as
+   * {@code eye().worldLocation(new Vector(0, 0, -(zNear() + zFar()) / (eye().magnitude() * 2) ))}.
    *
-   * @see #setCenter(Vector)
-   * @see #setRadius(float)
-   * @see #setFrustum(Vector, Vector)
+   * @see #setBounds(Vector, float, float, float)
+   * @see #setBounds(Vector, float)
+   * @see #zNear()
+   * @see #zFar()
    */
-  public void setFrustum(Vector center, float radius) {
-    setCenter(center);
-    setAnchor(center);
-    setRadius(radius);
-  }
-
-  /**
-   * Similar to {@link #setRadius(float)} and {@link #setCenter(Vector)}, but the
-   * graph limits are defined by a world axis aligned bounding box.
-   *
-   * @see #setFrustum(Vector, float)
-   */
-  public void setFrustum(Vector corner1, Vector corner2) {
-    setFrustum(Vector.multiply(Vector.add(corner1, corner2), 1 / 2.0f), 0.5f * (Vector.subtract(corner2, corner1)).magnitude());
+  public void setBounds(float zNear, float zFar) {
+    float near = Math.abs(zNear);
+    float far = Math.abs(zFar);
+    if (far <= near || near == 0)
+      return;
+    if (is2D()) {
+      System.out.println("Warning: setBounds(zNear, zFar) only available in 3D. Calling setBounds((zFar - zNear) / 2) instead!");
+      setBounds((far - near) / 2);
+      return;
+    }
+    _fixed = true;
+    _zNear = near;
+    _zFar = far;
+    _radius = (far - near) / 2;
+    _modified();
   }
 
   /**
@@ -1740,7 +1725,7 @@ public class Graph {
    * Use this method in order to define the eye horizontal plane.
    * <p>
    * When {@code noMove} is set to {@code false}, the orientation modification is
-   * compensated by a translation, so that the {@link #anchor()} stays projected at the
+   * compensated by a translation, so that the {@link #center()} stays projected at the
    * same position on screen. This is especially useful when the eye is an observer of the
    * graph.
    * <p>
@@ -1752,7 +1737,7 @@ public class Graph {
   public void setUpVector(Vector up, boolean noMove) {
     Quaternion q = new Quaternion(new Vector(0.0f, 1.0f, 0.0f), eye().displacement(up));
     if (!noMove)
-      eye().setPosition(Vector.subtract(anchor(), (Quaternion.multiply(eye().orientation(), q)).rotate(eye().location(anchor()))));
+      eye().setPosition(Vector.subtract(center(), (Quaternion.multiply(eye().orientation(), q)).rotate(eye().location(center()))));
     eye().rotate(q);
   }
 
@@ -1767,24 +1752,6 @@ public class Graph {
    */
   public Vector upVector() {
     return eye().yAxis();
-  }
-
-  /**
-   * Same as {@code lookAt(anchor())}.
-   *
-   * @see #lookAt(Vector)
-   * @see #anchor()
-   */
-  public void lookAtAnchor() {
-    lookAt(anchor());
-  }
-
-  /**
-   * @see #lookAt(Vector)
-   * @see #center()
-   */
-  public void lookAtCenter() {
-    lookAt(center());
   }
 
   /**
@@ -1912,7 +1879,7 @@ public class Graph {
    * @see #fitFOV(float)
    */
   public void fit() {
-    fit(center(), radius());
+    fit(center(), _radius);
   }
 
   /**
@@ -1933,7 +1900,7 @@ public class Graph {
    * @see #fitFOV(float)
    */
   public void fit(float duration) {
-    fit(center(), radius(), duration);
+    fit(center(), _radius, duration);
   }
 
   /**
@@ -1990,13 +1957,13 @@ public class Graph {
    * @see #fitFOV(float)
    */
   public void fit(Vector center, float radius) {
-    switch (type()) {
+    switch (_type) {
       case TWO_D:
         lookAt(center);
         fitFOV();
         break;
       case ORTHOGRAPHIC:
-        float distance = Vector.dot(Vector.subtract(center, anchor()), viewDirection()) + (radius / eye().magnitude());
+        float distance = Vector.dot(Vector.subtract(center, center()), viewDirection()) + (radius / eye().magnitude());
         eye().setPosition(Vector.subtract(center, Vector.multiply(viewDirection(), distance)));
         fitFOV();
         break;
@@ -2073,15 +2040,15 @@ public class Graph {
    */
   public void fitFOV() {
     float distance = Vector.scalarProjection(Vector.subtract(eye().position(), center()), eye().zAxis());
-    float magnitude = distance < (float) Math.sqrt(2) * radius() ? ((float) Math.PI / 2) : 2 * (float) Math.asin(radius() / distance);
-    switch (type()) {
+    float magnitude = distance < (float) Math.sqrt(2) * _radius ? ((float) Math.PI / 2) : 2 * (float) Math.asin(_radius / distance);
+    switch (_type) {
       case PERSPECTIVE:
         setFOV(magnitude);
         break;
       case ORTHOGRAPHIC:
-        eye().setMagnitude(distance < (float) Math.sqrt(2) * radius() ? 2 * radius() / Math.min(width(), height()) : 2 * (float) Math.sin(magnitude) * distance / width());
+        eye().setMagnitude(distance < (float) Math.sqrt(2) * _radius ? 2 * _radius / (float) Math.min(width(), height()) : 2 * (float) Math.sin(magnitude) * distance / width());
       case TWO_D:
-        eye().setMagnitude(2 * radius() / Math.min(width(), height()));
+        eye().setMagnitude(2 * _radius / (float) Math.min(width(), height()));
         break;
     }
   }
@@ -2146,8 +2113,8 @@ public class Graph {
    * upper left corner) fits the screen.
    * <p>
    * The eye is translated (its {@link Node#orientation()} is unchanged) so that
-   * {@code rectangle} is entirely visible. Since the pixel coordinates only define a
-   * <i>boundary</i> in 3D, it's the intersection of this boundary with a plane
+   * {@code rectangle} is entirely visible. Since the pixel coordinates only define
+   * <i>bounds</i> in 3D, it's the intersection of this bounds with a plane
    * (orthogonal to the {@link #viewDirection()} and passing through the
    * {@link #center()}) that is used to define the 3D rectangle that is eventually
    * fitted.
@@ -2191,10 +2158,6 @@ public class Graph {
    * to the {@link #viewDirection()} and passing through the {@link #center()}) that
    * is used to define the 3D rectangle that is eventually fitted.
    *
-   * @param x      coordinate of the rectangle
-   * @param y      coordinate of the rectangle
-   * @param width  width of the rectangle
-   * @param height height of the rectangle
    * @see #fit(int, int, int, int, float)
    * @see #fit(Vector, Vector, float)
    * @see #fit(Vector, Vector)
@@ -2206,6 +2169,10 @@ public class Graph {
    * @see #fit(Vector, float, float)
    * @see #fitFOV()
    * @see #fitFOV(float)
+   * @param x coordinate of the rectangle
+   * @param y coordinate of the rectangle
+   * @param width width of the rectangle
+   * @param height height of the rectangle
    */
   public void fit(int x, int y, int width, int height) {
     int centerX = (int) ((float) x + (float) width / 2);
@@ -2239,7 +2206,7 @@ public class Graph {
     Vector pointY = Vector.add(orig, Vector.multiply(dir, (distToPlane / Vector.dot(dir, vd))));
     float distance = 0.0f;
     float distX, distY;
-    switch (type()) {
+    switch (_type) {
       case PERSPECTIVE:
         //horizontal fov: radians(eye().magnitude() * aspectRatio())
         distX = Vector.distance(pointX, newCenter) / (float) Math.sin(2 * (float) Math.atan(eye().magnitude() * aspectRatio()) / 2.0f);
@@ -2247,7 +2214,7 @@ public class Graph {
         distance = Math.max(distX, distY);
         break;
       case ORTHOGRAPHIC:
-        float dist = Vector.dot(Vector.subtract(newCenter, anchor()), vd);
+        float dist = Vector.dot(Vector.subtract(newCenter, center()), vd);
         distX = Vector.distance(pointX, newCenter) / eye().magnitude() / aspectRatio();
         distY = Vector.distance(pointY, newCenter) / eye().magnitude() / 1.0f;
         distance = dist + Math.max(distX, distY);
@@ -2267,14 +2234,14 @@ public class Graph {
    * This method is useful for analytical intersection in a selection method.
    */
   public void pixelToLine(int pixelX, int pixelY, Vector origin, Vector direction) {
-    switch (type()) {
+    switch (_type) {
       case PERSPECTIVE:
         // left-handed coordinate system correction
         if (leftHanded)
           pixelY = height() - pixelY;
         origin.set(eye().position());
-        direction.set(new Vector(((2.0f * pixelX / width()) - 1.0f) * eye().magnitude() * aspectRatio(),
-            ((2.0f * (height() - pixelY) / height()) - 1.0f) * eye().magnitude(),
+        direction.set(new Vector(((2.0f * pixelX / (float) width()) - 1.0f) * eye().magnitude() * aspectRatio(),
+            ((2.0f * (height() - pixelY) / (float) height()) - 1.0f) * eye().magnitude(),
             -1.0f));
         direction.set(Vector.subtract(eye().worldLocation(direction), origin));
         direction.normalize();
@@ -2356,7 +2323,7 @@ public class Graph {
    * @return true if the graph is 2D.
    */
   public boolean is2D() {
-    return type() == Type.TWO_D;
+    return _type == Type.TWO_D;
   }
 
   /**
@@ -2536,20 +2503,26 @@ public class Graph {
         _track(tag, child, pixelX, pixelY);
   }
 
-  protected boolean _precisePicking(Node node) {
+  /**
+   * Condition for the node back picking.
+   */
+  protected boolean _backPicking(Node node) {
     return picking && node.tagging == true && !isEye(node) && _bb != null && (
             (node.isPickingModeEnable(Node.CAMERA) && node.isHintEnable(Node.CAMERA)) ||
                     (node.isPickingModeEnable(Node.AXES) && node.isHintEnable(Node.AXES)) ||
-                    (node.isPickingModeEnable(Node.HUD) && node.isHintEnable(Node.HUD)) ||
-                    (node.isPickingModeEnable(Node.FRUSTUM) && node.isHintEnable(Node.FRUSTUM)) ||
-                    (node.isPickingModeEnable(Node.SHAPE) && node.isHintEnable(Node.SHAPE)) ||
+                    (node.isPickingModeEnable(Node.HUD) && node.isHintEnable(Node.HUD) && (node._imrHUD != null || node._rmrHUD != null)) ||
+                    (node._frustumGraphs != null && node.isPickingModeEnable(Node.BOUNDS) && node.isHintEnable(Node.BOUNDS)) ||
+                    (node.isPickingModeEnable(Node.SHAPE) && node.isHintEnable(Node.SHAPE) && (node._imrShape != null || node._rmrShape != null)) ||
                     (node.isPickingModeEnable(Node.TORUS) && node.isHintEnable(Node.TORUS)) ||
                     (node.isPickingModeEnable(Node.CONSTRAINT) && node.isHintEnable(Node.CONSTRAINT)) ||
                     (node.isPickingModeEnable(Node.BONE) && node.isHintEnable(Node.BONE))
     );
   }
 
-  protected boolean _bullseyePicking(Node node) {
+  /**
+   * Condition for the node front picking.
+   */
+  protected boolean _frontPicking(Node node) {
     return picking && node.tagging == true && !isEye(node) && node.isPickingModeEnable(Node.BULLSEYE) && node.isHintEnable(Node.BULLSEYE);
   }
 
@@ -2566,11 +2539,16 @@ public class Graph {
    * @see Node#setBullsEyeSize(float)
    */
   public boolean tracks(Node node, int pixelX, int pixelY) {
-    if (_precisePicking(node))
-      return _tracks(node, pixelX, pixelY);
-    else if(_bullseyePicking(node))
-      return _tracks(node, pixelX, pixelY, screenLocation(node.position()));
-    return false;
+    boolean result = false;
+    if (_backPicking(node)) {
+      result = _tracks(node, pixelX, pixelY);
+    }
+    if (!result) {
+      if(_frontPicking(node)) {
+        result = _tracks(node, pixelX, pixelY, screenLocation(node.position()));
+      }
+    }
+    return result;
   }
 
   /**
@@ -2713,143 +2691,43 @@ public class Graph {
   }
 
   /**
-   * Returns the cached projection times view inverse matrix computed at {@link #openContext()}}.
+   * Returns the projection times view inverse matrix.
    */
   public Matrix projectionViewInverse() {
-    if (isProjectionViewInverseCached())
-      return _projectionViewInverse;
-    else {
-      Matrix projectionViewInverse = projectionView().get();
-      projectionViewInverse.invert();
-      return projectionViewInverse;
+    if (_cacheProjectionViewInverse < TimingHandler.frameCount) {
+      _projectionViewInverse = Matrix.inverse(_projectionView);
+      _cacheProjectionViewInverse = TimingHandler.frameCount;
     }
+    return _projectionViewInverse;
   }
 
   // cache setters for projection times view and its inverse
 
   /**
-   * Returns {@code true} if the projection * view matrix and its inverse are being cached, and
-   * {@code false} otherwise.
-   * <p>
-   * Use it only when continuously calling {@link #location(Vector)}.
-   *
-   * @see #projectionView()
-   * @see #cacheProjectionViewInverse(boolean)
-   */
-  public boolean isProjectionViewInverseCached() {
-    return _isProjectionViewInverseCached;
-  }
-
-  /**
-   * Cache projection * view inverse matrix (and also projection * view) so that
-   * {@link Graph#location(Vector)} is optimized.
-   * <p>
-   * Use it only when continuously calling {@link #location(Vector)}.
-   *
-   * @see #isProjectionViewInverseCached()
-   * @see #projectionView()
-   */
-  public void cacheProjectionViewInverse(boolean optimise) {
-    _isProjectionViewInverseCached = optimise;
-  }
-
-  // get matrices
-
-  /**
-   * Returns either {@code Matrix.perspective(leftHanded ? -eye.magnitude() : eye.magnitude(), width / height, zNear, zFar)}
-   * if the {@code type} is {@link Graph.Type#PERSPECTIVE} or
-   * {@code Matrix.orthographic(width * eye.magnitude(), (leftHanded ? -height : height) * eye.magnitude(), zNear, zFar)}, if the
-   * the {@code type} is {@link Graph.Type#ORTHOGRAPHIC} or {@link Graph.Type#TWO_D}.
-   * In both cases it uses the node {@link Node#magnitude()}.
-   * <p>
-   * Override this method to set a {@link Graph.Type#CUSTOM} projection.
-   *
-   * @see #perspective(Node, float, float, float)
-   * @see #orthographic(Node, float, float, float, float)
-   */
-  public static Matrix projection(Node eye, Graph.Type type, float width, float height, float zNear, float zFar) {
-    if (type == Graph.Type.PERSPECTIVE)
-      return Matrix.perspective(leftHanded ? -eye.magnitude() : eye.magnitude(), width / height, zNear, zFar);
-    else
-      return Matrix.orthographic(width * eye.magnitude(), (leftHanded ? -height : height) * eye.magnitude(), zNear, zFar);
-  }
-
-  /**
-   * Same as {@code return Matrix.perspective(leftHanded ? -eye.magnitude() : eye.magnitude(), aspectRatio, zNear, zFar)}.
-   *
-   * @see Matrix#perspective(float, float, float, float)
-   */
-  public static Matrix perspective(Node eye, float aspectRatio, float zNear, float zFar) {
-    return Matrix.perspective(leftHanded ? -eye.magnitude() : eye.magnitude(), aspectRatio, zNear, zFar);
-  }
-
-  /**
-   * Same as {@code return Matrix.orthographic(width * eye.magnitude(), (leftHanded ? -height : height) * eye.magnitude(), zNear, zFar)}.
-   *
-   * @see Matrix#orthographic(float, float, float, float)
-   */
-  public static Matrix orthographic(Node eye, float width, float height, float zNear, float zFar) {
-    return Matrix.orthographic(width * eye.magnitude(), (leftHanded ? -height : height) * eye.magnitude(), zNear, zFar);
-  }
-
-  /**
-   * Same as {@code return Matrix.multiply(projection(eye, type, width, height, zNear, zFar), eye.view())}.
-   *
-   * @see #projection(Node, Type, float, float, float, float)
-   * @see Node#view()
-   */
-  public static Matrix projectionView(Node eye, Graph.Type type, float width, float height, float zNear, float zFar) {
-    return Matrix.multiply(projection(eye, type, width, height, zNear, zFar), eye.view());
-  }
-
-  /**
-   * Same as {@code return Matrix.multiply(perspective(eye, aspectRatio, zNear, zFar), eye.view())}.
-   *
-   * @see #perspective(Node, float, float, float)
-   * @see Node#view()
-   */
-  public static Matrix perspectiveView(Node eye, float aspectRatio, float zNear, float zFar) {
-    return Matrix.multiply(perspective(eye, aspectRatio, zNear, zFar), eye.view());
-  }
-
-  /**
-   * Same as {@code return Matrix.multiply(orthographic(eye, width, height, zNear, zFar), eye.view())}.
-   *
-   * @see #orthographic(Node, float, float, float, float)
-   * @see Node#view()
-   */
-  public static Matrix orthographicView(Node eye, float width, float height, float zNear, float zFar) {
-    return Matrix.multiply(orthographic(eye, width, height, zNear, zFar), eye.view());
-  }
-
-  /**
    * Called by {@link #render(Node)} and performs the following:
    * <ol>
-   * <li>Updates the projection matrix by calling
-   * {@code eye().projection(type(), width(), height(), zNear(), zFar(), isLeftHanded())}.</li>
+   * <li>Updates the projection matrix using
+   * {@link Matrix#perspective(float, float, float, float)} or
+   * {@link Matrix#orthographic(float, float, float, float)}.</li>
    * <li>Updates the view matrix by calling {@code eye().view()}.</li>
    * <li>Updates the {@link #projectionView()} matrix.</li>
-   * <li>Updates the {@link #projectionViewInverse()} matrix if
-   * {@link #isProjectionViewInverseCached()}.</li>
    * </ol>
    *
    * @see #fov()
-   * @see #projection(Node, Type, float, float, float, float)
    * @see Node#view()
    */
   protected void _bind() {
-    _projection = projection(eye(), type(), width(), height(), zNear(), zFar());
+    _projection = _type == Graph.Type.PERSPECTIVE ? Matrix.perspective(leftHanded ? -eye().magnitude() : eye().magnitude(), aspectRatio(), zNear(), zFar())
+            : Matrix.orthographic(width() * eye().magnitude(), (leftHanded ? -height() : height()) * eye().magnitude(), zNear(), zFar());
     _view = eye().view();
     _projectionView = Matrix.multiply(_projection, _view);
-    if (isProjectionViewInverseCached())
-      _projectionViewInverse = Matrix.inverse(_projectionView);
     _matrixHandler.bind(_projection, _view);
   }
 
   /**
    * Begins the rendering process (see {@link #render(Node)}). Use it always before
-   * {@link #closeContext()}. Binds the matrices to the renderer, updates the boundary equations
-   * (see {@link #updateBoundaryEquations()}) and displays the scene {@link #hint()}.
+   * {@link #closeContext()}. Binds the matrices to the renderer and displays the scene
+   * {@link #hint()}.
    * <p>
    * This method is automatically called by {@link #render(Node)}. Call it explicitly only
    * when the scene {@link #hint()} is reset (see also {@link #resetHint()}) and you need
@@ -2883,10 +2761,6 @@ public class Graph {
       if (isOffscreen())
         _initFrontBuffer();
       _bind();
-      if (areBoundaryEquationsEnabled() && (eye().lastUpdate() > _lastEqUpdate || _lastEqUpdate == 0)) {
-        updateBoundaryEquations();
-        _lastEqUpdate = TimingHandler.frameCount;
-      }
       _matrixHandler.pushMatrix();
       _displayHint();
     }
@@ -2919,11 +2793,11 @@ public class Graph {
 
   /**
    * Renders the node tree onto the {@link #context()} from the {@link #eye()} viewpoint.
-   * Calls {@link Node#visit(Graph)} on each visited node (refer to the {@link Node} documentation).
+   * Calls {@link #setVisit(Node, BiConsumer)} on each visited node (refer to the {@link Node} documentation).
    * Same as {@code render(null)}.
    *
    * @see #render(Node)
-   * @see Node#visit(Graph)
+   * @see #setVisit(Node, BiConsumer)
    * @see Node#cull
    * @see Node#bypass()
    * @see Node#setShape(Consumer)
@@ -2938,10 +2812,10 @@ public class Graph {
    * when {@code subtree} is {@code null}) onto the {@link #context()} from the {@link #eye()}
    * viewpoint, and calls {@link #closeContext()}.
    * <p>
-   * Note that the rendering algorithm calls {@link Node#visit(Graph)} on each visited node
+   * Note that the rendering algorithm calls {@link #setVisit(Node, BiConsumer)} on each visited node
    * (refer to the {@link Node} documentation).
    *
-   * @see Node#visit(Graph)
+   * @see #setVisit(Node, BiConsumer)
    * @see Node#cull
    * @see Node#bypass()
    * @see Node#setShape(Consumer)
@@ -2967,26 +2841,87 @@ public class Graph {
   }
 
   /**
+   * Sets a custom node visit for the {@link #render()} algorithm.
+   * <p>
+   * Bypassing the node rendering and/or performing hierarchical culling, i.e.,
+   * culling of the node and its children, should be done here.
+   *
+   * <pre>
+   * {@code
+   * Graph scene = new Graph(context, width, height);
+   * Node space = new Node();
+   * public void visit(Graph graph, Node node) {
+   *   if (graph.cullingCondition) {
+   *     node.cull = true;
+   *   }
+   *   else if (bypassCondition) {
+   *     node.bypass();
+   *   }
+   * }
+   * scene.setVisit(space, visit);
+   * }
+   * </pre>
+   * Note that the graph culling condition may be set from
+   * {@link #ballVisibility(Vector, float)} or {@link #boxVisibility(Vector, Vector)}.
+   *
+   * @see #setVisit(Node, Consumer)
+   * @see #resetVisit(Node)
+   * @see #render(Node)
+   * @see Node#setVisit(Graph, BiConsumer)
+   * @see Node#setVisit(Graph, Consumer)
+   * @see Node#bypass()
+   * @see Node#cull
+   */
+  public void setVisit(Node node, BiConsumer<Graph, Node> functor) {
+    _functors.put(node.id(), functor);
+  }
+
+  /**
+   * Same as {@code setVisit(node, (g, n) -> functor.accept(n))}.
+   *
+   * @see #setVisit(Node, BiConsumer)
+   * @see #resetVisit(Node)
+   * @see #render(Node)
+   * @see Node#setVisit(Graph, BiConsumer)
+   * @see Node#setVisit(Graph, Consumer)
+   * @see Node#bypass()
+   * @see Node#cull
+   */
+  public void setVisit(Node node, Consumer<Node> functor) {
+    setVisit(node, (g, n) -> functor.accept(n));
+  }
+
+  /**
+   * Resets the node custom visit set with {@link #setVisit(Node, BiConsumer)}.
+   *
+   * @see #setVisit(Node, BiConsumer)
+   * @see #render(Node)
+   * @see Node#bypass()
+   * @see Node#cull
+   */
+  public void resetVisit(Node node) {
+    _functors.remove(node.id());
+  }
+
+  /**
    * Used by the {@link #render(Node)} algorithm.
    */
   protected void _render(Node node) {
     _matrixHandler.pushMatrix();
     _matrixHandler.applyTransformation(node);
-    if (visit) {
-      node.visit();
-      node.visit(this);
-    }
+    BiConsumer<Graph, Node> functor = _functors.get(node.id());
+    if (functor != null)
+      functor.accept(this, node);
     if (!node.cull) {
       if (node._bypass != TimingHandler.frameCount) {
         _trackFrontBuffer(node);
         if (isOffscreen())
           _trackBackBuffer(node);
-        if (_precisePicking(node))
+        if (_backPicking(node))
           _bbNeed = TimingHandler.frameCount;
         if (isTagged(node) && node._highlight > 0 && node._highlight <= 1) {
           _matrixHandler.pushMatrix();
           float scl = 1 + node._highlight;
-          // TODO 2d case needs testing
           if (is2D())
             _matrixHandler.scale(scl, scl);
           else
@@ -3040,7 +2975,7 @@ public class Graph {
     _bbMatrixHandler.applyTransformation(node);
     if (!node.cull) {
       if (node._bypass != TimingHandler.frameCount) {
-        if (_precisePicking(node)) {
+        if (_backPicking(node)) {
           _displayBackHint(node);
         }
         if (!isOffscreen())
@@ -3090,7 +3025,7 @@ public class Graph {
    * Internally used by {@link #_render(Node)}.
    */
   protected void _trackFrontBuffer(Node node) {
-    if (_bullseyePicking(node) && !_rays.isEmpty()) {
+    if (_frontPicking(node) && !_rays.isEmpty()) {
       Vector projection = screenLocation(node.position());
       Iterator<Ray> it = _rays.iterator();
       while (it.hasNext()) {
@@ -3108,7 +3043,7 @@ public class Graph {
    * Internally used by {@link #_render(Node)} and {@link #_renderBackBuffer(Node)}.
    */
   protected void _trackBackBuffer(Node node) {
-    if (_precisePicking(node) && !_rays.isEmpty()) {
+    if (_backPicking(node) && !_rays.isEmpty()) {
       Iterator<Ray> it = _rays.iterator();
       while (it.hasNext()) {
         Ray ray = it.next();
@@ -3353,14 +3288,14 @@ public class Graph {
    * @see #location(Vector)
    */
   public Vector screenLocation(Vector vector, Node node) {
-    return screenLocation(vector, node, projectionView(), width(), height());
+    return _screenLocation(vector, node, projectionView(), width(), height());
   }
 
   /**
    * Static cached version of {@link #screenLocation(Vector, Node)}. Requires the programmer
    * to suply the cached {@code projectionView} matrix.
    */
-  public static Vector screenLocation(Vector vector, Node node, Matrix projectionView, int width, int height) {
+  protected static Vector _screenLocation(Vector vector, Node node, Matrix projectionView, int width, int height) {
     return _screenLocation(node != null ? node.worldLocation(vector) : vector, projectionView, width, height);
   }
 
@@ -3431,10 +3366,6 @@ public class Graph {
    * This method only uses the intrinsic eye parameters (view and projection matrices),
    * {@link #width()} and {@link #height()}). You can hence define a virtual eye and use
    * this method to compute un-projections out of a classical rendering context.
-   * <p>
-   * This method is not computationally optimized by default. If you call it several times with no
-   * change in the matrices, you should buffer the inverse of the projection times view matrix
-   * to speed-up the queries. See {@link #cacheProjectionViewInverse(boolean)}.
    *
    * @see #screenLocation(Vector, Node)
    * @see #screenDisplacement(Vector, Node)
@@ -3442,14 +3373,14 @@ public class Graph {
    * @see #setHeight(int)
    */
   public Vector location(Vector pixel, Node node) {
-    return location(pixel, node, projectionViewInverse(), width(), height());
+    return _location(pixel, node, projectionViewInverse(), width(), height());
   }
 
   /**
    * Static cached version of {@link #_location(Vector, Matrix, int, int)}. Requires the programmer
    * to suply the cached {@code projectionViewInverseMatrix} matrix.
    */
-  public static Vector location(Vector pixel, Node node, Matrix projectionViewInverseMatrix, int width, int height) {
+  protected static Vector _location(Vector pixel, Node node, Matrix projectionViewInverseMatrix, int width, int height) {
     Vector worldLocation = _location(pixel, projectionViewInverseMatrix, width, height);
     return node != null ? node.location(worldLocation) : worldLocation;
   }
@@ -3508,7 +3439,7 @@ public class Graph {
    * @see #screenToNDCLocation(Vector)
    */
   public Vector screenToNDCDisplacement(Vector vector) {
-    return new Vector(2 * vector.x() / width(), 2 * vector.y() / height(), 2 * vector.z());
+    return new Vector(2 * vector.x() / (float) width(), 2 * vector.y() / (float) height(), 2 * vector.z());
   }
 
   /**
@@ -3539,11 +3470,11 @@ public class Graph {
     float dx = vector.x();
     float dy = leftHanded ? vector.y() : -vector.y();
     // Scale to fit the screen relative vector displacement
-    if (type() == Type.PERSPECTIVE) {
+    if (_type == Type.PERSPECTIVE) {
       Vector position = node == null ? new Vector() : node.position();
       float k = (float) Math.tan(fov() / 2.0f) * Math.abs(eye().location(position)._vector[2] * eye().magnitude());
-      dx *= 2.0 * k / (height() * eye().magnitude());
-      dy *= 2.0 * k / (height() * eye().magnitude());
+      dx *= 2.0 * k / ((float) height() * eye().magnitude());
+      dy *= 2.0 * k / ((float) height() * eye().magnitude());
     }
     float dz = vector.z();
     if (is2D() && dz != 0) {
@@ -3578,11 +3509,11 @@ public class Graph {
     Vector eyeVector = eye().displacement(vector, node);
     float dx = eyeVector.x();
     float dy = leftHanded ? eyeVector.y() : -eyeVector.y();
-    if (type() == Type.PERSPECTIVE) {
+    if (_type == Type.PERSPECTIVE) {
       Vector position = node == null ? new Vector() : node.position();
       float k = (float) Math.tan(fov() / 2.0f) * Math.abs(eye().location(position)._vector[2] * eye().magnitude());
-      dx /= 2.0 * k / (height() * eye().magnitude());
-      dy /= 2.0 * k / (height() * eye().magnitude());
+      dx /= 2.0 * k / ((float) height() * eye().magnitude());
+      dy /= 2.0 * k / ((float) height() * eye().magnitude());
     }
     float dz = eyeVector.z();
     if (is2D() && dz != 0) {
@@ -3894,7 +3825,7 @@ public class Graph {
       System.out.println("Warning: scaleNode requires a non-null node different than the eye. Nothing done");
       return;
     }
-    float factor = 1 + Math.abs(delta) / height();
+    float factor = 1 + Math.abs(delta) / (float) height();
     node.scale(delta >= 0 ? factor : 1 / factor, inertia);
   }
 
@@ -4049,7 +3980,7 @@ public class Graph {
    */
   public void translateEye(float dx, float dy, float dz, float inertia) {
     Node node = eye().detach();
-    node.setPosition(anchor().get());
+    node.setPosition(center().get());
     Vector vector = displacement(new Vector(dx, dy, dz), node);
     vector.multiply(-1);
     // Option 1: don't compensate orthographic, i.e., use Node.translate(vector, inertia)
@@ -4071,10 +4002,10 @@ public class Graph {
    */
   protected void _translate(float x, float y, float z) {
     float d1 = 1, d2;
-    if (type() == Type.ORTHOGRAPHIC)
+    if (_type == Type.ORTHOGRAPHIC)
       d1 = Vector.scalarProjection(Vector.subtract(eye().position(), center()), eye().zAxis());
     eye().translate(x, y, z);
-    if (type() == Type.ORTHOGRAPHIC) {
+    if (_type == Type.ORTHOGRAPHIC) {
       d2 = Vector.scalarProjection(Vector.subtract(eye().position(), center()), eye().zAxis());
       if (d1 != 0)
         if (d2 / d1 > 0)
@@ -4205,7 +4136,7 @@ public class Graph {
   }
 
   /**
-   * Rotate the {@link #eye()} around the world x-y-z axes passing through {@link #anchor()},
+   * Rotate the {@link #eye()} around the world x-y-z axes passing through {@link #center()},
    * according to {@code roll}, {@code pitch} and {@code yaw} radians, resp., and {@code inertia}
    * which should be in {@code [0..1]}, 0 no inertia & 1 no friction.
    *
@@ -4218,7 +4149,7 @@ public class Graph {
       pitch = 0;
       System.out.println("Warning: graph is 2D. Roll and/or pitch reset");
     }
-    eye().orbit(new Quaternion(leftHanded ? -roll : roll, pitch, leftHanded ? -yaw : yaw), anchor(), inertia);
+    eye().orbit(new Quaternion(leftHanded ? -roll : roll, pitch, leftHanded ? -yaw : yaw), center(), inertia);
   }
 
   // 6. Spin
@@ -4336,10 +4267,10 @@ public class Graph {
       return;
     int centerX = (int) center.x();
     int centerY = (int) center.y();
-    float px = sensitivity * (pixel1X - centerX) / width();
-    float py = sensitivity * (leftHanded ? (pixel1Y - centerY) : (centerY - pixel1Y)) / height();
-    float dx = sensitivity * (pixel2X - centerX) / width();
-    float dy = sensitivity * (leftHanded ? (pixel2Y - centerY) : (centerY - pixel2Y)) / height();
+    float px = sensitivity * (pixel1X - centerX) / (float) width();
+    float py = sensitivity * (leftHanded ? (pixel1Y - centerY) : (centerY - pixel1Y)) / (float) height();
+    float dx = sensitivity * (pixel2X - centerX) / (float) width();
+    float dy = sensitivity * (leftHanded ? (pixel2Y - centerY) : (centerY - pixel2Y)) / (float) height();
     Vector p1 = new Vector(px, py, _projectOnBall(px, py));
     Vector p2 = new Vector(dx, dy, _projectOnBall(dx, dy));
     // Approximation of rotation angle should be divided by the projectOnBall size, but it is 1.0
@@ -4363,7 +4294,7 @@ public class Graph {
    * Rotates the {@link #eye()} using an arcball interface, from points {@code (pixel1X, pixel1Y)} to
    * {@code (pixel2X, pixel2Y)} pixel positions. The {@code inertia} controls the gesture strength
    * and it should be in {@code [0..1]}, 0 no inertia & 1 no friction.
-   * The center of the rotation is the screen projected graph {@link #anchor()}.
+   * The center of the rotation is the screen projected graph {@link #center()}.
    * <p>
    * For implementation details refer to Shoemake 92 paper: Arcball: a user interface for specifying
    * three-dimensional orientation using a mouse.
@@ -4372,22 +4303,22 @@ public class Graph {
    */
   public void spinEye(int pixel1X, int pixel1Y, int pixel2X, int pixel2Y, float inertia) {
     float sensitivity = 1;
-    Vector center = screenLocation(anchor());
+    Vector center = screenLocation(center());
     if (center == null)
       return;
     int centerX = (int) center.x();
     int centerY = (int) center.y();
-    float px = sensitivity * (pixel1X - centerX) / width();
-    float py = sensitivity * (leftHanded ? (pixel1Y - centerY) : (centerY - pixel1Y)) / height();
-    float dx = sensitivity * (pixel2X - centerX) / width();
-    float dy = sensitivity * (leftHanded ? (pixel2Y - centerY) : (centerY - pixel2Y)) / height();
+    float px = sensitivity * (pixel1X - centerX) / (float) width();
+    float py = sensitivity * (leftHanded ? (pixel1Y - centerY) : (centerY - pixel1Y)) / (float) height();
+    float dx = sensitivity * (pixel2X - centerX) / (float) width();
+    float dy = sensitivity * (leftHanded ? (pixel2Y - centerY) : (centerY - pixel2Y)) / (float) height();
     Vector p1 = new Vector(px, py, _projectOnBall(px, py));
     Vector p2 = new Vector(dx, dy, _projectOnBall(dx, dy));
     // Approximation of rotation angle should be divided by the projectOnBall size, but it is 1.0
     Vector axis = p2.cross(p1);
     // 2D is an ad-hoc
     float angle = (is2D() ? sensitivity : 2.0f) * (float) Math.asin((float) Math.sqrt(axis.squaredNorm() / (p1.squaredNorm() * p2.squaredNorm())));
-    eye().orbit(new Quaternion(axis, angle), anchor(), inertia);
+    eye().orbit(new Quaternion(axis, angle), center(), inertia);
   }
 
   /**
@@ -4526,7 +4457,7 @@ public class Graph {
    */
   protected void _rotateCAD() {
     Vector _up = eye().displacement(_eyeUp);
-    eye().orbit(Quaternion.multiply(new Quaternion(_up, _up.y() < 0.0f ? _cadRotateTask._x : -_cadRotateTask._x), new Quaternion(new Vector(1.0f, 0.0f, 0.0f), leftHanded ? _cadRotateTask._y : -_cadRotateTask._y)), anchor());
+    eye().orbit(Quaternion.multiply(new Quaternion(_up, _up.y() < 0.0f ? _cadRotateTask._x : -_cadRotateTask._x), new Quaternion(new Vector(1.0f, 0.0f, 0.0f), leftHanded ? _cadRotateTask._y : -_cadRotateTask._y)), center());
   }
 
   // visual hints
@@ -4556,8 +4487,6 @@ public class Graph {
    * <li>{@link #AXES} which displays a grid hint centered at the world origin.</li>
    * <li>{@link #HUD} which displays the graph Heads-Up-Display set with
    * {@link #setHUD(PShape)} or {@link #setHUD(Consumer)}.</li>
-   * <li>{@link #FRUSTUM} which is an interface to set up the {@link Node#FRUSTUM}
-   * for a given graph {@link #eye()}.</li>
    * <li>{@link #SHAPE} which displays the node shape set with
    * {@link #setShape(PShape)} or {@link #setShape(Consumer)}.</li>
    * <li>{@link #BACKGROUND} which sets up the graph background to be displayed.</li>
@@ -4591,9 +4520,6 @@ public class Graph {
    */
   public void resetHint() {
     _mask = 0;
-    if (isHintEnable(FRUSTUM) && _frustumEye != null) {
-      _frustumEye.disableHint(Node.FRUSTUM);
-    }
   }
 
   /**
@@ -4609,9 +4535,6 @@ public class Graph {
    */
   public void disableHint(int hint) {
     _mask &= ~hint;
-    if (!isHintEnable(FRUSTUM) && _frustumEye != null) {
-      _frustumEye.disableHint(Node.FRUSTUM);
-    }
   }
 
   /**
@@ -4628,9 +4551,6 @@ public class Graph {
   public void enableHint(int hint, Object... params) {
     enableHint(hint);
     configHint(hint, params);
-    if (isHintEnable(FRUSTUM) && _frustumEye != null) {
-      _frustumEye.enableHint(Node.FRUSTUM);
-    }
   }
 
   /**
@@ -4646,9 +4566,6 @@ public class Graph {
    */
   public void enableHint(int hint) {
     _mask |= hint;
-    if (isHintEnable(FRUSTUM) && _frustumEye != null) {
-      _frustumEye.enableHint(Node.FRUSTUM);
-    }
   }
 
   /**
@@ -4664,9 +4581,6 @@ public class Graph {
    */
   public void toggleHint(int hint) {
     _mask ^= hint;
-    if (isHintEnable(FRUSTUM) && _frustumEye != null) {
-      _frustumEye.enableHint(Node.FRUSTUM);
-    }
   }
 
   /**
@@ -4678,10 +4592,6 @@ public class Graph {
    * {@code configHint(Graph.GRID, gridStroke, gridType)},
    * {@code configHint(Graph.GRID, gridStroke, gridSubdivs)}
    * {@code configHint(Graph.GRID, gridStroke, gridSubdivs, gridType)}.</li>
-   * <li>{@link #FRUSTUM} hint: {@code configHint(Graph.FRUSTUM, otherGraph)} or
-   * {@code configHint(Graph.FRUSTUM, frustumColor)} or
-   * {@code configHint(Graph.FRUSTUM, otherGraph, frustumColor)}, or
-   * {@code configHint(Graph.FRUSTUM, frustumColor, otherGraph)}.</li>
    * <li>{@link #BACKGROUND} hint: {@code configHint(Graph.BACKGROUND, background)}.</li>
    * </ol>
    * Note that the {@code gridStroke}, {@code cameraStroke} and {@code frustumColor}
@@ -4712,17 +4622,6 @@ public class Graph {
             return;
           }
         }
-        if (hint == FRUSTUM) {
-          if (isNumInstance(params[0]) && _frustumEye != null) {
-            _frustumEye.configHint(Node.FRUSTUM, params[0]);
-            return;
-          }
-          if (params[0] instanceof Graph && params[0] != this) {
-            _frustumEye = ((Graph) params[0]).eye();
-            _frustumEye.configHint(Node.FRUSTUM, params[0]);
-            return;
-          }
-        }
         if (hint == BACKGROUND) {
           if (isNumInstance(params[0])) {
             _background = castToInt(params[0]);
@@ -4735,18 +4634,6 @@ public class Graph {
         }
         break;
       case 2:
-        if (hint == FRUSTUM) {
-          if (Graph.isNumInstance(params[0]) && params[1] instanceof Graph) {
-            _frustumEye = ((Graph) params[1]).eye();
-            _frustumEye.configHint(Node.FRUSTUM, params[0], params[1]);
-            return;
-          }
-          if (params[0] instanceof Graph && Graph.isNumInstance(params[1])) {
-            _frustumEye = ((Graph) params[0]).eye();
-            _frustumEye.configHint(Node.FRUSTUM, params[0], params[1]);
-            return;
-          }
-        }
         if (hint == GRID) {
           if (isNumInstance(params[0]) && isNumInstance(params[1])) {
             _gridStroke = castToInt(params[0]);
@@ -4786,6 +4673,14 @@ public class Graph {
   }
 
   /**
+   * Sets this (H)eads (U)p (D)isplay from the {@code graph} hud.
+   */
+  public void setHUD(Graph graph) {
+    setHUD(graph._rmrHUD);
+    setHUD(graph._imrHUD);
+  }
+
+  /**
    * Sets the graph retained mode rendering (rmr) shape {@link #HUD} hint
    * (see {@link #hint()}). Use {@code enableHint(Node.HUD)},
    * {@code disableHint(Node.HUD)} and {@code toggleHint(Node.HUD)} to (dis)enable the hint.
@@ -4797,6 +4692,7 @@ public class Graph {
    */
   public void setHUD(processing.core.PShape hud) {
     _rmrHUD = hud;
+    enableHint(HUD);
   }
 
   /**
@@ -4811,6 +4707,7 @@ public class Graph {
    */
   public void setHUD(Consumer<processing.core.PGraphics> hud) {
     _imrHUD = hud;
+    enableHint(HUD);
   }
 
   /**
@@ -4819,6 +4716,7 @@ public class Graph {
   public void resetHUD() {
     _imrHUD = null;
     _rmrHUD = null;
+    disableHint(HUD);
   }
 
   /**
@@ -4828,6 +4726,8 @@ public class Graph {
    */
   public void resetIMRHUD() {
     _imrHUD = null;
+    if (_rmrHUD == null)
+      disableHint(HUD);
   }
 
   /**
@@ -4837,6 +4737,8 @@ public class Graph {
    */
   public void resetRMRHUD() {
     _rmrHUD = null;
+    if (_imrHUD == null)
+      disableHint(HUD);
   }
 
   /**
@@ -4845,6 +4747,7 @@ public class Graph {
   public void resetShape() {
     _rmrShape = null;
     _imrShape = null;
+    disableHint(SHAPE);
   }
 
   /**
@@ -4854,6 +4757,8 @@ public class Graph {
    */
   public void resetRMRShape() {
     _rmrShape = null;
+    if (_imrShape == null)
+      disableHint(SHAPE);
   }
 
   /**
@@ -4863,6 +4768,8 @@ public class Graph {
    */
   public void resetIMRShape() {
     _imrShape = null;
+    if (_rmrShape == null)
+      disableHint(SHAPE);
   }
 
   /**
@@ -4878,6 +4785,7 @@ public class Graph {
    */
   public void setShape(processing.core.PShape shape) {
     _rmrShape = shape;
+    enableHint(SHAPE);
   }
 
   /**
@@ -4893,9 +4801,16 @@ public class Graph {
    */
   public void setShape(Consumer<processing.core.PGraphics> callback) {
     _imrShape = callback;
+    enableHint(SHAPE);
   }
 
   // Hack to hide node & interpolator hint properties
+
+  // Graph
+
+  protected Object _background(Graph graph) {
+    return graph._background;
+  }
 
   // Node
 
@@ -4915,32 +4830,36 @@ public class Graph {
     return node._torusFaces;
   }
 
-  protected int _frustumColor(Node node) {
-    return node._frustumColor;
-  }
-
-  protected Graph _frustumGraph(Node node) {
-    return node._frustumGraph;
-  }
-
-  protected Object _eyeBuffer(Node node) {
-    return node._eyeBuffer;
-  }
-
-  protected Type _frustumType(Node node) {
-    return node._frustumtype;
-  }
-
-  protected float _zNear(Node node) {
-    return node._zNear;
-  }
-
-  protected float _zFar(Node node) {
-    return node._zFar;
+  protected HashSet<Graph> _frustumGraphs(Node node) {
+    return node._frustumGraphs;
   }
 
   protected Node.BullsEyeShape _bullsEyeShape(Node node) {
     return node._bullsEyeShape;
+  }
+
+  protected int _bullsEyeStroke(Node node) {
+    return node._bullsEyeStroke;
+  }
+
+  protected float _axesLength(Node node) {
+    return node._axesLength;
+  }
+
+  protected int _cameraStroke(Node node) {
+    return node._cameraStroke;
+  }
+
+  protected float _cameraLength(Node node) {
+    return node._cameraLength;
+  }
+
+  protected Consumer<processing.core.PGraphics> _imrHUD(Node node) {
+    return node._imrHUD;
+  }
+
+  protected processing.core.PShape _rmrHUD(Node node) {
+    return node._rmrHUD;
   }
 
   // Interpolator
@@ -4948,30 +4867,21 @@ public class Graph {
   /**
    * Used to display the interpolator in {@link #_displayHint()}.
    */
-  protected float _axesLength(Interpolator interpolator) {
-    return interpolator._axesLength;
-  }
-
-  /**
-   * Used to display the interpolator in {@link #_displayHint()}.
-   */
-  protected float _cameraLength(Interpolator interpolator) {
-    return interpolator._cameraLength;
-  }
-
-  /**
-   * Used to display the interpolator in {@link #_displayHint()}.
-   */
-  protected int _cameraStroke(Interpolator interpolator) {
-    return interpolator._cameraStroke;
-  }
-
-  /**
-   * Used to display the interpolator in {@link #_displayHint()}.
-   */
   protected int _splineStroke(Interpolator interpolator) {
     return interpolator._splineStroke;
   }
+
+  /**
+   * Used to display the interpolator in {@link #_displayHint()}.
+   */
+  protected int _splineWeight(Interpolator interpolator) {
+    return interpolator._splineWeight;
+  }
+
+  protected List<Node> _path(Interpolator interpolator) {
+    return interpolator._path();
+  }
+
 
   //IK SOLVERS
   /**
@@ -5091,4 +5001,5 @@ public class Graph {
   public static void stopSolver(Solver solver) {
     _solverTasks.get(solver).stop();
   }
+
 }

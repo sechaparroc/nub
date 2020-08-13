@@ -19,8 +19,10 @@ import nub.timing.Task;
 import nub.timing.TimingHandler;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -65,13 +67,12 @@ import java.util.function.Consumer;
  * {@code Node node = new Node(new Vector(0.5,0,0), new Quaternion(new Vector(0,1,0),
  * new Vector(1,1,1)));} <br>
  * {@code pushMatrix();} <br>
- * {@code graph.applyTransformation(node);} <br>
+ * {@code applyMatrix(node.matrix());} <br>
  * {@code // Draw your object here, in the local node coordinate system.} <br>
  * {@code popMatrix();} <br>
  * <p>
- * Use {@link #view()} and {@link Graph#projection(Node, Graph.Type, float, float, float, float)}
- * when rendering the scene from the node point-of-view. Note that these methods are used by
- * the graph when a node is set as its eye, see {@link Graph#render(Node)}.
+ * Use {@link #view()} when rendering the scene from the node point-of-view. Note that
+ * this method is automatically called by the graph, see {@link Graph#render(Node)}.
  * <p>
  * To transform a point from one node to another use {@link #location(Vector, Node)} and
  * {@link #worldLocation(Vector)}. To transform a vector (such as a normal) use
@@ -87,8 +88,8 @@ import java.util.function.Consumer;
  * <h2>Hierarchical traversals</h2>
  * Hierarchical traversals of the node hierarchy which automatically apply the local
  * node transformations described above may be achieved with {@link Graph#render()} and
- * {@link Graph#render(Node)}. Customize the rendering traversal algorithm by
- * overriding {@link #visit(Graph)} (see also {@link #cull} and {@link #bypass()}).
+ * {@link Graph#render(Node)}. Customize the rendering traversal with
+ * {@link Graph#setVisit(Node, BiConsumer)} (see also {@link #cull} and {@link #bypass()}).
  * <h2>Constraints</h2>
  * One interesting feature of a node is that its displacements can be constrained.
  * When a {@link Constraint} is attached to a node, it filters the input of
@@ -104,14 +105,15 @@ import java.util.function.Consumer;
  * easily be implemented.
  * <h2>Visual hints</h2>
  * The node space visual representation may be configured using the following hints:
- * {@link #CAMERA}, {@link #AXES}, {@link #HUD}, {@link #FRUSTUM}, {@link #SHAPE},
+ * {@link #CAMERA}, {@link #AXES}, {@link #HUD}, {@link #BOUNDS},, {@link #SHAPE},
  * {@link #BULLSEYE}, and {@link #TORUS}.
  * <p>
  * See {@link #hint()}, {@link #configHint(int, Object...)} {@link #enableHint(int)},
  * {@link #enableHint(int, Object...)}, {@link #disableHint(int)}, {@link #toggleHint(int)}
  * and {@link #resetHint()}.
  * <h2>Ray casting</h2>
- * The ray-casting node {@link #pickingMode()} may be set with {@link #enablePickingMode(int)}.
+ * Set the node picking ray-casting mode with {@link #enablePickingMode(int)} (see also
+ * {@link #pickingMode()}).
  * <h2>Custom behavior</h2>
  * Implementing a custom behavior for node is a two step process:
  * <ul>
@@ -164,44 +166,34 @@ public class Node {
   public final static int CAMERA = 1 << 0;
   public final static int AXES = Graph.AXES;
   public final static int HUD = Graph.HUD;
-  public final static int FRUSTUM = Graph.FRUSTUM;
   public final static int SHAPE = Graph.SHAPE;
+  public final static int BOUNDS = 1 << 4;
   public final static int BULLSEYE = 1 << 5;
   public final static int TORUS = 1 << 6;
   public final static int CONSTRAINT = 1 << 7;
   public final static int BONE = 1 << 8;
   protected float _highlight;
-  // Frustum
-  protected int _frustumColor;
-  // 1st form
-  protected Graph _frustumGraph;
-  // 2nd form
-  protected Object _eyeBuffer;
-  protected Graph.Type _frustumtype;
-  protected float _zNear, _zFar;
+  // Bounds
+  protected HashSet<Graph> _frustumGraphs;
   // torus
   protected int _torusColor;
   protected int _torusFaces;
-  // TODO public because Scene._drawFrontBuffer
-  public int _bullsEyeStroke;
-  public float _axesLength;
-  public int _cameraStroke;
-  public float _cameraLength;
-
+  protected int _bullsEyeStroke;
+  protected float _axesLength;
+  protected int _cameraStroke;
+  protected float _cameraLength;
   // Constraint
-  public float _constraintFactor = 0.5f;
-  public int _constraintColor;
-
+  protected float _constraintFactor = 0.5f;
+  protected int _constraintColor;
   // Bone
-  public boolean _boneDepth = false;
-  public int _boneColor;
-  public float _boneWidth = 0; //A radius greater than 0 will draw a bone as a Cylinder
-  public float _boneRadius = 0; //A radius greater than 0 will draw a bone as a Cylinder
+  protected boolean _boneDepth = false;
+  protected int _boneColor;
+  protected float _boneWidth = 0; //A radius greater than 0 will draw a bone as a Cylinder
+  protected float _boneRadius = 0; //A radius greater than 0 will draw a bone as a Cylinder
 
 
-
-  public Consumer<processing.core.PGraphics> _imrHUD;
-  public processing.core.PShape _rmrHUD;
+  protected Consumer<processing.core.PGraphics> _imrHUD;
+  protected processing.core.PShape _rmrHUD;
   // Rendering
   // Immediate mode rendering
   protected Consumer<processing.core.PGraphics> _imrShape;
@@ -314,8 +306,13 @@ public class Node {
   public Node(Node reference, Constraint constraint, Vector translation, Quaternion rotation, float scaling) {
     this(constraint, translation, rotation, scaling);
     setReference(reference);
+    // /*
     // TODO deprecated
-    setShape(this::graphics);
+    // hack (refer to Node.get())
+    _imrShape = this::graphics;
+    if (!getClass().equals(Node.class))
+      enableHint(SHAPE);
+    // */
   }
 
   /**
@@ -327,12 +324,12 @@ public class Node {
     setTranslation(translation);
     setRotation(rotation);
     setScaling(scaling);
-    enablePickingMode(CAMERA | AXES | HUD | FRUSTUM | SHAPE | BULLSEYE | TORUS | CONSTRAINT | BONE);
+    enablePickingMode(CAMERA | AXES | HUD | SHAPE | BOUNDS | BULLSEYE | TORUS | CONSTRAINT | BONE);
     _id = ++_counter;
     // unlikely but theoretically possible
     if (_id == 16777216)
       throw new RuntimeException("Maximum node instances reached. Exiting now!");
-    setBullsEyeSize(30);
+    _bullsEyeSize = 30;
     _bullsEyeShape = BullsEyeShape.SQUARE;
     tagging = true;
     // hints
@@ -347,8 +344,6 @@ public class Node {
     _torusColor = Graph._color(r, g, b);
     // cyan (color(0, 255, 255)) encoded as a processing int rgb color
     _bullsEyeStroke = -16711681;
-    // yellow (with alpha: color(255, 255, 0, 125)) encoded as a processing int rgb color
-    _frustumColor = 2113928960;
     // magenta (color(255, 0, 255)) encoded as a processing int rgb color
     _cameraStroke = -65281;
     // green (color(0, 255, 0, 150)) encoded as a processing int rgb color
@@ -356,6 +351,7 @@ public class Node {
     // white (color(255, 255, 255)) encoded as a processing int rgb color
     _boneColor = -1;
     _children = new ArrayList<Node>();
+    _frustumGraphs = new HashSet<Graph>();
   }
 
   // From here only Java constructors
@@ -436,7 +432,13 @@ public class Node {
    * @see #get()
    */
   public Node detach() {
-    return detach(this);
+    Node node = detach(this);
+    node._torusFaces = this._torusFaces;
+    node._torusColor = this._torusColor;
+    node._bullsEyeStroke = this._bullsEyeStroke;
+    node._cameraStroke = this._cameraStroke;
+    node._axesLength = this._axesLength;
+    return node;
   }
 
   /**
@@ -511,19 +513,23 @@ public class Node {
    *
    * @see #detach()
    */
-  // TODO should hint be copied ?
   public Node get() {
-    // Copying the shape (node.setShape(this.shape())) is incompatible with js
-    // and it also would affect Interpolator addKeyFrame(eye)
     Node node = new Node();
     node.set(this);
-    // TODO decide this and make consistent with Interpolator.get()
+    // /*
+    // TODO deprecated
+    // hack
+    //if (getClass().equals(Node.class))
+    if (!isHintEnable(Node.SHAPE))
+      node.disableHint(SHAPE);
+    // */
     return node;
   }
 
   /**
-   * Sets {@link #position()}, {@link #orientation()} and {@link #magnitude()} values from
-   * those of the {@code node}. The node {@link #reference()} and {@link #constraint()}
+   * Sets {@link #position()}, {@link #orientation()}, {@link #magnitude()},
+   * {@link #hint()} and {@link #pickingMode()} values from those of the {@code node}.
+   * The node {@link #reference()} and {@link #constraint()}
    * are not affected by this call.
    * <p>
    * After calling {@code set(node)} a call to {@code this.matches(node)} should
@@ -539,6 +545,18 @@ public class Node {
     setPosition(node);
     setOrientation(node);
     setMagnitude(node);
+    _mask = node.hint();
+    _pickingMode = node.pickingMode();
+    setShape(node);
+    setHUD(node);
+    _bullsEyeSize = node._bullsEyeSize;
+    _bullsEyeShape = node._bullsEyeShape;
+    tagging = node.tagging;
+    _highlight = node._highlight;
+    _torusFaces = node._torusFaces;
+    _torusColor = node._torusColor;
+    _bullsEyeStroke = node._bullsEyeStroke;
+    _cameraStroke = node._cameraStroke;
   }
 
   /**
@@ -560,7 +578,7 @@ public class Node {
 
   /**
    * Returns the unique sequential node id assigned at instantiation time.
-   * Used by {@link #colorID()} and {@link Graph#_drawBackBuffer(Node)}.
+   * Used by {@link #colorID()} and {@link Graph#_displayBackHint(Node)}.
    */
   public int id() {
     return _id;
@@ -577,7 +595,8 @@ public class Node {
   // MODIFIED
 
   /**
-   * @return the last frame this node was updated.
+   * @return the last frame this node affine transformation ({@link #position()},
+   * {@link #orientation()} or {@link #magnitude()}) or {@link #reference()} was updated.
    */
   public long lastUpdate() {
     return _lastUpdate;
@@ -927,6 +946,14 @@ public class Node {
 
   /**
    * Sets the {@link #bullsEyeSize()} of the {@link #BULLSEYE} {@link #hint()}.
+   * <p>
+   * Picking a node is done with ray casting against a screen-space bullseye shape
+   * (see {@link #configHint(int, Object...)}) whose length is defined as follows:
+   * <ul>
+   * <li>A percentage of the graph diameter (see {@link Graph#radius()}). Set it
+   * with {@code size in [0..1]}.</li>
+   * <li>A fixed numbers of pixels. Set it with {@code size > 1}.</li>
+   * </ul>
    *
    * @see #bullsEyeSize()
    */
@@ -936,6 +963,12 @@ public class Node {
     _bullsEyeSize = size;
   }
 
+  /**
+   * Sets the node {@link #highlight()} which should be a value in  {@code [0..1]}.
+   * Default value is {@code 0.15}.
+   *
+   * @see #highlight()
+   */
   public void setHighlight(float highlight) {
     float val = Math.abs(highlight);
     while (val > 1)
@@ -945,6 +978,11 @@ public class Node {
     _highlight = val;
   }
 
+  /**
+   * Returns the highlighting magnitude use to scale the node when it's tagged.
+   *
+   * @see #setHighlight(float)
+   */
   public float highlight() {
     return _highlight;
   }
@@ -952,18 +990,6 @@ public class Node {
   /**
    * Returns the node {@link #BULLSEYE} {@link #hint()} size. Set it with
    * {@link #setBullsEyeSize(float)}.
-   * <p>
-   * Picking a node is done with ray casting against a screen-space shape defined according
-   * to a {@link #bullsEyeSize()} as follows:
-   * <ul>
-   * <li>A node bounding box whose length is defined as percentage of the graph diameter
-   * (see {@link Graph#radius()}). Set it with {@code threshold in [0..1]}.</li>
-   * <li>A squared 'bullseye' of a fixed pixels length. Set it with {@code threshold > 1}.</li>
-   * <li>A node bounding sphere whose length is defined as percentage of the graph diameter
-   * (see {@link Graph#radius()}). Set it with {@code threshold in [-1..0]}.</li>
-   * <li>A circled 'bullseye' of a fixed pixels length. Set it with {@code threshold < -1}.</li>
-   * </ul>
-   * Default picking precision is defined with {@code threshold = 0}.
    *
    * @see #setBullsEyeSize(float)
    */
@@ -1487,15 +1513,14 @@ public class Node {
   /**
    * Returns the magnitude of the node, defined in the world coordinate system.
    * <p>
-   * Note that the magnitude is used to compute the node
-   * {@link Graph#projection(Node, Graph.Type, float, float, float, float)} which is useful to render a
-   * scene from the node point-of-view.
+   * Note that the magnitude is used to compute the node {@link Graph#projection()}
+   * matrix to render a scene from the node point-of-view.
    *
    * @see #orientation()
    * @see #position()
    * @see #setPosition(Vector)
    * @see #translation()
-   * @see Graph#projection(Node, Graph.Type, float, float, float, float)
+   * @see Graph#projection()
    */
   public float magnitude() {
     return reference() != null ? reference().magnitude() * scaling() : scaling();
@@ -2397,54 +2422,42 @@ public class Node {
   }
 
   /**
-   * This method is called on each node of the graph hierarchy by the {@link Graph#render()}
-   * algorithm to visit it. Default implementation is empty, i.e., it is meant to be implemented
-   * by derived classes.
-   * <p>
-   * Hierarchical culling, i.e., culling of the node and its children, should be decided here.
-   * Set the culling flag with {@link #cull} according to your culling condition:
+   * Same as {@code graph.setVisit(this, functor)}.
    *
-   * <pre>
-   * {@code
-   * node = new Node() {
-   *   public void visit() {
-   *     // Hierarchical culling is optional and disabled by default. When the cullingCondition
-   *     // (which should be implemented by you) is true, scene.render() will prune the branch
-   *     // at the node
-   *     cull(cullingCondition);
-   *   }
-   * }
-   * }
-   * </pre>
-   * Bypassing rendering of the node may also be decided here, according to a bypassCondition
-   * (which should be implemented by you):
-   * <pre>
-   * {@code
-   * node = new Node() {
-   *   public void visit() {
-   *     if(bypassCondition)
-   *       // this will bypass node rendering without culling its children
-   *       bypass();
-   *   }
-   * }
-   * }
-   * </pre>
-   *
-   * @see Graph#render(Node)
-   * @see #bypass()
+   * @see #setVisit(Graph, Consumer)
+   * @see Graph#setVisit(Node, BiConsumer)
+   * @see Graph#setVisit(Node, Consumer)
    */
-  public void visit() {
+  public void setVisit(Graph graph, BiConsumer<Graph, Node> functor) {
+    graph.setVisit(this, functor);
   }
 
   /**
-   * View-point adaptive {@link #visit()}, which now takes a {@code graph} param
-   * matching the calling instance in {@link Graph#render()}.
+   * Same as {@code graph.setVisit(this, (g, n) -> functor.accept(g))}.
    *
-   * @see Graph#render(Node)
-   * @see #bypass()
+   * @see #setVisit(Graph, BiConsumer)
+   * @see Graph#setVisit(Node, BiConsumer)
+   * @see Graph#setVisit(Node, Consumer)
    */
-  public void visit(Graph graph) {
+  public void setVisit(Graph graph, Consumer<Graph> functor) {
+    graph.setVisit(this, (g, n) -> functor.accept(g));
   }
+
+  /**
+   * This together with {@link #visit(Graph)} is a workaround for
+   * {@link #setVisit(Graph, BiConsumer)} which is not available in Processing 3.x.
+   */
+  @Deprecated
+  public void setVisit(Graph graph) {
+    setVisit(graph, this::visit);
+  }
+
+  /**
+   * This together with {@link #setVisit(Graph)} is a workaround for
+   * {@link #setVisit(Graph, BiConsumer)} which is not available in Processing 3.x.
+   */
+  @Deprecated
+  public void visit(Graph graph) {}
 
   /**
    * Bypass rendering the node for the current frame. Set it before calling {@link Graph#render()}
@@ -2476,6 +2489,8 @@ public class Node {
    */
   public void resetRMRShape() {
     _rmrShape = null;
+    if (_imrShape == null)
+      disableHint(SHAPE);
   }
 
   /**
@@ -2485,6 +2500,16 @@ public class Node {
    */
   public void resetIMRShape() {
     _imrShape = null;
+    if (_rmrShape == null)
+      disableHint(SHAPE);
+  }
+
+  /**
+   * Sets this shape from the {@code node} shape.
+   */
+  public void setShape(Node node) {
+    setShape(node._rmrShape);
+    setShape(node._imrShape);
   }
 
   /**
@@ -2499,8 +2524,13 @@ public class Node {
    * @see #resetRMRShape()
    */
   public void setShape(processing.core.PShape shape) {
-    _rmrShape = shape;
-    enableHint(SHAPE);
+    if (shape == null) {
+      resetRMRShape();
+    }
+    else {
+      _rmrShape = shape;
+      enableHint(SHAPE);
+    }
   }
 
   /**
@@ -2515,8 +2545,20 @@ public class Node {
    * @see #resetRMRShape()
    */
   public void setShape(Consumer<processing.core.PGraphics> callback) {
-    _imrShape = callback;
-    enableHint(SHAPE);
+    if (callback == null) {
+      resetIMRShape();
+    } else {
+      _imrShape = callback;
+      enableHint(SHAPE);
+    }
+  }
+
+  /**
+   * Sets this shape from the {@code graph} shape.
+   */
+  public void setShape(Graph graph) {
+    setShape(graph._rmrShape);
+    setShape(graph._imrShape);
   }
 
   /**
@@ -2555,6 +2597,8 @@ public class Node {
    */
   public void resetRMRHUD() {
     _rmrHUD = null;
+    if (_imrHUD == null)
+      disableHint(HUD);
     _updateHUD();
   }
 
@@ -2565,7 +2609,17 @@ public class Node {
    */
   public void resetIMRHUD() {
     _imrHUD = null;
+    if (_rmrHUD == null)
+      disableHint(HUD);
     _updateHUD();
+  }
+
+  /**
+   * Sets this (H)eads (U)p (D)isplay from the {@code node} hud.
+   */
+  public void setHUD(Node node) {
+    setHUD(node._rmrHUD);
+    setHUD(node._imrHUD);
   }
 
   /**
@@ -2582,9 +2636,14 @@ public class Node {
    * @see #resetRMRHUD()
    */
   public void setHUD(processing.core.PShape shape) {
-    _rmrHUD = shape;
-    enableHint(HUD);
-    _updateHUD();
+    if (shape == null) {
+      resetRMRHUD();
+    }
+    else {
+      _rmrHUD = shape;
+      enableHint(HUD);
+      _updateHUD();
+    }
   }
 
   /**
@@ -2601,31 +2660,136 @@ public class Node {
    * @see #resetRMRHUD()
    */
   public void setHUD(Consumer<processing.core.PGraphics> callback) {
-    _imrHUD = callback;
-    enableHint(HUD);
-    _updateHUD();
+    if (callback == null) {
+      resetIMRHUD();
+    }
+    else {
+      _imrHUD = callback;
+      enableHint(HUD);
+      _updateHUD();
+    }
   }
 
+  /**
+   * Returns whether or not all single visual hints encoded in the bitwise-or
+   * {@code pickingMode} mask are enable for node picking with ray casting.
+   *
+   * @see #pickingMode()
+   * @see #resetPickingMode()
+   * @see #resetPickingMode()
+   * @see #disablePickingMode(int)
+   * @see #enablePickingMode(int)
+   * @see #togglePickingMode(int)
+   * @see #hint()
+   * @see #isHintEnable(int)
+   */
   public boolean isPickingModeEnable(int pickingMode) {
     return ~(_pickingMode | ~pickingMode) == 0;
   }
 
+  /**
+   * This mask is a bitwise-or of those node visual aspects which are enabled
+   * for picking with ray casting. It thus expects the same values as
+   * {@link #hint()}.
+   * <p>
+   * Note that picking a node from one of its visual aspects requires both
+   * the {@link #hint()} and this mask to have enabled the same aspects.
+   *
+   * @see #pickingMode()
+   * @see #resetPickingMode()
+   * @see #disablePickingMode(int)
+   * @see #enablePickingMode(int)
+   * @see #togglePickingMode(int)
+   * @see #isPickingModeEnable(int)
+   * @see #hint()
+   * @see #isHintEnable(int)
+   * @see #resetHint()
+   * @see #disableHint(int)
+   * @see #enableHint(int)
+   * @see #toggleHint(int)
+   */
   public int pickingMode() {
     return this._pickingMode;
   }
 
+  /**
+   * Resets the current {@link #pickingMode()}, i.e., disables all single
+   * visual hints available for node picking with ray casting.
+   *
+   * @see #pickingMode()
+   * @see #resetPickingMode()
+   * @see #disablePickingMode(int)
+   * @see #enablePickingMode(int)
+   * @see #togglePickingMode(int)
+   * @see #isPickingModeEnable(int)
+   * @see #hint()
+   * @see #isHintEnable(int)
+   * @see #resetHint()
+   * @see #disableHint(int)
+   * @see #enableHint(int)
+   * @see #toggleHint(int)
+   */
   public void resetPickingMode() {
     _pickingMode = 0;
   }
 
+  /**
+   * Disables all the single visual hints encoded in the bitwise-or {@code pickingMode} mask.
+   *
+   * @see #pickingMode()
+   * @see #resetPickingMode()
+   * @see #resetPickingMode()
+   * @see #disablePickingMode(int)
+   * @see #enablePickingMode(int)
+   * @see #togglePickingMode(int)
+   * @see #isPickingModeEnable(int)
+   * @see #hint()
+   * @see #isHintEnable(int)
+   * @see #resetHint()
+   * @see #disableHint(int)
+   * @see #enableHint(int)
+   * @see #toggleHint(int)
+   */
   public void disablePickingMode(int pickingMode) {
     _pickingMode &= ~pickingMode;
   }
 
+  /**
+   * Enables all single visual hints encoded in the bitwise-or {@code pickingMode} mask.
+   *
+   * @see #pickingMode()
+   * @see #resetPickingMode()
+   * @see #disablePickingMode(int)
+   * @see #enablePickingMode(int)
+   * @see #togglePickingMode(int)
+   * @see #isPickingModeEnable(int)
+   * @see #hint()
+   * @see #isHintEnable(int)
+   * @see #resetHint()
+   * @see #disableHint(int)
+   * @see #enableHint(int)
+   * @see #toggleHint(int)
+   */
   public void enablePickingMode(int pickingMode) {
     _pickingMode |= pickingMode;
   }
 
+  /**
+   * Toggles all single visual hints encoded in the bitwise-or {@code pickingMode} mask.
+   *
+   * @see #resetPickingMode()
+   * @see #resetPickingMode()
+   * @see #disablePickingMode(int)
+   * @see #enablePickingMode(int)
+   * @see #togglePickingMode(int)
+   * @see #isPickingModeEnable(int)
+   * @see #hint()
+   * @see #isHintEnable(int)
+   * @see #resetHint()
+   * @see #disableHint(int)
+   * @see #enableHint(int)
+   * @see #toggleHint(int)
+   */
   public void togglePickingMode(int pickingMode) {
     _pickingMode ^= pickingMode;
   }
@@ -2641,6 +2805,12 @@ public class Node {
    * @see #disableHint(int)
    * @see #toggleHint(int)
    * @see #resetHint()
+   * @see #pickingMode()
+   * @see #enablePickingMode(int)
+   * @see #disablePickingMode(int)
+   * @see #togglePickingMode(int)
+   * @see #isPickingModeEnable(int)
+   * @see #resetPickingMode()
    */
   public boolean isHintEnable(int hint) {
     return ~(_mask | ~hint) == 0;
@@ -2657,9 +2827,9 @@ public class Node {
    * {@link #position()} an oriented according to the node {@link #orientation()}.</li>
    * <li>{@link #HUD} which displays the node Heads-Up-Display set with
    * {@link #setHUD(processing.core.PShape)} or {@link #setHUD(Consumer)}.</li>
-   * <li>{@link #FRUSTUM} which displays a frustum visual representation which origin is
-   * located at the node {@link #position()}. The frustum may be set up from a given
-   * {@link Graph} or from low-level frustum plane params.</li>
+   * <li>{@link #BOUNDS} which displays the bounding volume of each graph for which
+   * this node is the eye. Only meaningful if there's a second scene perspective
+   * to look at this eye node from.</li>
    * <li>{@link #SHAPE} which displays the node shape set with
    * {@link #setShape(processing.core.PShape)} or {@link #setShape(Consumer)}.</li>
    * <li>{@link #BULLSEYE} which displays a bullseye centered at the node
@@ -2677,6 +2847,12 @@ public class Node {
    * @see #toggleHint(int)
    * @see #isHintEnable(int)
    * @see #resetHint()
+   * @see #pickingMode()
+   * @see #enablePickingMode(int)
+   * @see #disablePickingMode(int)
+   * @see #togglePickingMode(int)
+   * @see #isPickingModeEnable(int)
+   * @see #resetPickingMode()
    */
   public int hint() {
     return this._mask;
@@ -2693,6 +2869,12 @@ public class Node {
    * @see #disableHint(int)
    * @see #toggleHint(int)
    * @see #isHintEnable(int)
+   * @see #pickingMode()
+   * @see #enablePickingMode(int)
+   * @see #disablePickingMode(int)
+   * @see #togglePickingMode(int)
+   * @see #isPickingModeEnable(int)
+   * @see #resetPickingMode()
    */
   public void resetHint() {
     _mask = 0;
@@ -2709,6 +2891,12 @@ public class Node {
    * @see #resetHint()
    * @see #toggleHint(int)
    * @see #isHintEnable(int)
+   * @see #pickingMode()
+   * @see #enablePickingMode(int)
+   * @see #disablePickingMode(int)
+   * @see #togglePickingMode(int)
+   * @see #isPickingModeEnable(int)
+   * @see #resetPickingMode()
    */
   public void disableHint(int hint) {
     _mask &= ~hint;
@@ -2725,6 +2913,12 @@ public class Node {
    * @see #resetHint()
    * @see #toggleHint(int)
    * @see #isHintEnable(int)
+   * @see #pickingMode()
+   * @see #enablePickingMode(int)
+   * @see #disablePickingMode(int)
+   * @see #togglePickingMode(int)
+   * @see #isPickingModeEnable(int)
+   * @see #resetPickingMode()
    */
   public void enableHint(int hint, Object... params) {
     enableHint(hint);
@@ -2741,6 +2935,12 @@ public class Node {
    * @see #resetHint()
    * @see #toggleHint(int)
    * @see #isHintEnable(int)
+   * @see #pickingMode()
+   * @see #enablePickingMode(int)
+   * @see #disablePickingMode(int)
+   * @see #togglePickingMode(int)
+   * @see #isPickingModeEnable(int)
+   * @see #resetPickingMode()
    */
   public void enableHint(int hint) {
     _mask |= hint;
@@ -2757,6 +2957,12 @@ public class Node {
    * @see #resetHint()
    * @see #enableHint(int)
    * @see #isHintEnable(int)
+   * @see #pickingMode()
+   * @see #enablePickingMode(int)
+   * @see #disablePickingMode(int)
+   * @see #togglePickingMode(int)
+   * @see #isPickingModeEnable(int)
+   * @see #resetPickingMode()
    */
   public void toggleHint(int hint) {
     _mask ^= hint;
@@ -2770,26 +2976,20 @@ public class Node {
    * <li>{@link #CAMERA} hint: {@code configHint(Node.CAMERA, cameraStroke)} or
    * {@code configHint(Node.CAMERA, cameraStroke, cameraLength)}.</li>
    * <li>{@link #AXES} hint: {@code configHint(Node.AXES, axesLength)}.</li>
-   * <li>{@link #FRUSTUM} hint: {@code configHint(Node.FRUSTUM, frustumColor)}
-   * or {@code configHint(Node.FRUSTUM, graph)} or
-   * {@code configHint(Node.FRUSTUM, frustumColor, graph)} or
-   * {@code configHint(Node.FRUSTUM, eyeBuffer, frustumType, zNear, zFar)} or
-   * {@code configHint(Node.FRUSTUM, frustumColor, eyeBuffer, frustumType, zNear, zFar)}.</li>
    * <li>{@link #BULLSEYE} hint: {@code configHint(Node.BULLSEYE, bullseyeStroke)},
    * {@code configHint(Node.BULLSEYE, bullseyeShape)}, or
    * {@code configHint(Node.BULLSEYE, bullseyeStroke, bullseyeShape)}.</li>
    * <li>{@link #TORUS} hint: configHint(Node.TORUS, torusStroke)}, or
    * configHint(Node.TORUS, torusStroke, torusFaces)}.</li>
    * </ol>
-   * Note that the {@code cameraStroke}, {@code splineStroke}, {@code bullseyeStroke},
-   * {@code torusStroke} and {@code frustumColor}, are color {@code int} vars;
-   * {@code cameraLength} and {@code exesLength}
-   * are world magnitude numerical values; {@code highlight} is a numerical value in
-   * {@code [0..1]} which represents the scale factor to be applied to the node when
-   * it gets tagged (see {@link Graph#tag(String, Node)}); {@code bullseyeShape}
-   * is either of type {@link BullsEyeShape#SQUARE} or {@link BullsEyeShape#CIRCLE};
-   * {@code graph} is of type {@link Graph}; and, {@code graph} may be of type
-   * {@link processing.core.PGraphics}.
+   * Note that the {@code cameraStroke}, {@code splineStroke}, {@code bullseyeStroke}
+   * and {@code torusStroke} are color {@code int} vars; {@code cameraLength} and
+   * {@code exesLength} are world magnitude numerical values; {@code highlight} is a
+   * numerical value in {@code [0..1]} which represents the scale factor to be
+   * applied to the node when it gets tagged (see {@link Graph#tag(String, Node)});
+   * {@code bullseyeShape} is either of type {@link BullsEyeShape#SQUARE} or
+   * {@link BullsEyeShape#CIRCLE}; {@code graph} is of type {@link Graph}; and,
+   * {@code graph} may be of type {@link processing.core.PGraphics}.
    *
    * @see #hint()
    * @see #enableHint(int)
@@ -2798,6 +2998,12 @@ public class Node {
    * @see #toggleHint(int)
    * @see #isHintEnable(int)
    * @see #resetHint()
+   * @see #pickingMode()
+   * @see #enablePickingMode(int)
+   * @see #disablePickingMode(int)
+   * @see #togglePickingMode(int)
+   * @see #isPickingModeEnable(int)
+   * @see #resetPickingMode()
    */
   public void configHint(int hint, Object... params) {
     switch (params.length) {
@@ -2816,15 +3022,6 @@ public class Node {
         }
         if (hint == CAMERA && Graph.isNumInstance(params[0])) {
           _cameraStroke = Graph.castToInt(params[0]);
-          return;
-        }
-        if (hint == FRUSTUM && Graph.isNumInstance(params[0])) {
-          _frustumColor = Graph.castToInt(params[0]);
-          return;
-        }
-        if (hint == FRUSTUM && params[0] instanceof Graph) {
-          _eyeBuffer = null;
-          _frustumGraph = (Graph) params[0];
           return;
         }
         if (hint == TORUS && Graph.isNumInstance(params[0])) {
@@ -2855,20 +3052,6 @@ public class Node {
           if (Graph.isNumInstance(params[0]) && Graph.isNumInstance(params[1])) {
             _cameraStroke = Graph.castToInt(params[0]);
             _cameraLength = Graph.castToFloat(params[1]);
-            return;
-          }
-        }
-        if (hint == FRUSTUM) {
-          if (Graph.isNumInstance(params[0]) && params[1] instanceof Graph) {
-            _frustumColor = Graph.castToInt(params[0]);
-            _frustumGraph = (Graph) params[1];
-            _eyeBuffer = null;
-            return;
-          }
-          if (params[0] instanceof Graph && Graph.isNumInstance(params[1])) {
-            _eyeBuffer = null;
-            _frustumGraph = (Graph) params[0];
-            _frustumColor = Graph.castToInt(params[1]);
             return;
           }
         }
@@ -2911,17 +3094,6 @@ public class Node {
         }
         break;
       case 4:
-        if (hint == FRUSTUM) {
-          if (params[0] instanceof processing.core.PGraphics && params[1] instanceof Graph.Type && Graph.isNumInstance(params[2]) && Graph.isNumInstance(params[3])) {
-            _frustumGraph = null;
-            _eyeBuffer = params[0];
-            _frustumtype = (Graph.Type) params[1];
-            _zNear = Graph.castToFloat(params[2]);
-            _zFar = Graph.castToFloat(params[3]);
-            return;
-          }
-        }
-
         if (hint == BONE){
           if (Graph.isNumInstance(params[0]) && Graph.isNumInstance(params[1]) && Graph.isNumInstance(params[2]) && Graph.isBooleanInstance(params[3])) {
             _boneColor = Graph.castToInt(params[0]);
@@ -2932,32 +3104,21 @@ public class Node {
           }
         }
         break;
-      case 5:
-        if (hint == FRUSTUM) {
-          if (params[0] instanceof processing.core.PGraphics && params[1] instanceof Graph.Type && Graph.isNumInstance(params[2]) && Graph.isNumInstance(params[3]) && Graph.isNumInstance(params[4])) {
-            _frustumGraph = null;
-            _eyeBuffer = params[0];
-            _frustumtype = (Graph.Type) params[1];
-            _zNear = Graph.castToFloat(params[2]);
-            _zFar = Graph.castToFloat(params[3]);
-            _frustumColor = Graph.castToInt(params[4]);
-            return;
-          }
-          if (Graph.isNumInstance(params[0]) && params[1] instanceof processing.core.PGraphics && params[2] instanceof Graph.Type && Graph.isNumInstance(params[3]) && Graph.isNumInstance(params[4])) {
-            _frustumColor = Graph.castToInt(params[0]);
-            _frustumGraph = null;
-            _eyeBuffer = params[1];
-            _frustumtype = (Graph.Type) params[2];
-            _zNear = Graph.castToFloat(params[3]);
-            _zFar = Graph.castToFloat(params[4]);
-            return;
-          }
-        }
-      break;
     }
     System.out.println("Warning: some params in Node.configHint(hint, params) couldn't be parsed!");
   }
 
+  /**
+   * Returns whether or not this node is some graph {@link Graph#eye()}.
+   */
+  public boolean isEye() {
+    return !_frustumGraphs.isEmpty();
+  }
 
-
+  /**
+   * Returns whether or not this node is the given {@code graph} {@link Graph#eye()}.
+   */
+  public boolean isEye(Graph graph) {
+    return _frustumGraphs.contains(graph);
+  }
 }

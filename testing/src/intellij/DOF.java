@@ -27,9 +27,8 @@ public class DOF extends PApplet {
 
   @Override
   public void setup() {
-    scene = new Scene(createGraphics(width, height, P3D));
+    scene = new Scene(createGraphics(width, height, P3D), 1000);
     scene.enableHint(Scene.BACKGROUND, color(0));
-    scene.setRadius(1000);
     scene.fit(1);
     models = new Node[100];
     for (int i = 0; i < models.length; i++) {
@@ -44,8 +43,7 @@ public class DOF extends PApplet {
     //depthPath = Paths.get("testing/data/depth/depth_frag.glsl").toAbsolutePath().toString();
     depthShader = loadShader(depthPath);
     // TODO add proper constructor to share eye node
-    depthScene = new Scene(createGraphics(width, height, P3D), scene.eye());
-    depthScene.setRadius(1000);
+    depthScene = new Scene(createGraphics(width, height, P3D), scene.eye(), 1000);
     //depthScene.fit();
     depthScene.context().shader(depthShader);
     // TODO make API more consistent
@@ -101,10 +99,7 @@ public class DOF extends PApplet {
     if (key == '1') mode = 1;
     if (key == '2') mode = 2;
     if (key == 't')
-      if (scene.type() == Graph.Type.ORTHOGRAPHIC)
-        scene.setType(Graph.Type.PERSPECTIVE);
-      else
-        scene.setType(Graph.Type.ORTHOGRAPHIC);
+      scene.togglePerspective();
     if (key == 'f')
       scene.fit(1);
     if (key == 'F')

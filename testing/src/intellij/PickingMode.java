@@ -3,17 +3,18 @@ package intellij;
 import nub.core.Node;
 import nub.processing.Scene;
 import processing.core.PApplet;
+import processing.core.PGraphics;
 import processing.core.PShape;
 import processing.event.MouseEvent;
 
-public class SceneBuffers extends PApplet {
+public class PickingMode extends PApplet {
   Scene scene;
   Node[] shapes;
 
   //Choose one of P3D for a 3D scene or P2D for a 2D one.
   String renderer = P3D;
-  int w = 700;
-  int h = 700;
+  int w = 1600;
+  int h = 1600;
 
   public void settings() {
     size(w, h, renderer);
@@ -27,12 +28,13 @@ public class SceneBuffers extends PApplet {
 
     shapes = new Node[100];
     for (int i = 0; i < shapes.length; i++) {
-      shapes[i] = new Node(caja());
+      shapes[i] = new Node();
+      //shapes[i] = new Node(this::point);
+      //shapes[i] = new Node(caja());
       scene.randomize(shapes[i]);
-      //shapes[i].enableHint(Node.CAMERA);
       shapes[i].enableHint(Node.AXES);
     }
-    scene.fit(1);
+    //scene.fit(1);
     scene.enableHint(Scene.AXES);
   }
 
@@ -41,6 +43,10 @@ public class SceneBuffers extends PApplet {
     scene.display();
     // 2. Display back buffer
     scene.displayBackBuffer(0, h / 2);
+  }
+
+  public void keyPressed() {
+    scene.togglePerspective();
   }
 
   public void mouseMoved() {
@@ -63,6 +69,14 @@ public class SceneBuffers extends PApplet {
       scene.scaleEye(event.getCount() * 20);
   }
 
+  void point(PGraphics pg) {
+    pg.pushStyle();
+    pg.stroke(0, 255, 0);
+    pg.strokeWeight(10);
+    pg.point(0, 0, 0);
+    pg.popStyle();
+  }
+
   PShape caja() {
     PShape caja = scene.is3D() ? createShape(BOX, random(60, 100)) : createShape(RECT, 0, 0, random(60, 100), random(60, 100));
     caja.setStrokeWeight(3);
@@ -72,6 +86,6 @@ public class SceneBuffers extends PApplet {
   }
 
   public static void main(String args[]) {
-    PApplet.main(new String[]{"intellij.SceneBuffers"});
+    PApplet.main(new String[]{"intellij.PickingMode"});
   }
 }

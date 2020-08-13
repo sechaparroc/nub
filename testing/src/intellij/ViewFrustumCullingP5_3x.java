@@ -8,12 +8,12 @@ import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.event.MouseEvent;
 
-public class ViewFrustumCulling extends PApplet {
+public class ViewFrustumCullingP5_3x extends PApplet {
   OctreeNode root;
   Scene mainScene, secondaryScene, focus;
 
-  int w = 700;
-  int h = 700;
+  int w = 1400;
+  int h = 1400;
   //octree
   float a = 220, b = 100, c = 280;
   int levels = 4;
@@ -53,10 +53,6 @@ public class ViewFrustumCulling extends PApplet {
     secondaryScene.display(0, h / 2);
   }
 
-  void handleMouse() {
-    focus = mouseY < h / 2 ? mainScene : secondaryScene;
-  }
-
   public void mouseDragged() {
     if (mouseButton == LEFT)
       focus.mouseSpinEye();
@@ -90,7 +86,7 @@ public class ViewFrustumCulling extends PApplet {
     OctreeNode() {
       tagging = false;
       setShape(this::draw);
-      setVisit(mainScene, this::culling);
+      setVisit(mainScene);
     }
 
     OctreeNode(OctreeNode node, Vector vector) {
@@ -99,7 +95,7 @@ public class ViewFrustumCulling extends PApplet {
       translate(Vector.multiply(vector, scaling() / 2));
       tagging = false;
       setShape(this::draw);
-      setVisit(mainScene, this::culling);
+      setVisit(mainScene);
     }
 
     float level() {
@@ -115,30 +111,31 @@ public class ViewFrustumCulling extends PApplet {
     }
 
     // The culling method is called just before the graphics(PGraphics) method
-    public void culling(Graph graph, Node node) {
-      switch (graph.boxVisibility(node.worldLocation(new Vector(-a / 2, -b / 2, -c / 2)),
-              node.worldLocation(new Vector(a / 2, b / 2, c / 2)))) {
+    @Override
+    public void visit(Graph graph) {
+      switch (graph.boxVisibility(worldLocation(new Vector(-a / 2, -b / 2, -c / 2)),
+              worldLocation(new Vector(a / 2, b / 2, c / 2)))) {
         case VISIBLE:
-          for (Node child : node.children())
+          for (Node child : children())
             child.cull = true;
           break;
         case SEMIVISIBLE:
-          if (!node.children().isEmpty()) {
+          if (!children().isEmpty()) {
             // don't render the node...
-            node.bypass();
+            bypass();
             // ... but don't cull its children either
-            for (Node child : node.children())
+            for (Node child : children())
               child.cull = false;
           }
           break;
         case INVISIBLE:
-          node.cull = true;
+          cull = true;
           break;
       }
     }
   }
 
   public static void main(String args[]) {
-    PApplet.main(new String[]{"intellij.ViewFrustumCulling"});
+    PApplet.main(new String[]{"intellij.ViewFrustumCullingP5_3x"});
   }
 }
