@@ -394,7 +394,7 @@ public class Context {
     if (_direction) {
       float orientationError = orientationError(effRotation, targetRotation, false);
       float weighted_error = error / radius;
-      error = weighted_error * (1 - _orientationWeight) + _orientationWeight * orientationError;
+      error = w1 * weighted_error + w2 * orientationError;
     }
     return error;
   }
@@ -465,7 +465,24 @@ public class Context {
     for (Node joint : chain) {
       Node newJoint = new Node();
       newJoint.enableHint(Node.CONSTRAINT);
-      if (!copy.isEmpty()) newJoint.enableHint(Node.BONE);
+      if (!copy.isEmpty()){
+        newJoint._boneColor = joint._boneColor;
+        newJoint._boneRadius = joint._boneRadius;
+        newJoint.enableHint(Node.BONE, joint._boneColor, joint._boneRadius, joint._boneWidth);
+      }
+      else{
+        newJoint._boneColor = joint._boneColor;
+        newJoint._boneRadius = joint._boneRadius;
+        newJoint.setShape(pg -> {
+          pg.pushStyle();
+          pg.noStroke();
+          pg.fill(newJoint._boneColor);
+          if(pg.is3D()) pg.sphere(newJoint._boneRadius);
+          else pg.ellipse(0,0, 2 * newJoint._boneRadius, 2 * newJoint._boneRadius);
+          pg.popStyle();
+        });
+      }
+      newJoint.enableHint(Node.AXES, newJoint._boneRadius * 2f);
       newJoint.setReference(ref);
       newJoint.setPosition(joint.position().get());
       newJoint.setOrientation(joint.orientation().get());
