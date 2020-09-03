@@ -120,6 +120,10 @@ public class IKSolver extends Solver {
         return _context.direction();
     }
 
+    public void setHeuristic(Heuristic heuristic){
+        _heuristic = heuristic;
+    }
+
     public HeuristicMode mode() {
         return _heuristicMode;
     }
