@@ -106,21 +106,4 @@ public class Util {
         Quaternion twist = new Quaternion(tw, angle);
         return twist;
     }
-
-    public static float findMaxDirectionalAngle(NodeInformation j_i, NodeInformation endEffector, Node target, float searchingAreaRadius){
-        float max_dist = searchingAreaRadius;
-        float radius = Vector.distance(endEffector.positionCache(), j_i.positionCache());
-        float rado = Vector.distance(target.position(), j_i.positionCache());
-        float p = Math.min(rado, radius) / Math.max(rado, radius);
-        float norm_error = Vector.distance(endEffector.positionCache(), target.position());
-        norm_error /= searchingAreaRadius;
-
-        //max_dist = searchingAreaRadius * (1 + p);
-
-        //find max theta allowed
-       return  (float) Math.acos(Math.max(Math.min(1 - (max_dist * max_dist) / (2 * radius * radius), 1), -1));
-    }
-
-
-
 }
