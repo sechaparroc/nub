@@ -299,6 +299,17 @@ public class Skeleton {
     _depth = depth;
   }
 
+  public void setBoneWidth(float width){
+    for(Node node : BFS()){
+      node._boneWidth = width;
+    }
+  }
+
+  public void setConstraintFactor(float factor){
+    for(Node node : BFS()){
+      node._constraintFactor = factor;
+    }
+  }
 
   /**
    * Adds a target related with an end effector (leaf of the tree structure) related with the given name.
