@@ -77,10 +77,11 @@ public class CCD extends Heuristic {
     Context context = heuristic._context;
     NodeInformation j_i = context.usableChainInformation().get(i);
     if (context.direction() && i != context.endEffectorId()) {
-      float maxAngle = Util.findMaxDirectionalAngle(j_i, context.endEffectorInformation(), context.worldTarget(), context.searchingAreaRadius());
       Quaternion deltaDirection = findOrientationalCCD(j_i, context.usableChainInformation().get(context.endEffectorId()), context.worldTarget());
-      deltaDirection = Util.constraintRotation(j_i, deltaDirection);
-      deltaDirection = Util.clampRotation(deltaDirection, maxAngle);
+      //normalize distance
+      float oerror = Context.orientationError(context.usableChain().get(context.endEffectorId()).orientation(), context.worldTarget().orientation(), false);
+      float ang = (float) Math.PI * oerror * (i + 1) / context.usableChain().size();
+      deltaDirection = Util.clampRotation(deltaDirection, ang);
       j_i.rotateAndUpdateCache(deltaDirection, false, context.endEffectorInformation());
     }
   }
