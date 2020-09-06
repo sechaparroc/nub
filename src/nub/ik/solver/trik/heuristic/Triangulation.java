@@ -67,7 +67,11 @@ public class Triangulation extends Heuristic {
       //Apply law of cosines
       float B = findCfromTriangle(a_mag,c_mag,b_mag);
       float angle = Vector.angleBetween(a,c) - B;
-      delta = new Quaternion(Vector.cross(a, c, null), angle);
+      Vector normal = Vector.cross(a, c, null);
+      if (normal.squaredNorm() < 0.0001f) {
+        normal = a.orthogonalVector();
+      }
+      delta = new Quaternion(normal, angle);
     }
     delta = Util.constraintRotation(j_i, delta);
     if (applyDelegation) {
