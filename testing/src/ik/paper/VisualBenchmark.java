@@ -26,7 +26,7 @@ public class VisualBenchmark extends PApplet {
     float boneLength = 50; //Define length of segments (bones)
 
     //Benchmark Parameters
-    Util.ConstraintType constraintType = Util.ConstraintType.MIX; //Choose what kind of constraints apply to chain
+    Util.ConstraintType constraintType = Util.ConstraintType.NONE; //Choose what kind of constraints apply to chain
     Random random = new Random();
     ArrayList<Solver> solvers; //Will store Solvers
     int randRotation = -1; //Set seed to generate initial random rotations, otherwise set to -1
@@ -39,11 +39,12 @@ public class VisualBenchmark extends PApplet {
             Util.SolverType.CCD_HEURISTIC,
             Util.SolverType.BACK_AND_FORTH_CCD_HEURISTIC,
             Util.SolverType.TRIK_HEURISTIC,
+            Util.SolverType.TRIANGULATION_HEURISTIC,
             Util.SolverType.BACK_AND_FORTH_TRIK_HEURISTIC,
             Util.SolverType.COMBINED_HEURISTIC,
             Util.SolverType.COMBINED_EXPRESSIVE,
             Util.SolverType.COMBINED_TRIK,
-            //Util.SolverType.FABRIK
+            Util.SolverType.FABRIK
     }; //Place Here Solvers that you want to compare
 
     ArrayList<ArrayList<Node>> structures = new ArrayList<>(); //Keep Structures

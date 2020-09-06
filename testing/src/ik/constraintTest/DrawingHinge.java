@@ -17,8 +17,8 @@ public class DrawingHinge extends PApplet {
   Scene constraintScene, thetaScene, focus;
   Node constraintRoot, thetaRoot;
 
-  int w = 900;
-  int h = 500;
+  int w = 1900;
+  int h = 1000;
   int mode = -1;
 
   ThetaControl control;
@@ -44,11 +44,11 @@ public class DrawingHinge extends PApplet {
 
     //Create a Joint
     Joint.constraintFactor = 0.9f;
-    j0 = new Joint(constraintScene, color(255), 0.1f * constraintScene.radius());
+    j0 = new Joint(constraintScene, color(66, 135, 245), 0.1f * constraintScene.radius());
     j0.setReference(constraintRoot);
     j0.setRoot(true);
     j0.translate(-constraintScene.radius() * 0.5f, 0, 0);
-    j1 = new Joint(constraintScene, color(255), 0.1f * constraintScene.radius());
+    j1 = new Joint(constraintScene, color(66, 135, 245), 0.1f * constraintScene.radius());
     j1.setReference(j0);
 
     Vector v = new Vector(1f, 0, 0);
@@ -68,11 +68,12 @@ public class DrawingHinge extends PApplet {
     //Update controllers
     updateControllers(constraint, control);
 
-    constraintScene.enableHint(Graph.BACKGROUND, color(0));
-    thetaScene.enableHint(Graph.BACKGROUND, color(0));
+    constraintScene.enableHint(Graph.BACKGROUND, color(255));
+    thetaScene.enableHint(Graph.BACKGROUND, color(255));
   }
 
   public void draw() {
+    constraintScene.context().lights();
     handleMouse();
     drawScene(constraintScene, constraintRoot, "Constraint View", 0,0);
     drawScene(thetaScene, thetaRoot, "Hinge Control", w / 2 , 0);
@@ -104,8 +105,8 @@ public class DrawingHinge extends PApplet {
     scene.beginHUD();
     scene.context().noLights();
     scene.context().pushStyle();
-    scene.context().fill(255);
-    scene.context().stroke(255);
+    scene.context().fill(0);
+    scene.context().stroke(0);
     scene.context().textAlign(CENTER, CENTER);
     scene.context().textFont(font, 24);
     scene.context().text(title, scene.context().width / 2, 20);
@@ -171,14 +172,14 @@ public class DrawingHinge extends PApplet {
       pg.noStroke();
       drawArc(pg, _scene.radius() * 0.7f, -_min, _max, 30);
       //draw semi-axe
-      pg.fill(255);
-      pg.stroke(255);
+      pg.fill(0);
+      pg.stroke(0);
       pg.strokeWeight(3);
       pg.line(0, 0, _scene.radius() * 0.7f, 0);
       pg.ellipse(_scene.radius() * 0.7f, 0, 3, 3);
 
-      pg.fill(255);
-      pg.stroke(255);
+      pg.fill(0);
+      pg.stroke(0);
       pg.ellipse(0, 0, 3, 3);
 
       if (_initial != null && _end != null) {
@@ -188,14 +189,14 @@ public class DrawingHinge extends PApplet {
         pg.noStroke();
         pg.ellipse(_initial.x(), _initial.y(), 5, 5);
         pg.ellipse(_end.x(), _end.y(), 5, 5);
-        pg.fill(pg.color(255));
+        pg.fill(pg.color(0));
       }
 
       if (pg == _scene.context()) {
         _scene.beginHUD();
         Vector min_position = _scene.screenLocation(new Vector(_scene.radius() * 0.7f * (float) Math.cos(-_min), _scene.radius() * 0.7f * (float) Math.sin(-_min)), this);
         Vector max_position = _scene.screenLocation(new Vector(_scene.radius() * 0.7f * (float) Math.cos(_max), _scene.radius() * 0.7f * (float) Math.sin(_max)), this);
-        pg.fill(255);
+        pg.fill(0);
         pg.textAlign(LEFT, CENTER);
         pg.textFont(font, 16);
         pg.text("\u03B8 " + _min_name, min_position.x() + 5, min_position.y());
@@ -301,6 +302,7 @@ public class DrawingHinge extends PApplet {
 
     @Override
     public void graphics(PGraphics pg) {
+      pg.lights();
       if (!depth) pg.hint(PConstants.DISABLE_DEPTH_TEST);
       pg.pushStyle();
       if (!_isRoot) {
@@ -346,6 +348,7 @@ public class DrawingHinge extends PApplet {
 
       pGraphics.pushMatrix();
       pGraphics.pushStyle();
+      pGraphics.lights();
       pGraphics.noStroke();
 
       pGraphics.fill(62, 203, 55, 150);
@@ -367,7 +370,7 @@ public class DrawingHinge extends PApplet {
         pGraphics.pushStyle();
         pGraphics.fill(255, 154, 31);
         _scene.drawArrow(new Vector(), new Vector(radius / 2, 0, 0), 1f);
-        pGraphics.fill(31, 132, 255);
+        pGraphics.fill(79, 196, 61);
         _scene.drawArrow(new Vector(), new Vector(0, 0, radius / 2), 1f);
         pGraphics.popStyle();
 
@@ -392,14 +395,14 @@ public class DrawingHinge extends PApplet {
         //((Scene) graph()).beginHUD(pGraphics);
         pGraphics.pushStyle();
         pGraphics.noLights();
-        pGraphics.fill(255);
+        pGraphics.fill(0);
         pGraphics.textFont(font, 12);
-        pGraphics.text("\u03B8 " + "min", v.x(), v.y());
-        pGraphics.text("\u03B8 " + "max", u.x(), u.y());
+        pGraphics.text("\u03B8 " + "max", v.x(), v.y());
+        pGraphics.text("\u03B8 " + "min", u.x(), u.y());
         pGraphics.fill(255, 154, 31);
         pGraphics.text("Up vector", w.x() - 10, w.y() - 5, w.z());
         pGraphics.textAlign(RIGHT, BOTTOM);
-        pGraphics.fill(31, 132, 255);
+        pGraphics.fill(79, 196, 61);
         pGraphics.text("Twist vector", s.x() - radius / 4, s.y(), s.z());
         pGraphics.lights();
         pGraphics.popStyle();

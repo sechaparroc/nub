@@ -20,8 +20,8 @@ public class DrawingConstraint extends PApplet {
   Scene constraintScene, thetaScene, baseScene, focus;
   Node constraintRoot, thetaRoot, baseRoot;
 
-  int w = 900;
-  int h = 500;
+  int w = 1900;
+  int h = 1000;
 
   ThetaControl t_lr, t_ud;
   BaseControl base;
@@ -32,6 +32,11 @@ public class DrawingConstraint extends PApplet {
 
   static PFont font;
 
+  String pathImg ="C:/Users/olgaa/Desktop/Sebas/Thesis/Results/Viz/";
+  String name = "Cone";
+  int idx = 0;
+
+
   public void settings() {
     size(w, h, P3D);
   }
@@ -40,27 +45,31 @@ public class DrawingConstraint extends PApplet {
     font = createFont("Zapfino", 38);
     constraintScene = new Scene(createGraphics(w / 3, h, P3D));
     constraintScene.setType(Graph.Type.ORTHOGRAPHIC);
+    constraintScene.leftHanded = true;
     constraintScene.fit(1);
     constraintRoot = new Node();
+
     constraintRoot.tagging = false;
 
     thetaScene = new Scene(createGraphics(w / 3, h,  P2D)); //w / 3, 0
+    thetaScene.leftHanded = true;
     thetaScene.fit(1);
     thetaRoot = new Node();
     thetaRoot.tagging = false;
 
     baseScene = new Scene(createGraphics(w / 3, h, P2D)); //2 * w / 3, 0
+    baseScene.leftHanded = true;
     baseScene.fit(1);
     baseRoot = new Node();
     baseRoot.tagging = false;
 
     //Create a Joint
     Joint.constraintFactor = 0.9f;
-    j0 = new Joint(constraintScene, color(255), 0.1f * constraintScene.radius());
+    j0 = new Joint(constraintScene, color(66, 135, 245), 0.1f * constraintScene.radius());
     j0.setRoot(true);
     j0.setReference(constraintRoot);
     j0.translate(-constraintScene.radius() * 0.5f, 0, 0);
-    j1 = new Joint(constraintScene, color(255), 0.1f * constraintScene.radius());
+    j1 = new Joint(constraintScene, color(66, 135, 245), 0.1f * constraintScene.radius());
     j1.setReference(j0);
 
     Vector v = new Vector(1f, 0.f, 0);
@@ -68,22 +77,24 @@ public class DrawingConstraint extends PApplet {
     v.multiply(constraintScene.radius());
     j1.translate(v);
     j1.tagging = false;
+    j1.tagging = false;
 
     //Add constraint to joint j0
     BallAndSocket constraint = new BallAndSocket(radians(5), radians(34), radians(5), radians(84));
     constraint.setRestRotation(j0.rotation(), new Vector(0, 1, 0), new Vector(1, 0, 0), j1.translation());
     j0.setConstraint(constraint);
 
+    j0.rotate(new Vector(1,0,0), PI);
     List<Node> structure = new ArrayList<>();
     structure.add(j0);
     structure.add(j1);
 
-    solver = new IKSolver(structure, IKSolver.HeuristicMode.COMBINED);
-    target = new Joint(constraintScene, color(255, 0, 0), 0.2f * constraintScene.radius());
-    target.setRoot(true);
-    target.setReference(constraintRoot);
-    solver.setTarget(target);
-    target.set(j1);
+    solver = new IKSolver(structure, IKSolver.HeuristicMode.COMBINED, false);
+    //target = new Joint(constraintScene, color(255, 0, 0), 0.2f * constraintScene.radius());
+    //target.setRoot(true);
+    //target.setReference(constraintRoot);
+    //solver.setTarget(target);
+    //target.set(j1);
 
     solver.setTimesPerFrame(1);
 
@@ -95,16 +106,16 @@ public class DrawingConstraint extends PApplet {
     t_ud = new ThetaControl(thetaScene, color(31, 132, 255));
     t_ud.setReference(thetaRoot);
     t_ud.translate(-thetaScene.radius() * 0.3f, thetaScene.radius() * 0.8f, 0);
-    t_ud.setNames("Down", "Up");
+    t_ud.setNames("Up", "Down");
     base = new BaseControl(baseScene, color(100, 203, 30));
     base.setReference(baseRoot);
     //Update controllers
     updateControllers(constraint, t_lr, t_ud, base);
 
     //Define scene hints
-    constraintScene.enableHint(Graph.BACKGROUND, color(0));
-    thetaScene.enableHint(Graph.BACKGROUND, color(0));
-    baseScene.enableHint(Graph.BACKGROUND, color(0));
+    constraintScene.enableHint(Graph.BACKGROUND, color(255));
+    thetaScene.enableHint(Graph.BACKGROUND, color(255));
+    baseScene.enableHint(Graph.BACKGROUND, color(255));
   }
 
   public void draw() {
@@ -151,8 +162,8 @@ public class DrawingConstraint extends PApplet {
     scene.beginHUD();
     scene.context().noLights();
     scene.context().pushStyle();
-    scene.context().fill(255);
-    scene.context().stroke(255);
+    scene.context().fill(0);
+    scene.context().stroke(0);
     scene.context().textAlign(CENTER, CENTER);
     scene.context().textFont(font, 24);
     scene.context().text(title, scene.context().width / 2, 20);
@@ -244,8 +255,8 @@ public class DrawingConstraint extends PApplet {
       pg.ellipse(0, _up, 3, 3);
       pg.ellipse(0, -_down, 3, 3);
 
-      pg.fill(255);
-      pg.stroke(255);
+      pg.fill(0);
+      pg.stroke(0);
       pg.ellipse(0, 0, 3, 3);
 
       if (_initial != null && _end != null) {
@@ -264,16 +275,16 @@ public class DrawingConstraint extends PApplet {
       Vector u = _scene.screenLocation(this.worldLocation(new Vector(0, _up)));
       Vector d = _scene.screenLocation(this.worldLocation(new Vector(0, -_down)));
 
-      pg.fill(255);
+      pg.fill(0);
       pg.textFont(font, 16);
       pg.textAlign(RIGHT, CENTER);
       pg.text("Left", l.x() - 5, l.y());
       pg.textAlign(LEFT, CENTER);
       pg.text("Right", r.x() + 5, r.y());
       pg.textAlign(CENTER, TOP);
-      pg.text("Up", u.x(), u.y());
+      pg.text("Down", u.x(), u.y());
       pg.textAlign(CENTER, BOTTOM);
-      pg.text("Down", d.x(), d.y());
+      pg.text("Up", d.x(), d.y());
 
       _scene.endHUD();
       pg.popStyle();
@@ -425,31 +436,31 @@ public class DrawingConstraint extends PApplet {
       pg.noStroke();
       drawArc(pg, _scene.radius() * 0.7f, -_min, _max, 30);
       //draw semi-axe
-      pg.fill(255);
-      pg.stroke(255);
+      pg.fill(0);
+      pg.stroke(0);
       pg.strokeWeight(3);
       pg.line(0, 0, _scene.radius() * 0.7f, 0);
       pg.ellipse(_scene.radius() * 0.7f, 0, 3, 3);
 
-      pg.fill(255);
-      pg.stroke(255);
+      pg.fill(0);
+      pg.stroke(0);
       pg.ellipse(0, 0, 3, 3);
 
       if (_initial != null && _end != null) {
-        pg.stroke(pg.color(255));
+        pg.stroke(pg.color(0));
         pg.line(_initial.x(), _initial.y(), _end.x(), _end.y());
         pg.fill(pg.color(255, 0, 0));
         pg.noStroke();
         pg.ellipse(_initial.x(), _initial.y(), 5, 5);
         pg.ellipse(_end.x(), _end.y(), 5, 5);
-        pg.fill(pg.color(255));
+        pg.fill(pg.color(0));
       }
 
       _scene.beginHUD();
       Vector min_position = _scene.screenLocation(new Vector(_scene.radius() * 0.7f * (float) Math.cos(-_min), _scene.radius() * 0.7f * (float) Math.sin(-_min)), this);
       Vector max_position = _scene.screenLocation(new Vector(_scene.radius() * 0.7f * (float) Math.cos(_max), _scene.radius() * 0.7f * (float) Math.sin(_max)), this);
 
-      pg.fill(255);
+      pg.fill(0);
       pg.textAlign(LEFT, CENTER);
       pg.textFont(font, 16);
       pg.text("\u03B8 " + _min_name, min_position.x() + 5, min_position.y());
@@ -578,7 +589,7 @@ public class DrawingConstraint extends PApplet {
       if (axes) Scene.drawAxes(pg, _radius * 2);
       if (!depth) pg.hint(PConstants.ENABLE_DEPTH_TEST);
 
-      pg.stroke(255);
+      pg.stroke(0);
       //pg.strokeWeight(2);
       //if(markers) scene.drawBullsEye(this);
       pg.popStyle();
@@ -650,18 +661,18 @@ public class DrawingConstraint extends PApplet {
         //Write names
         pGraphics.pushStyle();
         pGraphics.noLights();
-        pGraphics.fill(255);
+        pGraphics.fill(0);
         pGraphics.textFont(font, 12);
         pGraphics.textAlign(RIGHT);
         pGraphics.text("Left", -left_r, 0, height);
         pGraphics.textAlign(LEFT);
         pGraphics.text("Right", right_r, 0, height);
         pGraphics.textAlign(CENTER, BOTTOM);
-        pGraphics.text("Down", 0, -down_r, height);
+        pGraphics.text("Up", 0, -down_r, height);
         pGraphics.textAlign(CENTER, TOP);
-        pGraphics.text("Up", 0, up_r, height);
-        pGraphics.textAlign(CENTER, CENTER);
-        pGraphics.text("Offset", off.x(), off.y(), off.z());
+        pGraphics.text("Down", 0, up_r, height);
+        //pGraphics.textAlign(CENTER, CENTER);
+        //pGraphics.text("Offset", off.x(), off.y(), off.z());
         pGraphics.lights();
         pGraphics.popStyle();
       }
@@ -741,6 +752,9 @@ public class DrawingConstraint extends PApplet {
     }
     if (key == 'w' || key == 'W') {
       solve = !solve;
+    }
+    if(key == 'p' || key == 'P'){
+      save( pathImg + "/" + name + idx++ + ".jpg");
     }
   }
 

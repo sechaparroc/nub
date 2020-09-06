@@ -122,7 +122,7 @@ public class Util {
     Node node =  new Node() {
       @Override
       public void graphics(PGraphics pg) {
-        Scene.drawAxes(pg, targetRadius * 2);
+        //Scene.drawAxes(pg, targetRadius * 2);
         if (scene.node() == this) {
           shape.setFill(pg.color(0, 255, 0));
         } else {
@@ -132,6 +132,7 @@ public class Util {
         pg.shape(shape);
       }
     };
+    node._boneRadius = targetRadius;
     node.setBullsEyeSize(0);
     return node;
   }
@@ -170,16 +171,18 @@ public class Util {
       Node joint = new Node();
       if (i == 0) {
           chainRoot = joint;
+          chainRoot._boneColor = Scene.pApplet.color(red, green, blue);
+          chainRoot._boneRadius = radius;
           chainRoot.setShape(pg -> {
               pg.pushStyle();
               pg.noStroke();
-              pg.fill(red, green, blue);
+              pg.fill(joint._boneColor);
               if(pg.is3D()) pg.sphere(radius);
               else pg.ellipse(0,0, 2 * radius, 2 * radius);
               pg.popStyle();
           });
       } else{
-          joint.enableHint(Node.BONE, Scene.pApplet.color(red, green, blue), radius);
+          joint.enableHint(Node.BONE, Scene.pApplet.color(red, green, blue), radius, radius / 4);
       }
       joint.enableHint(Node.CONSTRAINT);
       if (prevJoint != null) joint.setReference(prevJoint);

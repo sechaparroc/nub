@@ -22,19 +22,24 @@ public class LissajousViewer extends PApplet {
   }
 
   public void setup(){
+    smooth(8);
     scene = new Scene(this);
+    scene.leftHanded = true;
     scene.setType(Graph.Type.ORTHOGRAPHIC);
     scene.setBounds(100);
     scene.enableHint(Graph.BACKGROUND | Graph.AXES);
+    scene.enableHint(Graph.BACKGROUND, color(255));
     scene.setShape(pg ->{
       pg.pushStyle();
       int s = 0;
+      Vector prev = null;
       for(Vector p : positions){
         pg.pushMatrix();
-        pg.noStroke();
-        pg.fill(255,0,0, 40 + 215.f * s++ / n);
-        pg.translate(p.x(), p.y(), p.z());
-        pg.sphere(scene.radius() * 0.05f);
+        pg.strokeWeight(4);
+        pg.fill(10 + 235.f * s++ / n,0,0, 255);
+        pg.stroke(10 + 235.f * s++ / n,0,0, 255);
+        if(prev != null)pg.line(prev.x(), prev.y(), prev.z(), p.x(), p.y(), p.z());
+        prev = p;
         pg.popMatrix();
       }
       pg.popStyle();
@@ -59,7 +64,7 @@ public class LissajousViewer extends PApplet {
 
   public ArrayList<Vector> generateLissajousCurve(int n, float x_speed, float y_speed, float z_speed, float radius) {
     ArrayList<Vector> targetPositions = new ArrayList<Vector>();
-    Vector init = new Vector();
+    Vector init = new Vector(0, radius,0);
     float step = 360f / n;
     for (float angle = 0; angle < 360 + step; angle += step) {
       float rad = radians(angle);

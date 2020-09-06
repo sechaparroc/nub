@@ -19,12 +19,12 @@ import java.util.Map;
 public class Viewer extends PApplet {
     String[] paths = new String[]{
             "/testing/data/bvh/0007_Cartwheel001.bvh",
-            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Trex/__Big_roar_step.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__SlowFly.bvh",
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/cmu-mocap-master/data/001/01_02.bvh",
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Horse/__SlowWalk.bvh"
     };
 
-    String path = paths[1];
+    String path = paths[2];
     boolean absolute = true;
     Scene scene;
     BVHLoader loader;
@@ -49,13 +49,19 @@ public class Viewer extends PApplet {
         loader.nextPosture(true);
         loader.nextPosture(true);
         loader.generateConstraints();
+        loader.skeleton().setRadius(scene.radius() * 0.01f);
+        loader.skeleton().setBoneWidth(scene.radius() * 0.01f);
+
         //Move the loader skeleton to the left
         //3. Create two skeletons with different solvers
         skeletons = new ArrayList<Skeleton>();
         Skeleton IKSkeleton1 = loader.skeleton().get();
         IKSkeleton1.setColor(color(255,0,0));
         IKSkeleton1.setDepth(true);
-        IKSkeleton1.setTargetRadius(scene.radius() * 0.01f);
+        IKSkeleton1.setTargetRadius(scene.radius() * 0.02f);
+        IKSkeleton1.setRadius(scene.radius() * 0.01f);
+        IKSkeleton1.setBoneWidth(scene.radius() * 0.01f);
+
         IKSkeleton1.enableIK(IKSolver.HeuristicMode.COMBINED_TRIK);
         IKSkeleton1.setMaxError(0.01f);
         IKSkeleton1.addTargets();
@@ -64,8 +70,11 @@ public class Viewer extends PApplet {
         Skeleton IKSkeleton2 = loader.skeleton().get();
         IKSkeleton2.setColor(color(0,255,0));
         IKSkeleton2.setDepth(true);
-        IKSkeleton2.setTargetRadius(scene.radius() * 0.01f);
-        IKSkeleton2.enableIK(IKSolver.HeuristicMode.CCD);
+        IKSkeleton2.setTargetRadius(scene.radius() * 0.02f);
+        IKSkeleton2.setRadius(scene.radius() * 0.01f);
+        IKSkeleton2.setBoneWidth(scene.radius() * 0.01f);
+
+        IKSkeleton2.enableIK(IKSolver.HeuristicMode.BACK_AND_FORTH_CCD);
         IKSkeleton2.setMaxError(0.01f * height);
         println("Height : " + height + " Max error " + 0.01f * height);
         IKSkeleton2.addTargets();
@@ -81,6 +90,7 @@ public class Viewer extends PApplet {
             pg.text("# End Effectors " + IKSkeleton1.endEffectors().size(), 50 , 50);
             pg.text("S1 error " + IKSkeleton1.solvers().get(0).error() / IKSkeleton1.endEffectors().size(), 50 , 100);
             pg.text("S2 error " + IKSkeleton2.solvers().get(0).error() / IKSkeleton2.endEffectors().size(), 50 , 150);
+            pg.text("FPS " + frameRate, 50 , 200);
             pg.popStyle();
         });
 
@@ -88,6 +98,9 @@ public class Viewer extends PApplet {
         scene.setBounds(height * 3);
         scene.fit(0);
         scene.enableHint(Graph.BACKGROUND | Graph.AXES);
+
+        //IKSkeleton1.enableIK(false);
+        //IKSkeleton2.enableIK(false);
 
     }
 
@@ -149,6 +162,16 @@ public class Viewer extends PApplet {
                 root.setRotation(skeletonRoot.rotation().get());
                 root.setConstraint(c);
             }
+
+            for(Node skNode : loader.skeleton().BFS()){
+                Node node = skeleton.joint(loader.skeleton().jointName(skNode));
+                Constraint c = node.constraint();
+                node.setConstraint(null);
+                node.setTranslation(skNode.translation().get());
+                node.setConstraint(c);
+            }
+
+
             //Set the targets
             for(Map.Entry<String, Node> entry : skeleton.targets().entrySet()){
                 Node desired =  loader.skeleton().joint(entry.getKey());
