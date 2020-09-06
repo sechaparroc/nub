@@ -200,14 +200,8 @@ public class Combined extends Heuristic {
       //Apply law of cosines
       float current = angle;
       float expected = Triangulation.findCfromTriangle(a_mag, b_mag, c_mag);
-
-      float sign = current != 0 ? Math.signum(current) : 1;
-      angle_1 = sign * expected - current;
-      if (Math.abs(current) < Math.abs(expected)) {
-        angle_2 = current - Math.signum(current) * expected;
-      } else {
-        angle_2 = sign * (float) (2 * Math.PI - expected) - current;
-      }
+      angle_1 = expected - current;
+      angle_2 = -current - expected;
     }
 
     Quaternion[] deltas = new Quaternion[2];
@@ -222,6 +216,11 @@ public class Combined extends Heuristic {
         deltas[k] = Util.clampRotation(deltas[k], context.maxAngleAtJoint(i + 1), context.clamping(0));
       }
       deltas[k].normalize();
+    }
+
+    //If the rotation is the same then explore only one rotation
+    if(Context.quaternionDistance(deltas[0], deltas[1]) < 0.0001f){
+      return new Quaternion[]{deltas[0]};
     }
     return deltas;
   }
