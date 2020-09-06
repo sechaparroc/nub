@@ -151,6 +151,10 @@ public class Hinge extends Constraint {
     Quaternion rotationTwist = new Quaternion(rotationAxis.x(), rotationAxis.y(), rotationAxis.z(), desired.w());
     float deltaAngle = rotationTwist.angle();
     if (rotationAxis.dot(new Vector(0, 0, 1)) < 0) deltaAngle *= -1;
+
+    if(Math.abs(deltaAngle) > Math.PI) //express as shortest quaternion
+      deltaAngle = (float) (deltaAngle - Math.signum(deltaAngle) * 2 * Math.PI);
+
     float change = deltaAngle;
     if (-_min > change || change > _max) {
       change = change < 0 ? (float) (change + 2 * Math.PI) : change;
