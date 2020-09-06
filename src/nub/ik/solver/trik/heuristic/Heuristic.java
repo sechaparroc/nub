@@ -27,6 +27,10 @@ public abstract class Heuristic {
 
   public abstract void applyActions(int i);
 
+  public Context context(){
+    return _context;
+  }
+
   //This methods keeps at least the state of the chain.
   //Override it to save additional information
   public abstract NodeInformation[] nodesToModify(int i); //return the nodes that the heuristic will modify in a single step
