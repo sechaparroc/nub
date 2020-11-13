@@ -80,7 +80,7 @@ public class CCD extends Heuristic {
       Quaternion deltaDirection = findOrientationalCCD(j_i, context.usableChainInformation().get(context.endEffectorId()), context.worldTarget());
       //normalize distance
       float oerror = Context.orientationError(context.usableChain().get(context.endEffectorId()).orientation(), context.worldTarget().orientation(), false);
-      float ang = (float) Math.PI * oerror * (i + 1) / context.usableChain().size();
+      float ang = (float) Math.PI * context.orientationWeight() * oerror * (i + 1) / context.usableChain().size();
       deltaDirection = Util.clampRotation(deltaDirection, ang);
       j_i.rotateAndUpdateCache(deltaDirection, false, context.endEffectorInformation());
     }

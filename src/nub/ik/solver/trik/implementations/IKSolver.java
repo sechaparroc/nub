@@ -69,7 +69,7 @@ public class IKSolver extends Solver {
                 break;
             }
             case TRIANGULATION: {
-                _heuristic = new Triangulation(_context);
+                _heuristic = new TIK(_context);
                 break;
             }
             case BACK_AND_FORTH_TRIANGULATION: {
@@ -85,11 +85,11 @@ public class IKSolver extends Solver {
                 break;
             }
             case COMBINED: {
-                _heuristic = new Combined(_context);
+                _heuristic = new ECTIK(_context);
                 break;
             }
             case COMBINED_EXPRESSIVE: {
-                _heuristic = new Combined(_context);
+                _heuristic = new ECTIK(_context);
                 //expressive parameters
                 context().enableDelegation(true);
                 context().setClamping(0.4f);
@@ -97,7 +97,7 @@ public class IKSolver extends Solver {
                 break;
             }
             case COMBINED_TRIK: {
-                _heuristic = new CombinedTRIK(_context);
+                _heuristic = new TRIKECTIK(_context);
                 break;
             }
         }
@@ -325,6 +325,10 @@ public class IKSolver extends Solver {
 
     public void set2D(boolean is2D){
         _context.set2D(is2D);
+    }
+
+    public void setDirection(boolean direction){
+        _context.setDirection(direction);
     }
 
     public static void showInfo(String name, Context context){

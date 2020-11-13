@@ -3,22 +3,22 @@ package nub.ik.solver.trik.heuristic;
 import nub.ik.solver.trik.Context;
 import nub.ik.solver.trik.NodeInformation;
 
-public class CombinedTRIK extends Heuristic{
+public class TRIKECTIK extends Heuristic{
     protected float _trikFraction; //Define how much of the iterations must use TRIK Heuristic (parameter between 0 and 1)
     protected int _trikIterations;
     protected int _times = 2; //How many passes of CCD must the combined heuristic perform
 
-    public CombinedTRIK(Context context, float trikFraction, int times){
+    public TRIKECTIK(Context context, float trikFraction, int times){
         super(context);
         _trikFraction = trikFraction;
         _times = times;
     }
 
-    public CombinedTRIK(Context context, float trikFraction){
+    public TRIKECTIK(Context context, float trikFraction){
         this(context, trikFraction, 2);
     }
 
-    public CombinedTRIK(Context context){
+    public TRIKECTIK(Context context){
         this(context, 0.3f, 2);
     }
 
@@ -55,7 +55,7 @@ public class CombinedTRIK extends Heuristic{
                     NodeInformation._copyCache(_context.chainInformation(), _context.usableChainInformation());
                 }
             }
-            Combined.applyCombined(this, i, _times);
+            ECTIK.applyCombined(this, i, _times);
         }
     }
 

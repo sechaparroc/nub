@@ -6,12 +6,12 @@ import nub.ik.solver.trik.Context;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 
-public class Triangulation extends Heuristic {
+public class TIK extends Heuristic {
   /**
    * The idea of this heuristics is to apply popular CCD Step. Here most of the work is done by the last joint and as them could move
    * that what is truly required the final pose of the chain will not be perceived as a natural pose.
    */
-  public Triangulation(Context context) {
+  public TIK(Context context) {
     super(context);
   }
 

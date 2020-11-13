@@ -8,7 +8,7 @@ import nub.ik.solver.trik.NodeState;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 
-public class Combined extends Heuristic {
+public class ECTIK extends Heuristic {
   /**
    * The idea of this heuristics is to apply and interchange popular CCD Step along with Triangulation step. Here most of the work is done by the first joints,
    * hence the obtained solution could not seem natural when working with unconstrained chains. For this purposes a smoothing stage is required in which each
@@ -16,7 +16,7 @@ public class Combined extends Heuristic {
    */
 
 
-  public Combined(Context context) {
+  public ECTIK(Context context) {
     super(context);
   }
 
@@ -166,7 +166,7 @@ public class Combined extends Heuristic {
       deltas = new Quaternion[]{new Quaternion(a, Vector.multiply(c, -1))};
     } else {
       //Apply law of cosines
-      float B = Triangulation.findCfromTriangle(a_mag,c_mag,b_mag);
+      float B = TIK.findCfromTriangle(a_mag,c_mag,b_mag);
       float angle_1 = Vector.angleBetween(a,c) - B;
       float angle_2 = -Vector.angleBetween(a,c) - B;
       Vector normal = Vector.cross(a, c, null);

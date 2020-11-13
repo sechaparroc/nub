@@ -32,7 +32,7 @@ public class BackAndForth extends Heuristic {
     public void applyActions(int i) {
         switch (_mode){
             case TRIANGULATION:{
-                Triangulation.applyTriangulation(this, i, true, _context.applyDelegation());
+                TIK.applyTriangulation(this, i, true, _context.applyDelegation());
                 break;
             }
             case TRIK:{
