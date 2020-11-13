@@ -95,7 +95,7 @@ import java.util.function.Consumer;
  * value globally, instead of setting it on a per method call basis. Note that it is initially set to 0.8.</li>
  * <li>Customize node behaviors by overridden {@link Node#interact(Object...)}
  * and then invoke them by either calling: {@link #interactTag(Object...)},
- * {@link #interactTag(String, Object...)} or {@link #interactNode(Node, Object...)}.
+ * {@link #interactTag(String, Object...)} or {@link #interact(Node, Object...)}.
  * </li>
  * </ol>
  * <h1>4. Timing handling</h1>
@@ -269,7 +269,7 @@ public class Graph {
     }
   }
 
-  public static TimingHandler TimingHandler = new TimingHandler();
+  public static TimingHandler TimingHandler;
   public static boolean _seeded;
   protected boolean _seededGraph;
   protected HashMap<String, Node> _tags;
@@ -357,8 +357,7 @@ public class Graph {
    * Defines a right-handed graph with the specified {@code width} and {@code height}
    * screen window dimensions. Creates and {@link #eye()} node, sets its {@link #fov()} to
    * {@code PI/3}. Calls {@link #setBounds(float, float)} on {@code zNear} and
-   * {@code zFar} to set up the scene frustum and {@link #fit()} to display the
-   * whole scene.
+   * {@code zFar} to set up the scene frustum.
    * <p>
    * The constructor also instantiates the graph main {@link #context()} and
    * {@code back-buffer} matrix-handlers (see {@link MatrixHandler}) and
@@ -374,7 +373,6 @@ public class Graph {
     if (is3D())
       setFOV((float) Math.PI / 3);
     setBounds(zNear, zFar);
-    fit();
   }
 
   /**
@@ -670,13 +668,13 @@ public class Graph {
   }
 
   /**
-   * Retrieves the graph field-of-view in radians. Meaningless if the graph {@link #is2D()}.
+   * Retrieves the scene field-of-view in radians. Meaningless if the scene {@link #is2D()}.
    * See {@link #setFOV(float)} for details. The value is related to the {@link #eye()}
    * {@link Node#magnitude()} as follows:
    * <p>
    * <ol>
    * <li>It returns {@code 2 * Math.atan(eye().magnitude())}, when the
-   * graph {@link #_type} is {@link Type#PERSPECTIVE}.</li>
+   * graph {@link #type()} is {@link Type#PERSPECTIVE}.</li>
    * <li>It returns {@code 2 * Math.atan(eye().magnitude() * width() / (2 * Math.abs(Vector.scalarProjection(Vector.subtract(eye().position(), center()), eye().zAxis()))))},
    * if the graph {@link #_type} is {@link Type#ORTHOGRAPHIC}.</li>
    * </ol>
@@ -715,10 +713,9 @@ public class Graph {
   }
 
   /**
-   * Same as {@code return _type == Type.PERSPECTIVE ? radians(eye().magnitude() * aspectRatio()) : eye().magnitude()}.
+   * Same as {@code return type() == Type.PERSPECTIVE ? radians(eye().magnitude() * aspectRatio()) : eye().magnitude()}.
    * <p>
-   * Returns the {@link #eye()} horizontal field-of-view in radians if the graph {@link #_type} is
-   * {@link Type#PERSPECTIVE}, or the {@link #eye()} {@link Node#magnitude()} otherwise.
+   * Returns the {@link #eye()} horizontal field-of-view in radians.
    *
    * @see #fov()
    * @see #setHFOV(float)
@@ -1863,6 +1860,8 @@ public class Graph {
 
   /**
    * Same as {@code fitBall(center(), radius())}.
+   * <p>
+   * Note that this is not available when bounds are fixed. Use {@link #setBounds(Vector, float)} instead.
    *
    * @see #center()
    * @see #radius()
@@ -1879,11 +1878,17 @@ public class Graph {
    * @see #fitFOV(float)
    */
   public void fit() {
+    if (_fixed) {
+      System.out.println("Warning: fit() is not available when bounds are fixed. Call setBounds(center, radius) first.");
+      return;
+    }
     fit(center(), _radius);
   }
 
   /**
    * Same as {@code fitBall(center(), radius(), duration)}.
+   * <p>
+   * Note that this method is not available when bounds are fixed. Use {@link #setBounds(Vector, float)} instead.
    *
    * @see #center()
    * @see #radius()
@@ -1900,6 +1905,10 @@ public class Graph {
    * @see #fitFOV(float)
    */
   public void fit(float duration) {
+    if (_fixed) {
+      System.out.println("Warning: fit(duration) is not available when bounds are fixed. Call setBounds(center, radius) first.");
+      return;
+    }
     fit(center(), _radius, duration);
   }
 
@@ -1911,6 +1920,8 @@ public class Graph {
    * ball fits the screen. Its {@link Node#orientation()} and its
    * {@link #fov()} are unchanged. You should therefore orientate the eye
    * before you call this method.
+   * <p>
+   * Note that this is not available when bounds are fixed. Use {@link #setBounds(Vector, float)} instead.
    *
    * @see #fit(float)
    * @see #fit(Vector, float)
@@ -1925,6 +1936,10 @@ public class Graph {
    * @see #fitFOV(float)
    */
   public void fit(Vector center, float radius, float duration) {
+    if (_fixed) {
+      System.out.println("Warning: fit(center, radius, duration) is not available when bounds are fixed. Call setBounds(center, radius) first.");
+      return;
+    }
     if (duration <= 0)
       fit(center, radius);
     else {
@@ -1943,6 +1958,8 @@ public class Graph {
   /**
    * Moves the eye so that the ball defined by {@code center} and {@code radius} is
    * visible and fits the window.
+   * <p>
+   * Note that this is not available when bounds are fixed. Use {@link #setBounds(Vector, float)} instead.
    *
    * @see #fit(float)
    * @see #fit(Vector, float, float)
@@ -1957,6 +1974,10 @@ public class Graph {
    * @see #fitFOV(float)
    */
   public void fit(Vector center, float radius) {
+    if (_fixed) {
+      System.out.println("Warning: fit(center, radius) is not available when bounds are fixed. Call setBounds(center, radius) first.");
+      return;
+    }
     switch (_type) {
       case TWO_D:
         lookAt(center);
@@ -1983,7 +2004,9 @@ public class Graph {
    * The eye position and orientation are not modified and you first have to orientate
    * the eye in order to actually see the scene (see {@link #lookAt(Vector)},
    * {@link #fit()} or {@link #fit(Vector, float)}).
-   *
+   * <p>
+   * Note that this is not available when bounds are fixed. Use {@link #setBounds(Vector, float)} instead.
+   * <p>
    * <b>Attention:</b> The {@link #fov()} is clamped to PI/2. This happens
    * when the eye is at a distance lower than sqrt(2) * radius() from the center().
    *
@@ -2000,6 +2023,10 @@ public class Graph {
    * @see #fit(Vector, Vector, float)
    */
   public void fitFOV(float duration) {
+    if (_fixed) {
+      System.out.println("Warning: fitFOV(duration) is not available when bounds are fixed. Call setBounds(center, radius) first.");
+      return;
+    }
     if (duration <= 0)
       fitFOV();
     else {
@@ -2022,7 +2049,9 @@ public class Graph {
    * The eye position and orientation are not modified and you first have to orientate
    * the eye in order to actually see the scene (see {@link #lookAt(Vector)},
    * {@link #fit()} or {@link #fit(Vector, float)}).
-   *
+   * <p>
+   * Note that this is not available when bounds are fixed. Use {@link #setBounds(Vector, float)} instead.
+   * <p>
    * <b>Attention:</b> The {@link #fov()} is clamped to PI/2. This happens
    * when the eye is at a distance lower than sqrt(2) * radius() from the center().
    *
@@ -2039,6 +2068,10 @@ public class Graph {
    * @see #fit(Vector, Vector, float)
    */
   public void fitFOV() {
+    if (_fixed) {
+      System.out.println("Warning: fitFOV() is not available when bounds are fixed. Call setBounds(center, radius) first.");
+      return;
+    }
     float distance = Vector.scalarProjection(Vector.subtract(eye().position(), center()), eye().zAxis());
     float magnitude = distance < (float) Math.sqrt(2) * _radius ? ((float) Math.PI / 2) : 2 * (float) Math.asin(_radius / distance);
     switch (_type) {
@@ -2056,6 +2089,8 @@ public class Graph {
   /**
    * Smoothly moves the eye during {@code duration} seconds so that the world axis aligned
    * box defined by {@code corner1} and {@code corner2} is entirely visible.
+   * <p>
+   * Note that this is not available when bounds are fixed. Use {@link #setBounds(Vector, float)} instead.
    *
    * @see #fit(Vector, Vector)
    * @see #fit(float)
@@ -2070,6 +2105,10 @@ public class Graph {
    * @see #fitFOV(float)
    */
   public void fit(Vector corner1, Vector corner2, float duration) {
+    if (_fixed) {
+      System.out.println("Warning: fit(corner1, corner2, duration) is not available when bounds are fixed. Call setBounds(center, radius) first.");
+      return;
+    }
     if (duration <= 0)
       fit(corner1, corner2);
     else {
@@ -2088,6 +2127,8 @@ public class Graph {
   /**
    * Moves the eye so that the world axis aligned box defined by {@code corner1}
    * and {@code corner2} is entirely visible.
+   * <p>
+   * Note that this is not available when bounds are fixed. Use {@link #setBounds(Vector, float)} instead.
    *
    * @see #fit(Vector, Vector, float)
    * @see #fit(float)
@@ -2102,6 +2143,10 @@ public class Graph {
    * @see #fitFOV(float)
    */
   public void fit(Vector corner1, Vector corner2) {
+    if (_fixed) {
+      System.out.println("Warning: fit(corner1, corner2) is not available when bounds are fixed. Call setBounds(center, radius) first.");
+      return;
+    }
     float diameter = Math.max(Math.abs(corner2._vector[1] - corner1._vector[1]), Math.abs(corner2._vector[0] - corner1._vector[0]));
     diameter = Math.max(Math.abs(corner2._vector[2] - corner1._vector[2]), diameter);
     fit(Vector.multiply(Vector.add(corner1, corner2), 0.5f), 0.5f * diameter);
@@ -2214,10 +2259,14 @@ public class Graph {
         distance = Math.max(distX, distY);
         break;
       case ORTHOGRAPHIC:
-        float dist = Vector.dot(Vector.subtract(newCenter, center()), vd);
-        distX = Vector.distance(pointX, newCenter) / eye().magnitude() / aspectRatio();
-        distY = Vector.distance(pointY, newCenter) / eye().magnitude() / 1.0f;
-        distance = dist + Math.max(distX, distY);
+        if (!_fixed) {
+          float dist = Vector.dot(Vector.subtract(newCenter, center()), vd);
+          distX = Vector.distance(pointX, newCenter) / eye().magnitude() / aspectRatio();
+          distY = Vector.distance(pointY, newCenter) / eye().magnitude() / 1.0f;
+          distance = dist + Math.max(distX, distY);
+        } else {
+          System.out.println("Warning: fit(x, y, width, height) is not available when bounds are fixed. Call setBounds(center, radius) first.");
+        }
         break;
     }
     eye().setPosition(Vector.subtract(newCenter, Vector.multiply(vd, distance)));
@@ -2256,68 +2305,6 @@ public class Graph {
   }
 
   // Other stuff
-
-  /**
-   * If {@link #isLeftHanded()} calls {@link #setRightHanded()}, otherwise calls
-   * {@link #setLeftHanded()}.
-   */
-  /*
-  public static void flip() {
-    if (isLeftHanded())
-      setRightHanded();
-    else
-      setLeftHanded();
-  }
-
-   */
-
-  /**
-   * Returns true if graph is left handed. Note that the graph is right handed by default.
-   *
-   * @see #setLeftHanded()
-   */
-  /*
-  public static boolean isLeftHanded() {
-    return leftHanded;
-  }
-
-
-   */
-  /**
-   * Returns true if graph is right handed. Note that the graph is right handed by default.
-   *
-   * @see #setRightHanded()
-   */
-  /*
-  public static boolean isRightHanded() {
-    return rightHanded;
-  }
-
-
-   */
-  /**
-   * Set the graph as right handed.
-   *
-   * @see #isRightHanded()
-   */
-  /*
-  public static void setRightHanded() {
-    rightHanded = true;
-  }
-
-   */
-
-  /**
-   * Set the graph as left handed.
-   *
-   * @see #isLeftHanded()
-   */
-  /*
-  public static void setLeftHanded() {
-    rightHanded = false;
-  }
-
-   */
 
   /**
    * @return true if the graph is 2D.
@@ -2508,14 +2495,14 @@ public class Graph {
    */
   protected boolean _backPicking(Node node) {
     return picking && node.tagging == true && !isEye(node) && _bb != null && (
-            (node.isPickingModeEnable(Node.CAMERA) && node.isHintEnable(Node.CAMERA)) ||
-                    (node.isPickingModeEnable(Node.AXES) && node.isHintEnable(Node.AXES)) ||
-                    (node.isPickingModeEnable(Node.HUD) && node.isHintEnable(Node.HUD) && (node._imrHUD != null || node._rmrHUD != null)) ||
-                    (node._frustumGraphs != null && node.isPickingModeEnable(Node.BOUNDS) && node.isHintEnable(Node.BOUNDS)) ||
-                    (node.isPickingModeEnable(Node.SHAPE) && node.isHintEnable(Node.SHAPE) && (node._imrShape != null || node._rmrShape != null)) ||
-                    (node.isPickingModeEnable(Node.TORUS) && node.isHintEnable(Node.TORUS)) ||
-                    (node.isPickingModeEnable(Node.CONSTRAINT) && node.isHintEnable(Node.CONSTRAINT)) ||
-                    (node.isPickingModeEnable(Node.BONE) && node.isHintEnable(Node.BONE))
+        (node.isPickingEnabled(Node.CAMERA) && node.isHintEnabled(Node.CAMERA)) ||
+            (node.isPickingEnabled(Node.AXES) && node.isHintEnabled(Node.AXES)) ||
+            (node.isPickingEnabled(Node.HUD) && node.isHintEnabled(Node.HUD) && (node._imrHUD != null || node._rmrHUD != null)) ||
+            (node._frustumGraphs != null && node.isPickingEnabled(Node.BOUNDS) && node.isHintEnabled(Node.BOUNDS)) ||
+            (node.isPickingEnabled(Node.SHAPE) && node.isHintEnabled(Node.SHAPE) && (node._imrShape != null || node._rmrShape != null)) ||
+            (node.isPickingEnabled(Node.TORUS) && node.isHintEnabled(Node.TORUS)) ||
+            (node.isPickingEnabled(Node.CONSTRAINT) && node.isHintEnabled(Node.CONSTRAINT)) ||
+            (node.isPickingEnabled(Node.BONE) && node.isHintEnabled(Node.BONE))
     );
   }
 
@@ -2523,7 +2510,7 @@ public class Graph {
    * Condition for the node front picking.
    */
   protected boolean _frontPicking(Node node) {
-    return picking && node.tagging == true && !isEye(node) && node.isPickingModeEnable(Node.BULLSEYE) && node.isHintEnable(Node.BULLSEYE);
+    return picking && node.tagging == true && !isEye(node) && node.isPickingEnabled(Node.BULLSEYE) && node.isHintEnabled(Node.BULLSEYE);
   }
 
   /**
@@ -3531,17 +3518,6 @@ public class Graph {
 
   // 0. Patterns
 
-  /*
-  public void interact(Object... gesture) {
-    interact(null, gesture);
-  }
-
-  public void interact(String tag, Object... gesture) {
-    if (!interactTag(tag, gesture))
-      interactEye(gesture);
-  }
-   */
-
   /**
    * Same as {@code return interactTag(null, gesture)}.
    *
@@ -3556,36 +3532,40 @@ public class Graph {
    * {@code interactNode(node(tag), gesture)} and returns {@code true}, otherwise
    * {@code false}.
    *
-   * @see #interactNode(Node, Object...)
+   * @see #interact(Node, Object...)
    */
   public boolean interactTag(String tag, Object... gesture) {
     if (node(tag) != null) {
-      interactNode(node(tag), gesture);
+      interact(node(tag), gesture);
       return true;
     }
     return false;
   }
 
   /**
-   * If {@code node} is non-null and different than the {@link #eye()} call
-   * {@code node.interact(gesture)} which should be overridden to customize the node behavior
-   * from the gesture data.
+   * If {@code node} is non-null call the interact {@code node} gesture
+   * parser function set either with {@link Node#setInteraction(Consumer)}
+   * or {@link Node#setInteraction(BiConsumer)}.
    *
-   * @see Node#interact(Object...)
+   * @see Node#setInteraction(BiConsumer)
+   * @see Node#setInteraction(Consumer)
    */
-  public void interactNode(Node node, Object... gesture) {
-    if (node == null || node == eye()) {
-      System.out.println("Warning: interactNode requires a non-null node different than the eye. Nothing done");
-      return;
+  public void interact(Node node, Object... gesture) {
+    if (node != null) {
+      if (node._interact != null) {
+        node._interact.accept(node, gesture);
+      }
     }
-    node.interact(gesture);
   }
 
-  /*
-  public void interactEye(Object... gesture) {
-
-  }
+  /**
+   * Same as {@code interact(eye(), gesture)}.
+   *
+   * @see #interact(Node, Object...)
    */
+  public void interact(Object... gesture) {
+    interact(eye(), gesture);
+  }
 
   // 1. Align
 
@@ -4474,7 +4454,7 @@ public class Graph {
    * @see #toggleHint(int)
    * @see #resetHint()
    */
-  public boolean isHintEnable(int hint) {
+  public boolean isHintEnabled(int hint) {
     return ~(_mask | ~hint) == 0;
   }
 
@@ -4499,7 +4479,7 @@ public class Graph {
    * @see #enableHint(int, Object...)
    * @see #disableHint(int)
    * @see #toggleHint(int)
-   * @see #isHintEnable(int)
+   * @see #isHintEnabled(int)
    * @see #resetHint()
    */
   public int hint() {
@@ -4516,7 +4496,7 @@ public class Graph {
    * @see #enableHint(int, Object...)
    * @see #disableHint(int)
    * @see #toggleHint(int)
-   * @see #isHintEnable(int)
+   * @see #isHintEnabled(int)
    */
   public void resetHint() {
     _mask = 0;
@@ -4531,7 +4511,7 @@ public class Graph {
    * @see #enableHint(int, Object...)
    * @see #resetHint()
    * @see #toggleHint(int)
-   * @see #isHintEnable(int)
+   * @see #isHintEnabled(int)
    */
   public void disableHint(int hint) {
     _mask &= ~hint;
@@ -4546,7 +4526,7 @@ public class Graph {
    * @see #disableHint(int)
    * @see #resetHint()
    * @see #toggleHint(int)
-   * @see #isHintEnable(int)
+   * @see #isHintEnabled(int)
    */
   public void enableHint(int hint, Object... params) {
     enableHint(hint);
@@ -4562,7 +4542,7 @@ public class Graph {
    * @see #enableHint(int, Object...)
    * @see #resetHint()
    * @see #toggleHint(int)
-   * @see #isHintEnable(int)
+   * @see #isHintEnabled(int)
    */
   public void enableHint(int hint) {
     _mask |= hint;
@@ -4577,7 +4557,7 @@ public class Graph {
    * @see #enableHint(int, Object...)
    * @see #resetHint()
    * @see #enableHint(int)
-   * @see #isHintEnable(int)
+   * @see #isHintEnabled(int)
    */
   public void toggleHint(int hint) {
     _mask ^= hint;
@@ -4606,7 +4586,7 @@ public class Graph {
    * @see #enableHint(int, Object...)
    * @see #disableHint(int)
    * @see #toggleHint(int)
-   * @see #isHintEnable(int)
+   * @see #isHintEnabled(int)
    * @see #resetHint()
    */
   public void configHint(int hint, Object... params) {

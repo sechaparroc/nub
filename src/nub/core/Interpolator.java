@@ -33,34 +33,25 @@ import java.util.ListIterator;
  * Here is a typical usage example:
  * <pre>
  * {@code
- * void init() {
+ * void setup() {
  *   Graph graph = new Graph(1200, 800);
  *   Interpolator interpolator = new Interpolator();
  *   for (int i = 0; i < 10; i++)
- *     interpolator.addKeyFrame(Node.random(graph));
- *   interpolator.start();
+ *     interpolator.addKeyFrame(scene.randomNode());
+ *   interpolator.run();
  * }
  * }
  * </pre>
  * which will create a random (see {@link Node#random(Graph)}) interpolator path
  * containing 10 keyframes (see {@link #addKeyFrame(Node)}). The interpolation is
- * also started (see {@link #run()}).
+ * also run (see {@link #run()}). The interpolation is stopped when {@link #time()} is
+ * greater than the {@link #lastTime()} (unless {@link #enableRecurrence()} is called).
  * <p>
- * The graph main drawing loop should look like:
- * <pre>
- * {@code
- * void mainLoop() {
- *   pushMatrix();
- *   graph.applyTransformation(interpolator.node());
- *   // draw your object here. Its position, orientation and magnitude are interpolated.
- *   popMatrix();
- * }
- * }
- * </pre>
- * The interpolation is stopped when {@link #time()} is greater than the
- * {@link #lastTime()} (unless loop() is {@code true}).
- * <p>
- * The
+ * The interpolator visual representation may be configured using the following hints:
+ * {@link #SPLINE} and {@link #STEPS}. See {@link #hint()},
+ * {@link #configHint(int, Object...)} {@link #enableHint(int)},
+ * {@link #enableHint(int, Object...)}, {@link #disableHint(int)}, {@link #toggleHint(int)}
+ * and {@link #resetHint()}.
  * <b>Attention:</b> If a {@link nub.core.constraint.Constraint} is attached to
  * the {@link #node()} (see {@link Node#constraint()}), it should be reset before
  * {@link #run()} is called, otherwise the interpolated motion (computed as if
@@ -109,7 +100,7 @@ public class Interpolator {
       _cacheHint = node.hint();
       _hint = hint;
       _time = time;
-      if (isHintEnable(SPLINE) && _hint != _cacheHint)
+      if (isHintEnabled(SPLINE) && _hint != _cacheHint)
         _node._mask = _hint;
     }
 
@@ -221,14 +212,7 @@ public class Interpolator {
     setNode(node);
     _t = 0.0f;
     _speed = 1.0f;
-    //JS should just go:
-    //_task = new Task(Graph.timingHandler()) {
-    _task = new nub.processing.TimingTask() {
-      @Override
-      public void execute() {
-        Interpolator.this._execute();
-      }
-    };
+    _task = new nub.processing.TimingTask(() -> Interpolator.this._execute());
     _recurrent = false;
     _pathIsValid = false;
     _valuesAreValid = false;
@@ -244,11 +228,10 @@ public class Interpolator {
 
     // TODO deprecated
     // hack (refer to Node.get())
-    if (node().isHintEnable(Node.SHAPE) && node()._imrShape != null || node()._rmrShape != null) {
+    if (node().isHintEnabled(Node.SHAPE) && node()._imrShape != null || node()._rmrShape != null) {
       //if (node()._imrShape != null || node()._rmrShape != null) {
       _stepsHint = Node.SHAPE;
-    }
-    else {
+    } else {
       if (node().isEye()) {
         _stepsHint = Node.CAMERA;
       } else {
@@ -267,14 +250,7 @@ public class Interpolator {
     this.setNode(other.node());
     this._t = other._t;
     this._speed = other._speed;
-    //JS should just go:
-    //this._task = new Task(Graph.timingHandler()) {
-    this._task = new nub.processing.TimingTask() {
-      @Override
-      public void execute() {
-        Interpolator.this._execute();
-      }
-    };
+    this._task = new nub.processing.TimingTask(() -> Interpolator.this._execute());
     this._task.setPeriod(other.task().period());
     this._task.enableConcurrence(other._task.isConcurrent());
     this._recurrent = other._recurrent;
@@ -896,7 +872,7 @@ public class Interpolator {
                 Vector.lerp(keyFrames[1]._node.magnitude(), keyFrames[2]._node.magnitude(), alpha));
             if (step % Interpolator.maxSteps != 0) {
               node._mask = _stepsHint;
-              if (node.isHintEnable(Node.SHAPE) && (node()._imrShape != null || node()._rmrShape != null)) {
+              if (node.isHintEnabled(Node.SHAPE) && (node()._imrShape != null || node()._rmrShape != null)) {
                 node.setShape(node());
               }
             }
@@ -982,7 +958,7 @@ public class Interpolator {
    * @see #toggleHint(int)
    * @see #resetHint()
    */
-  public boolean isHintEnable(int hint) {
+  public boolean isHintEnabled(int hint) {
     return ~(_mask | ~hint) == 0;
   }
 
@@ -1004,7 +980,7 @@ public class Interpolator {
    * @see #enableHint(int, Object...)
    * @see #disableHint(int)
    * @see #toggleHint(int)
-   * @see #isHintEnable(int)
+   * @see #isHintEnabled(int)
    * @see #resetHint()
    */
   public int hint() {
@@ -1021,7 +997,7 @@ public class Interpolator {
    * @see #enableHint(int, Object...)
    * @see #disableHint(int)
    * @see #toggleHint(int)
-   * @see #isHintEnable(int)
+   * @see #isHintEnabled(int)
    */
   public void resetHint() {
     _mask = 0;
@@ -1037,7 +1013,7 @@ public class Interpolator {
    * @see #enableHint(int, Object...)
    * @see #resetHint()
    * @see #toggleHint(int)
-   * @see #isHintEnable(int)
+   * @see #isHintEnabled(int)
    */
   public void disableHint(int hint) {
     _mask &= ~hint;
@@ -1053,7 +1029,7 @@ public class Interpolator {
    * @see #disableHint(int)
    * @see #resetHint()
    * @see #toggleHint(int)
-   * @see #isHintEnable(int)
+   * @see #isHintEnabled(int)
    */
   public void enableHint(int hint, Object... params) {
     enableHint(hint);
@@ -1069,7 +1045,7 @@ public class Interpolator {
    * @see #enableHint(int, Object...)
    * @see #resetHint()
    * @see #toggleHint(int)
-   * @see #isHintEnable(int)
+   * @see #isHintEnabled(int)
    */
   public void enableHint(int hint) {
     _mask |= hint;
@@ -1101,7 +1077,7 @@ public class Interpolator {
    * @see #enableHint(int, Object...)
    * @see #resetHint()
    * @see #enableHint(int)
-   * @see #isHintEnable(int)
+   * @see #isHintEnabled(int)
    */
   public void toggleHint(int hint) {
     _mask ^= hint;
@@ -1128,7 +1104,7 @@ public class Interpolator {
    * @see #enableHint(int, Object...)
    * @see #disableHint(int)
    * @see #toggleHint(int)
-   * @see #isHintEnable(int)
+   * @see #isHintEnabled(int)
    * @see #resetHint()
    */
   public void configHint(int hint, Object... params) {

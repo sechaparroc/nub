@@ -1,6 +1,5 @@
 package intellij;
 
-import nub.core.Graph;
 import nub.core.Node;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -20,57 +19,66 @@ public class MouseDragInteraction extends PApplet {
   Node node, shape1, shape2;
 
   public void settings() {
-    size(1600, 800, P3D);
+    size(1200, 600, P3D);
   }
 
   public void setup() {
     rectMode(CENTER);
-    scene = new Scene(this, 1000);
-    scene.fit(1);
 
-    shape1 = new Node() {
-      @Override
-      public void graphics(PGraphics pGraphics) {
-        Scene.drawAxes(pGraphics, scene.radius() / 3);
-        pGraphics.pushStyle();
-        pGraphics.rectMode(CENTER);
-        pGraphics.fill(255, 0, 255);
-        if (scene.is3D())
-          Scene.drawTorusSolenoid(pGraphics, 80);
-        else
-          pGraphics.rect(10, 10, 200, 200);
-        pGraphics.popStyle();
-      }
-    };
+    //scene = new Scene(this, 100, 1600);
+    //scene.eye().setPosition(new Vector(0, 0, 850));
+    scene = new Scene(this, 1500);
+    scene.setHUD((PGraphics pg) -> {
+      pg.pushStyle();
+      pg.stroke(255, 255, 0);
+      pg.strokeWeight(5);
+      pg.fill(255, 255, 0, 125);
+      pg.rect(pixelX, pixelY, 2 * h, h);
+      //pg.point(pixelX, pixelY);
+      pg.popStyle();
+    });
+    //scene.togglePerspective();
+    scene.enableHint(Scene.AXES);
+    scene.enableHint(Scene.BACKGROUND, color(0));
+    //scene.fit(1);
+
+    shape1 = new Node((PGraphics pGraphics) -> {
+      Scene.drawAxes(pGraphics, scene.radius() / 3);
+      pGraphics.pushStyle();
+      pGraphics.rectMode(CENTER);
+      pGraphics.fill(255, 0, 255);
+      if (scene.is3D())
+        Scene.drawTorusSolenoid(pGraphics, 80);
+      else
+        pGraphics.rect(10, 10, 200, 200);
+      pGraphics.popStyle();
+    }
+    );
     shape1.setRotation(Quaternion.random());
     shape1.translate(-375, 175, 0);
 
-    shape2 = new Node(shape1) {
-      @Override
-      public void graphics(PGraphics pGraphics) {
-        Scene.drawAxes(pGraphics, scene.radius() / 3);
-        pGraphics.pushStyle();
-        pGraphics.rectMode(CENTER);
-        pGraphics.fill(255, 255, 0);
-        if (scene.is3D())
-          pGraphics.box(150);
-        else
-          pGraphics.rect(10, 10, 200, 200);
-        pGraphics.popStyle();
-      }
-    };
+    shape2 = new Node(shape1, (PGraphics pGraphics) -> {
+      Scene.drawAxes(pGraphics, scene.radius() / 3);
+      pGraphics.pushStyle();
+      pGraphics.rectMode(CENTER);
+      pGraphics.fill(255, 255, 0);
+      if (scene.is3D())
+        pGraphics.box(150);
+      else
+        pGraphics.rect(10, 10, 200, 200);
+      pGraphics.popStyle();
+    }
+    );
     shape2.translate(275, 275, 0);
     randomVector = Vector.random();
     randomVector.setMagnitude(scene.radius() * 0.5f);
   }
 
   public void draw() {
-    background(0);
-    fill(0, 255, 255);
-    scene.drawArrow(randomVector);
-    scene.drawAxes();
     // render scene nodes (shapes simply get drawn)
     scene.render();
+    fill(0, 255, 255);
+    scene.drawArrow(randomVector);
   }
 
   public void keyPressed() {
@@ -118,7 +126,13 @@ public class MouseDragInteraction extends PApplet {
       Scene.leftHanded = !Scene.leftHanded;
     if (key == 'p')
       scene.togglePerspective();
+
+    if (key == 'g') {
+      scene.fit(pixelX, pixelY, 2 * h, h, 1);
+    }
   }
+
+  int pixelX = 300, pixelY = 400, h = 100;
 
   @Override
   public void mouseMoved() {
@@ -128,7 +142,8 @@ public class MouseDragInteraction extends PApplet {
   public void mouseDragged() {
     if (mouseButton == LEFT)
       if (cad) {
-        scene.mouseRotateCAD(randomVector);
+        //scene.mouseRotateCAD(randomVector);
+        scene.mouseRotateCAD();
       } else if (lookAround) {
         scene.mouseLookAround();
       } else {
