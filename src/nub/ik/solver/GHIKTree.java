@@ -1,8 +1,6 @@
-package nub.ik.solver.trik;
+package nub.ik.solver;
 
 import nub.core.Node;
-import nub.ik.solver.Solver;
-import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 
@@ -11,12 +9,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Tree extends Solver {
+public class GHIKTree extends Solver {
   protected static class TreeNode {
     protected TreeNode _parent;
     protected List<TreeNode> _children;
     protected List<TreeNode> _reachableLeafNodes; //Reachable leaf nodes from current node
-    protected IKSolver _solver;
+    protected GHIK _solver;
     protected float _weight = 1.f;
 
     protected boolean _outerTarget = false;
@@ -26,14 +24,14 @@ public class Tree extends Solver {
       _reachableLeafNodes = new ArrayList<TreeNode>();
     }
 
-    public TreeNode(IKSolver solver) {
+    public TreeNode(GHIK solver) {
       this._solver = solver;
       _solver.setTimesPerFrame(1);
       _children = new ArrayList<TreeNode>();
       _reachableLeafNodes = new ArrayList<TreeNode>();
     }
 
-    protected TreeNode(TreeNode parent, IKSolver solver) {
+    protected TreeNode(TreeNode parent, GHIK solver) {
       this._parent = parent;
       this._solver = solver;
       if (parent != null) {
@@ -55,13 +53,13 @@ public class Tree extends Solver {
       return _weight;
     }
 
-    protected IKSolver _solver() {
+    protected GHIK _solver() {
       return _solver;
     }
   }
 
   protected TreeNode _root;
-  protected IKSolver.HeuristicMode _mode;
+  protected GHIK.HeuristicMode _mode;
   protected List<List<NodeState>> _initial, _bestSubchains;
   protected float _bestVal = 99999f, _bestDist = 999999f;
 
@@ -69,11 +67,11 @@ public class Tree extends Solver {
   protected float _distanceFactor = 2;
 
 
-  public Tree(Node root) {
-    this(root, IKSolver.HeuristicMode.BACK_AND_FORTH_TRIK);
+  public GHIKTree(Node root) {
+    this(root, GHIK.HeuristicMode.BFIK_TRIK);
   }
 
-  public Tree(Node root, IKSolver.HeuristicMode mode) {
+  public GHIKTree(Node root, GHIK.HeuristicMode mode) {
     super();
     TreeNode dummy = new TreeNode(); //Dummy TreeNode to Keep Reference
     _mode = mode;
@@ -92,11 +90,11 @@ public class Tree extends Solver {
     if (node == null) return;
     if (node.children().isEmpty()) { //Is a leaf node, hence we've found a chain of the structure
       list.add(node);
-      IKSolver solver = new IKSolver(list, _mode);
+      GHIK solver = new GHIK(list, _mode);
       new TreeNode(parent, solver);
     } else if (node.children().size() > 1) {
       list.add(node);
-      IKSolver solver = new IKSolver(list, _mode);
+      GHIK solver = new GHIK(list, _mode);
       TreeNode treeNode = new TreeNode(parent, solver);
       for (Node child : node.children()) {
         List<Node> newList = new ArrayList<>();
@@ -143,7 +141,7 @@ public class Tree extends Solver {
   }
 
   protected float _applyBestRotation(TreeNode treeNode, Node target, List<Vector> effs, List<Vector> targets){
-      IKSolver solver = treeNode._solver;
+      GHIK solver = treeNode._solver;
       Quaternion rotation = FA3R.FA3R(targets, effs, new Vector(), new Vector());
       if(solver.context().chain().get(solver.context().endEffectorId()).constraint() != null)
           rotation = solver.context().chain().get(solver.context().endEffectorId()).constraint().constrainRotation(rotation, solver.context().chain().get(solver.context().endEffectorId()));
@@ -175,7 +173,7 @@ public class Tree extends Solver {
   protected void moveParent(TreeNode node){
     if(node._parent == null) return;
     Node subbase = node._parent._solver.context().chain().get(node._parent._solver.context().chain().size() - 1);
-    IKSolver solver = node._solver;
+    GHIK solver = node._solver;
     if(solver.target() == null) return;
     //target w.r.t subbase
     Vector v1 = subbase.location(solver.context().chain().get(solver.context().endEffectorId()).position());
@@ -188,7 +186,7 @@ public class Tree extends Solver {
 
   protected boolean _solve(TreeNode treeNode) {
     if (treeNode._children == null || treeNode._children.isEmpty()) {
-      IKSolver solver = treeNode._solver;
+      GHIK solver = treeNode._solver;
       if (solver.target() == null) return false;
       //solve ik for current chain
       solver.reset();
@@ -199,7 +197,7 @@ public class Tree extends Solver {
       return true;
     }
 
-    IKSolver solver = treeNode._solver;
+    GHIK solver = treeNode._solver;
     for (TreeNode child : treeNode._children()) {
       _solve(child);
     }

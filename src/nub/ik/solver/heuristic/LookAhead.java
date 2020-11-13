@@ -1,8 +1,8 @@
-package nub.ik.solver.trik.heuristic;
+package nub.ik.solver.heuristic;
 
-import nub.ik.solver.trik.NodeInformation;
-import nub.ik.solver.trik.NodeState;
-import nub.ik.solver.trik.State;
+import nub.ik.solver.NodeInformation;
+import nub.ik.solver.NodeState;
+import nub.ik.solver.State;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 

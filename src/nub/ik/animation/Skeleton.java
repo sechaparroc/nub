@@ -18,8 +18,8 @@ import nub.core.constraint.BallAndSocket;
 import nub.core.constraint.Constraint;
 import nub.core.constraint.Hinge;
 import nub.ik.solver.Solver;
-import nub.ik.solver.trik.Tree;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.GHIKTree;
+import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
 import nub.processing.Scene;
 import processing.core.PConstants;
@@ -476,13 +476,13 @@ public class Skeleton {
   }
 
   public void enableIK(){
-    enableIK(IKSolver.HeuristicMode.COMBINED_TRIK);
+    enableIK(GHIK.HeuristicMode.TRIK_ECTIK);
   }
 
-  public void enableIK(IKSolver.HeuristicMode mode) {
+  public void enableIK(GHIK.HeuristicMode mode) {
     for (Node child : _reference.children()) {
       if (!_solvers.containsKey(child)) {
-        Tree s = Graph.registerTreeSolver(child, mode);
+        GHIKTree s = Graph.registerTreeSolver(child, mode);
         _solvers.put(child, s);
       } else {
         Graph.executeSolver(_solvers.get(child));
@@ -492,10 +492,10 @@ public class Skeleton {
 
   public void enableDirection(boolean direction){
     for(Solver s : solvers()){
-      if(s instanceof Tree){
-        ((Tree) s).setDirection(direction);
-      } else if(s instanceof IKSolver){
-        ((IKSolver) s).setDirection(direction);
+      if(s instanceof GHIKTree){
+        ((GHIKTree) s).setDirection(direction);
+      } else if(s instanceof GHIK){
+        ((GHIK) s).setDirection(direction);
       }
     }
   }

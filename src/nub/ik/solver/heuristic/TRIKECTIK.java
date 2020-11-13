@@ -1,7 +1,7 @@
-package nub.ik.solver.trik.heuristic;
+package nub.ik.solver.heuristic;
 
-import nub.ik.solver.trik.Context;
-import nub.ik.solver.trik.NodeInformation;
+import nub.ik.solver.Context;
+import nub.ik.solver.NodeInformation;
 
 public class TRIKECTIK extends Heuristic{
     protected float _trikFraction; //Define how much of the iterations must use TRIK Heuristic (parameter between 0 and 1)

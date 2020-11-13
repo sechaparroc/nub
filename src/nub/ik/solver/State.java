@@ -1,4 +1,4 @@
-package nub.ik.solver.trik;
+package nub.ik.solver;
 
 import nub.core.Node;
 import nub.core.constraint.Constraint;

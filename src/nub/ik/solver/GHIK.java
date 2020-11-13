@@ -1,22 +1,19 @@
-package nub.ik.solver.trik.implementations;
+package nub.ik.solver;
 
 import nub.core.Node;
-import nub.ik.solver.Solver;
-import nub.ik.solver.trik.NodeInformation;
-import nub.ik.solver.trik.Context;
-import nub.ik.solver.trik.heuristic.*;
+import nub.ik.solver.heuristic.*;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 
 import java.util.List;
 
-public class IKSolver extends Solver {
+public class GHIK extends Solver {
     public static boolean log = false;
     public enum HeuristicMode{
-        CCD, BACK_AND_FORTH_CCD,
-        TRIANGULATION, BACK_AND_FORTH_TRIANGULATION,
-        TRIK, BACK_AND_FORTH_TRIK,
-        COMBINED, COMBINED_EXPRESSIVE, COMBINED_TRIK
+        CCD, BFIK_CCD,
+        TIK, BFIK_TIK,
+        TRIK, BFIK_TRIK,
+        ECTIK, ECTIK_DAMP, TRIK_ECTIK
     }
     protected boolean _swapOrder = false; //swap the order of traversal at each iteration
     protected boolean _enableDeadLockResolution = false;
@@ -34,7 +31,7 @@ public class IKSolver extends Solver {
     }
 
 
-    public IKSolver(List<? extends Node> chain, Node target, HeuristicMode mode, boolean debug) {
+    public GHIK(List<? extends Node> chain, Node target, HeuristicMode mode, boolean debug) {
         super();
         this._context = new Context(chain, target, debug);
         _context.setSolver(this);
@@ -44,15 +41,15 @@ public class IKSolver extends Solver {
         _context.setSingleStep(false);
     }
 
-    public IKSolver(List<? extends Node> chain, HeuristicMode mode) {
+    public GHIK(List<? extends Node> chain, HeuristicMode mode) {
         this(chain, null, mode, false);
     }
 
-    public IKSolver(List<? extends Node> chain, HeuristicMode mode, boolean debug) {
+    public GHIK(List<? extends Node> chain, HeuristicMode mode, boolean debug) {
         this(chain, null, mode, debug);
     }
 
-    public IKSolver(List<? extends Node> chain, Node target, HeuristicMode mode){
+    public GHIK(List<? extends Node> chain, Node target, HeuristicMode mode){
         this(chain, target, mode, false);
     }
 
@@ -64,15 +61,15 @@ public class IKSolver extends Solver {
                 _heuristic = new CCD(_context);
                 break;
             }
-            case BACK_AND_FORTH_CCD: {
+            case BFIK_CCD: {
                 _heuristic = new BackAndForth(_context, BackAndForth.Mode.CCD);
                 break;
             }
-            case TRIANGULATION: {
+            case TIK: {
                 _heuristic = new TIK(_context);
                 break;
             }
-            case BACK_AND_FORTH_TRIANGULATION: {
+            case BFIK_TIK: {
                 _heuristic = new BackAndForth(_context, BackAndForth.Mode.TRIANGULATION);
                 break;
             }
@@ -80,15 +77,15 @@ public class IKSolver extends Solver {
                 _heuristic = new TRIK(_context);
                 break;
             }
-            case BACK_AND_FORTH_TRIK: {
+            case BFIK_TRIK: {
                 _heuristic = new BackAndForth(_context, BackAndForth.Mode.TRIK);
                 break;
             }
-            case COMBINED: {
+            case ECTIK: {
                 _heuristic = new ECTIK(_context);
                 break;
             }
-            case COMBINED_EXPRESSIVE: {
+            case ECTIK_DAMP: {
                 _heuristic = new ECTIK(_context);
                 //expressive parameters
                 context().enableDelegation(true);
@@ -96,7 +93,7 @@ public class IKSolver extends Solver {
                 context().setMaxAngle((float)Math.toRadians(40));
                 break;
             }
-            case COMBINED_TRIK: {
+            case TRIK_ECTIK: {
                 _heuristic = new TRIKECTIK(_context);
                 break;
             }
@@ -156,7 +153,7 @@ public class IKSolver extends Solver {
 
     @Override
     protected boolean _iterate() {
-        if(IKSolver.log) showInfo("Begin iterate " + "iteration " + _iterations, _context);
+        if(GHIK.log) showInfo("Begin iterate " + "iteration " + _iterations, _context);
         if (_context.target() == null) return true;
         if (_context.singleStep()) return _iterateStepByStep();
         _current = 10e10f; //Keep the current error

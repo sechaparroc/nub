@@ -1,9 +1,8 @@
-package nub.ik.solver.trik;
+package nub.ik.solver;
 
 import nub.core.Graph;
 import nub.core.Node;
 import nub.core.constraint.Constraint;
-import nub.ik.solver.Solver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 

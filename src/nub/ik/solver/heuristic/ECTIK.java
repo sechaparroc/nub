@@ -1,10 +1,10 @@
-package nub.ik.solver.trik.heuristic;
+package nub.ik.solver.heuristic;
 
 import nub.core.constraint.Constraint;
 import nub.core.constraint.Hinge;
-import nub.ik.solver.trik.NodeInformation;
-import nub.ik.solver.trik.Context;
-import nub.ik.solver.trik.NodeState;
+import nub.ik.solver.NodeInformation;
+import nub.ik.solver.Context;
+import nub.ik.solver.NodeState;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 

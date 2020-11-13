@@ -12,8 +12,8 @@
 package nub.core;
 
 import nub.ik.solver.Solver;
-import nub.ik.solver.trik.Tree;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.GHIKTree;
+import nub.ik.solver.GHIK;
 import nub.primitives.Matrix;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -4918,23 +4918,23 @@ public class Graph {
   /**
    * Registers the given chain to solve IK.
    */
-  public static Tree registerTreeSolver(Node node){
-    return registerTreeSolver(node, IKSolver.HeuristicMode.COMBINED_TRIK);
+  public static GHIKTree registerTreeSolver(Node node){
+    return registerTreeSolver(node, GHIK.HeuristicMode.TRIK_ECTIK);
   }
 
-  public static Tree registerTreeSolver(Node node, IKSolver.HeuristicMode mode) {
+  public static GHIKTree registerTreeSolver(Node node, GHIK.HeuristicMode mode) {
     for (Solver solver : _solvers) {
       Node head = null;
-      if (solver instanceof Tree) head = ((Tree) solver).head();
+      if (solver instanceof GHIKTree) head = ((GHIKTree) solver).head();
       else return null;
       //If Head is Contained in any structure do nothing
       if (!((isReachable(head) && isReachable(node)) ? Node.path(head, node) : new ArrayList<Node>()).isEmpty())
         return null;
     }
 
-    Tree solver;
+    GHIKTree solver;
 
-    solver = new Tree(node, mode);
+    solver = new GHIKTree(node, mode);
     _solvers.add(solver);
     //Add task
     Task task = new Task(TimingHandler) {
@@ -4955,7 +4955,7 @@ public class Graph {
     Solver toRemove = null;
     for (Solver solver : _solvers) {
       Node head = null;
-      if (solver instanceof Tree) head = ((Tree) solver).head();
+      if (solver instanceof GHIKTree) head = ((GHIKTree) solver).head();
       else return false;
       if (head == node) {
         toRemove = solver;
@@ -4973,7 +4973,7 @@ public class Graph {
   public static Solver treeSolver(Node node) {
     for (Solver solver : _solvers) {
       Node head = null;
-      if (solver instanceof Tree) head = ((Tree) solver).head();
+      if (solver instanceof GHIKTree) head = ((GHIKTree) solver).head();
       else return null;
 
       if (head == node) {
@@ -4985,7 +4985,7 @@ public class Graph {
 
   public static boolean addIKTarget(Node endEffector, Node target) {
     for (Solver solver : _solvers) {
-      if (solver instanceof Tree && ((Tree) solver).addTarget(endEffector, target)) return true;
+      if (solver instanceof GHIKTree && ((GHIKTree) solver).addTarget(endEffector, target)) return true;
     }
     return false;
   }
@@ -5001,7 +5001,7 @@ public class Graph {
 
   /**
    * Only meaningful for non-registered solvers. Solver should be different than
-   * {@link Tree}.
+   * {@link GHIKTree}.
    *
    * @see #registerTreeSolver(Node)
    * @see #unregisterTreeSolver(Node)

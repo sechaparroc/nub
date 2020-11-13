@@ -1,7 +1,7 @@
-package nub.ik.solver.trik.heuristic;
+package nub.ik.solver.heuristic;
 
-import nub.ik.solver.trik.NodeInformation;
-import nub.ik.solver.trik.Context;
+import nub.ik.solver.NodeInformation;
+import nub.ik.solver.Context;
 
 public abstract class Heuristic {
   /**
