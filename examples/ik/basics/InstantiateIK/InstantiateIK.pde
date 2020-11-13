@@ -28,7 +28,7 @@ import nub.primitives.*;
 import nub.core.*;
 import nub.processing.*;
 import nub.ik.solver.geometric.*;
-import nub.ik.solver.trik.implementations.SimpleTRIK;
+import nub.ik.solver.implementations.SimpleTRIK;
 import nub.timing.*;
 
 int w = 700;
