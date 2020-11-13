@@ -376,7 +376,11 @@ public class Context {
 
 
   public static float quaternionDistance(Quaternion a, Quaternion b) {
-    float dot = Quaternion.dot(a,b);
+    float s1 = 1, s2 = 1;
+    if (a.w() < 0) s1 = -1;
+    if (b.w() < 0) s2 = -1;
+    float dot = s1 * a._quaternion[0] * s2 * b._quaternion[0] + s1 * a._quaternion[1] * s2 * b._quaternion[1] + s1 * a._quaternion[2] * s2 * b._quaternion[2] + s1 * a._quaternion[3] * s2 * b._quaternion[3];
+    dot = Math.max(Math.min(dot, 1), -1);
     return (float) (1 - Math.pow(dot, 2));
   }
 
@@ -512,4 +516,23 @@ public class Context {
       nodeState._nodeInformation.setCache(nodeState._position.get(), nodeState._orientation.get());
     }
   }
+
+  public void printInfo(){
+    System.out.println("Chain---------");
+    for(Node node : chain()){
+      System.out.println("\t" + node.position());
+    }
+    System.out.println("--------------");
+    System.out.println("Usable chain---------");
+    for(Node node : usableChain()){
+      System.out.println("\t" + node.position());
+    }
+    System.out.println("--------------");
+    System.out.println("TARGET--------");
+    System.out.println(target().position());
+    System.out.println("Dist----------");
+    System.out.println(Vector.distance(target().position(), endEffectorInformation().node().position()));
+
+  }
+
 }
