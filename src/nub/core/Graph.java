@@ -4918,11 +4918,11 @@ public class Graph {
   /**
    * Registers the given chain to solve IK.
    */
-  public static Solver registerTreeSolver(Node node){
+  public static Tree registerTreeSolver(Node node){
     return registerTreeSolver(node, IKSolver.HeuristicMode.COMBINED_TRIK);
   }
 
-  public static Solver registerTreeSolver(Node node, IKSolver.HeuristicMode mode) {
+  public static Tree registerTreeSolver(Node node, IKSolver.HeuristicMode mode) {
     for (Solver solver : _solvers) {
       Node head = null;
       if (solver instanceof Tree) head = ((Tree) solver).head();
@@ -4932,9 +4932,9 @@ public class Graph {
         return null;
     }
 
-    Solver solver;
+    Tree solver;
 
-    solver = new Tree(node, IKSolver.HeuristicMode.COMBINED_TRIK);
+    solver = new Tree(node, mode);
     _solvers.add(solver);
     //Add task
     Task task = new Task(TimingHandler) {
