@@ -7,7 +7,7 @@ import nub.ik.solver.trik.NodeInformation;
 import nub.ik.solver.trik.NodeState;
 import nub.ik.solver.trik.heuristic.CCD;
 import nub.ik.solver.trik.heuristic.Heuristic;
-import nub.ik.solver.trik.heuristic.Triangulation;
+import nub.ik.solver.trik.heuristic.TIK;
 import nub.ik.solver.trik.heuristic.Util;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -57,7 +57,7 @@ public class CombinedViz extends Heuristic {
       Quaternion q_i = findCCD(context, i, j_i, eff_wrt_j_i, target_wrt_j_i, true);
       if(viz != null) {
         viz.clearFigures();
-        viz.addHighlightNode("Pc", j_i.node(), Scene.pApplet.color(252, 186, 3));
+        viz.addHighlightNode("Pc", j_i.node(), Scene.pApplet.color(0,255,255));
         viz.addHighlightNode("Pe", context.endEffectorInformation().node(), Scene.pApplet.color(0,255,0));
         viz.addHighlightNode("Pt", context.target(), Scene.pApplet.color(0,255,0));
         viz.addArrow("", j_i.positionCache(), context.endEffectorInformation().positionCache(), Scene.pApplet.color(0, 255, 255), Scene.pApplet.color(0));
@@ -122,7 +122,7 @@ public class CombinedViz extends Heuristic {
       if(viz != null){
         viz.clearFigures();
         //highlight current nodes
-        viz.addHighlightNode("", j_i.node(), Scene.pApplet.color(252, 186,3));
+        viz.addHighlightNode("", j_i.node(), Scene.pApplet.color(0, 255, 255));
         viz.addHighlightNode("", j_i1.node(), Scene.pApplet.color(0, 255, 255));
         viz.addFrame("New Configuration after triangulation");
       }
@@ -170,7 +170,7 @@ public class CombinedViz extends Heuristic {
 
       if(viz != null){
         viz.clearFigures();
-        viz.addHighlightNode("", j_i.node(), Scene.pApplet.color(252, 186,3));
+        viz.addHighlightNode("", j_i.node(), Scene.pApplet.color(0, 255, 255));
         viz.addHighlightNode("", j_i1.node(), Scene.pApplet.color(0, 255, 255));
         viz.addFrame("New Configuration after CCD Pass");
       }
@@ -259,7 +259,7 @@ public class CombinedViz extends Heuristic {
     } else {
       //Apply law of cosines
       float current = angle;
-      float expected = Triangulation.findCfromTriangle(a_mag, b_mag, c_mag);
+      float expected = TIK.findCfromTriangle(a_mag, b_mag, c_mag);
 
       angle_1 = expected - current;
       angle_2 = -current - expected;
@@ -288,7 +288,7 @@ public class CombinedViz extends Heuristic {
         viz.addArrow("b", j_i1.node().position(), context.endEffectorInformation().node().position(), Scene.pApplet.color(0,255,255), Scene.pApplet.color(0));
         viz.addArrow("c", j_i.node().position(), context.worldTarget().position(), Scene.pApplet.color(255,0,255), Scene.pApplet.color(0));
         //Highlight related nodes
-        viz.addHighlightNode("", j_i.node(), Scene.pApplet.color(252, 186,3));
+        viz.addHighlightNode("", j_i.node(), Scene.pApplet.color(0, 255, 255));
         viz.addHighlightNode("", j_i1.node(), Scene.pApplet.color(0, 255, 255));
         viz.addFrame("Define the vectors a, b, c" + " a" + a_mag + " b " + b_mag + " c " + c_mag);
 

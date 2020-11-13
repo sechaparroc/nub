@@ -38,7 +38,7 @@ public class MoCapPerformance {
     static float maxError = 0.01f;
     static int effs;
 
-    static String startAfterFile = "Stego";
+    static String startAt = "Cat";
     static int n_packages = 1;
 
     public static List<BVHPackage> generateZooPackages(){
@@ -50,12 +50,10 @@ public class MoCapPerformance {
         boolean start = false;
         int n = 0;
         for(File f : directories){
-            if(!start) {
-                if (f.getName().toUpperCase().equals(startAfterFile.toUpperCase())) {
-                    start = true;
-                }
-                continue;
+            if (f.getName().toUpperCase().equals(startAt.toUpperCase())) {
+                start = true;
             }
+            if(!start) continue;
             if(n == n_packages) break;
             System.out.println("Name " + f.getName());
             BVHPackage bvhP = new BVHPackage(zooInput, f.getName());
@@ -124,6 +122,7 @@ public class MoCapPerformance {
 
             stats.positionErrorSt.addValue(skeleton.positionDistance());
             stats.rotationErrorSt.addValue(skeleton.rotationDistance());
+            stats.orientationErrorSt.addValue(skeleton.orientationDistance());
             loader.nextPosture();
         }
     }
@@ -237,6 +236,14 @@ public class MoCapPerformance {
         table.addColumn("Med rot error");
         table.addColumn("Med Std rot error");
 
+        table.addColumn("Max ors error");
+        table.addColumn("Min ors error");
+        table.addColumn("Avg ors error");
+        table.addColumn("Std ors error");
+        table.addColumn("Med ors error");
+        table.addColumn("Med Std ors error");
+
+
         return table;
     }
 
@@ -313,6 +320,13 @@ public class MoCapPerformance {
             row.setDouble("Med rot error", stat.rotationErrorSt._median);
             row.setDouble("Med Std rot error", stat.rotationErrorSt._stdMedian);
 
+            row.setDouble("Max ors error", stat.rotationErrorSt._max);
+            row.setDouble("Min ors error", stat.rotationErrorSt._min);
+            row.setDouble("Avg ors error", stat.rotationErrorSt._mean);
+            row.setDouble("Std ors error", stat.rotationErrorSt._std);
+            row.setDouble("Med ors error", stat.rotationErrorSt._median);
+            row.setDouble("Med Std ors error", stat.rotationErrorSt._stdMedian);
+
         }
     }
 
@@ -357,6 +371,7 @@ public class MoCapPerformance {
             solver = new Tree(root, mode);
             //define attributes
             solver.setMaxError(maxError * height); //1% of the skeleton height
+            solver.setDirection(true);
             solver.setTimesPerFrame(iterations);
             solver.setMaxIterations(iterations);
             solver.setChainTimesPerFrame(1);
@@ -404,6 +419,14 @@ public class MoCapPerformance {
             double dist = 0;
             for (Node joint : structure.values()) {
                 dist += quaternionDistance(joint.rotation(), jointToNode.get(joint).rotation());
+            }
+            return dist / structure.size();
+        }
+
+        double orientationDistance(){
+            double dist = 0;
+            for (Node joint : structure.values()) {
+                dist += quaternionDistance(joint.orientation(), jointToNode.get(joint).orientation());
             }
             return dist / structure.size();
         }
@@ -500,7 +523,7 @@ public class MoCapPerformance {
         String name;
         Statistics errorSt = new Statistics(), iterationSt = new Statistics(), timeSt = new Statistics();
         Statistics distancePosSt = new Statistics(), distanceOrientationSt = new Statistics(), distanceRotationSt = new Statistics(), motionSt = new Statistics();
-        Statistics positionErrorSt = new Statistics(), rotationErrorSt = new Statistics();
+        Statistics positionErrorSt = new Statistics(), rotationErrorSt = new Statistics(), orientationErrorSt = new Statistics();
 
         void update(){
             errorSt.updateStatistics();
@@ -512,6 +535,7 @@ public class MoCapPerformance {
             motionSt.updateStatistics();
             positionErrorSt.updateStatistics();
             rotationErrorSt.updateStatistics();
+            orientationErrorSt.updateStatistics();
         }
     }
 
@@ -572,11 +596,11 @@ public class MoCapPerformance {
         }
 
         public double median(){
-          return _median;
+            return _median;
         }
 
         public double stdMedian(){
-          return _stdMedian;
+            return _stdMedian;
         }
 
         public float std(double mean) {
@@ -616,6 +640,8 @@ public class MoCapPerformance {
             stats.setDouble("std", _std);
             stats.setDouble("min", _min);
             stats.setDouble("max", _max);
+            stats.setDouble("median", _median);
+            stats.setDouble("median_std", _stdMedian);
             JSONArray values = new JSONArray();
             for(double val : _values){
                 values.append(val);

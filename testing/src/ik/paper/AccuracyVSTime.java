@@ -4,7 +4,7 @@ import ik.basic.Util;
 import nub.core.Node;
 import nub.ik.solver.Solver;
 import nub.ik.solver.trik.NodeInformation;
-import nub.ik.solver.trik.heuristic.CombinedTRIK;
+import nub.ik.solver.trik.heuristic.TRIKECTIK;
 import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -24,7 +24,7 @@ public class AccuracyVSTime {
     static int seed = 0;
     //Benchmark Parameters
     static boolean continuousPath = true;
-    static boolean lissajous = true;
+    static boolean lissajous = false;
 
     static String dir = "C:/Users/olgaa/Desktop/Sebas/Thesis/Results/AccuracyVSTime/";
 
@@ -35,15 +35,15 @@ public class AccuracyVSTime {
     static float boneLength = 50; //Define length of segments (bones)
     static int numJoints;
 
-    static float accuracyThreshold = continuousPath ? 0.01f : 0.001f;
+    static float accuracyThreshold = continuousPath ? 0.001f : 0.001f;
 
 
     static Util.ConstraintType constraintTypes[] = {
             Util.ConstraintType.NONE,
             Util.ConstraintType.HINGE,
-            Util.ConstraintType.HINGE_ALIGNED,
+            //Util.ConstraintType.HINGE_ALIGNED,
             Util.ConstraintType.CONE_ELLIPSE,
-            Util.ConstraintType.MIX,
+            //Util.ConstraintType.MIX,
             Util.ConstraintType.MIX_CONSTRAINED
     }; //Choose what kind of constraints apply to chain
 
@@ -56,16 +56,23 @@ public class AccuracyVSTime {
         Util.SolverType.BACK_AND_FORTH_TRIK_HEURISTIC,
         Util.SolverType.COMBINED_HEURISTIC,
         Util.SolverType.COMBINED_TRIK,
-        Util.SolverType.COMBINED_EXPRESSIVE,
+        //Util.SolverType.COMBINED_EXPRESSIVE,
     }; //Place Here Solvers that you want to compare
 
     static List<Vector> targetPositions;
+    static List<Quaternion> initialConfig;
 
     static HashMap<Util.SolverType, SolverStats> _statisticsPerSolver = new HashMap<>();
 
     public static void generateExperiment(Util.SolverType type, SolverStats solverStats, Util.ConstraintType constraintType, int iterations, int seed) {
         //1. Generate structure
         List<Node> structure = Util.generateDetachedChain(numJoints, boneLength, randRotation, randLength);
+        if(continuousPath){
+          for(int i = 0; i < initialConfig.size(); i++){
+            structure.get(i).setRotation(initialConfig.get(i).get());
+          }
+        }
+
         //Save the current values
         List<Quaternion> rotations = new ArrayList<Quaternion>();
         for(Node n : structure) rotations.add(n.rotation().get());
@@ -83,8 +90,8 @@ public class AccuracyVSTime {
         if(solver instanceof IKSolver){
             IKSolver ikSolver = (IKSolver) solver;
             ikSolver.enableDeadLockResolution(false);
-            if(ikSolver.heuristic() instanceof CombinedTRIK){
-                CombinedTRIK heuristic = (CombinedTRIK) ikSolver.heuristic();
+            if(ikSolver.heuristic() instanceof TRIKECTIK){
+                TRIKECTIK heuristic = (TRIKECTIK) ikSolver.heuristic();
                 heuristic.setTRIKFraction(continuousPath ? 0.3f : 0.05f); //First 5 iterations will use TRIK the others use combined heuristic
             }
             if(ikSolver.mode() == IKSolver.HeuristicMode.COMBINED_EXPRESSIVE){
@@ -168,7 +175,7 @@ public class AccuracyVSTime {
             nextRots = obtainRotations(structure);
             double distRot = distanceBetweenRotations(prevRots, nextRots);
             solverStats.distanceRotationSt.addValue(distRot);
-            if(distRot > Float.MIN_VALUE)solverStats.motionSt.addValue(motionDistribution(prevRots, nextRots, distRot));
+            if(distRot > 0.01f)solverStats.motionSt.addValue(motionDistribution(prevRots, nextRots, distRot));
             prevRots = nextRots;
 
             sample++;
@@ -181,6 +188,7 @@ public class AccuracyVSTime {
 
         targetPositions = new ArrayList<Vector>();
         for (int t = 0; t < n; t++) {
+            Vector prev = chain.get(chain.size() - 1).position().get();
             for (int i = 0; i < chain.size() - 1; i++) {
                 if (random.nextFloat() > 0.4f) {
                     chain.get(i).rotate(new Quaternion(new Vector(0, 0, 1), random.nextFloat() * 2 * PI - PI));
@@ -189,7 +197,16 @@ public class AccuracyVSTime {
                 }
             }
             //save the position of the target
-            targetPositions.add(chain.get(chain.size() - 1).position().get());
+            Vector des = chain.get(chain.size() - 1).position().get();
+            if(Vector.distance(des, prev) < 5) t--;
+            else{
+                if(random.nextFloat() < 0.2f){
+                    //Totally random and possibly unreacheable
+                    targetPositions.add(new Vector(boneLength * numJoints * random.nextFloat(), boneLength * numJoints * random.nextFloat(), boneLength * numJoints * random.nextFloat()));
+                }
+                targetPositions.add(des);
+            }
+
         }
     }
 
@@ -200,6 +217,7 @@ public class AccuracyVSTime {
         List<Node> chain = Util.generateDetachedChain(numJoints, boneLength, randRotation, randLength);
         Util.generateConstraints(chain, constraintType, seed, true);
         targetPositions = new ArrayList<Vector>();
+        initialConfig = new ArrayList<Quaternion>();
         float step = 0.01f;
         float last = step * n;
         double mean_dist = 0;
@@ -210,6 +228,7 @@ public class AccuracyVSTime {
                 float angle = 2 * PI * pa.noise(1000 * i + t) - PI;
                 Vector dir = new Vector(pa.noise(10000 * i + t), pa.noise(20000 * i + t), pa.noise(30000 * i + t));
                 chain.get(i).setRotation(new Quaternion(dir, angle));
+                if(t == 0) initialConfig.add(chain.get(i).rotation().get());
             }
             targetPositions.add(chain.get(chain.size() - 1).position().get());
             if (t > 0) {
@@ -285,7 +304,7 @@ public class AccuracyVSTime {
 
 
                 for (int i = 0; i < numSolvers; i++) {
-                    generateExperiment(solversType[i], _statisticsPerSolver.get(solversType[i]), constraintType, continuousPath ? 20 : 100, c_seed);
+                    generateExperiment(solversType[i], _statisticsPerSolver.get(solversType[i]), constraintType, continuousPath ? 50 : 50, c_seed);
                 }
                 c_seed = random.nextInt(100000);
             }
@@ -411,6 +430,8 @@ public class AccuracyVSTime {
                 row.setDouble("Min dist ors", _statisticsPerSolver.get(solversType[s]).distanceOrientationSt._min);
                 row.setDouble("Avg dist ors", _statisticsPerSolver.get(solversType[s]).distanceOrientationSt._mean);
                 row.setDouble("Std dist ors", _statisticsPerSolver.get(solversType[s]).distanceOrientationSt._std);
+                row.setDouble("Med dist ors", _statisticsPerSolver.get(solversType[s]).distanceOrientationSt._median);
+                row.setDouble("Med Std dist ors", _statisticsPerSolver.get(solversType[s]).distanceOrientationSt._stdMedian);
 
                 row.setDouble("Max motion", _statisticsPerSolver.get(solversType[s]).motionSt._max);
                 row.setDouble("Min motion", _statisticsPerSolver.get(solversType[s]).motionSt._min);
@@ -469,11 +490,18 @@ public class AccuracyVSTime {
     }
 
     public static double motionDistribution(List<Quaternion> prev, List<Quaternion> cur, double dist) {
-        double distrib = 0;
+        List<Double> vals = new ArrayList<Double>();
         for (int i = 0; i < prev.size(); i++) {
-            distrib += Math.min(quaternionDistance(prev.get(i), cur.get(i)) / dist, 1);
+            vals.add(quaternionDistance(prev.get(i), cur.get(i)));
         }
-        return distrib / prev.size();
+        return gini(vals);
+    }
+
+    public static double gini(List<Double> values) {
+        double sumOfDifference = values.stream()
+            .flatMapToDouble(v1 -> values.stream().mapToDouble(v2 -> Math.abs(v1 - v2))).sum();
+        double mean = values.stream().mapToDouble(v -> v).average().getAsDouble();
+        return sumOfDifference / (2 * values.size() * values.size() * mean);
     }
 
 

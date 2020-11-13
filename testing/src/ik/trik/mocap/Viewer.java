@@ -19,9 +19,13 @@ import java.util.Map;
 public class Viewer extends PApplet {
     String[] paths = new String[]{
             "/testing/data/bvh/0007_Cartwheel001.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/SpiderG/__Walk.bvh",
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__SlowFly.bvh",
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/cmu-mocap-master/data/001/01_02.bvh",
-            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Horse/__SlowWalk.bvh"
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Horse/__SlowWalk.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Monkey/__Run.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Eagle/__Strike1.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Puppy/Puppy_IdleEnergetic.bvh"
     };
 
     String path = paths[2];
@@ -37,6 +41,8 @@ public class Viewer extends PApplet {
     }
 
     public void setup(){
+        Scene._retainedBones = true;
+        //frameRate(24);
         //1. Setup Scene
         scene = new Scene(this);
         scene.setType(Graph.Type.ORTHOGRAPHIC);
@@ -55,7 +61,7 @@ public class Viewer extends PApplet {
         //Move the loader skeleton to the left
         //3. Create two skeletons with different solvers
         skeletons = new ArrayList<Skeleton>();
-        Skeleton IKSkeleton1 = loader.skeleton().get();
+        /*Skeleton IKSkeleton1 = loader.skeleton().get();
         IKSkeleton1.setColor(color(255,0,0));
         IKSkeleton1.setDepth(true);
         IKSkeleton1.setTargetRadius(scene.radius() * 0.02f);
@@ -65,16 +71,18 @@ public class Viewer extends PApplet {
         IKSkeleton1.enableIK(IKSolver.HeuristicMode.COMBINED_TRIK);
         IKSkeleton1.setMaxError(0.01f);
         IKSkeleton1.addTargets();
-        skeletons.add(IKSkeleton1);
+        skeletons.add(IKSkeleton1);*/
 
         Skeleton IKSkeleton2 = loader.skeleton().get();
+        //IKSkeleton2.disableConstraints();
         IKSkeleton2.setColor(color(0,255,0));
         IKSkeleton2.setDepth(true);
         IKSkeleton2.setTargetRadius(scene.radius() * 0.02f);
         IKSkeleton2.setRadius(scene.radius() * 0.01f);
         IKSkeleton2.setBoneWidth(scene.radius() * 0.01f);
 
-        IKSkeleton2.enableIK(IKSolver.HeuristicMode.BACK_AND_FORTH_CCD);
+        IKSkeleton2.enableIK(IKSolver.HeuristicMode.BACK_AND_FORTH_TRIK);
+        IKSkeleton2.enableDirection(true);
         IKSkeleton2.setMaxError(0.01f * height);
         println("Height : " + height + " Max error " + 0.01f * height);
         IKSkeleton2.addTargets();
@@ -87,8 +95,8 @@ public class Viewer extends PApplet {
 
         scene.setHUD(pg -> {
             pg.pushStyle();
-            pg.text("# End Effectors " + IKSkeleton1.endEffectors().size(), 50 , 50);
-            pg.text("S1 error " + IKSkeleton1.solvers().get(0).error() / IKSkeleton1.endEffectors().size(), 50 , 100);
+            //pg.text("# Joints" + + IKSkeleton1.BFS().size() + " # End Effectors " + IKSkeleton1.endEffectors().size(), 50 , 50);
+            //pg.text("S1 error " + IKSkeleton1.solvers().get(0).error() / IKSkeleton1.endEffectors().size(), 50 , 100);
             pg.text("S2 error " + IKSkeleton2.solvers().get(0).error() / IKSkeleton2.endEffectors().size(), 50 , 150);
             pg.text("FPS " + frameRate, 50 , 200);
             pg.popStyle();
@@ -98,9 +106,10 @@ public class Viewer extends PApplet {
         scene.setBounds(height * 3);
         scene.fit(0);
         scene.enableHint(Graph.BACKGROUND | Graph.AXES);
+        loader.skeleton().cull(true);
 
         //IKSkeleton1.enableIK(false);
-        //IKSkeleton2.enableIK(false);
+        IKSkeleton2.enableIK(false);
 
     }
 
@@ -179,6 +188,8 @@ public class Viewer extends PApplet {
                 entry.getValue().setOrientation(loader.skeleton().reference().displacement(new Quaternion(), desired));
             }
             skeleton.IKStatusChanged();
+            skeleton.solveIK();
+
         }
     }
 

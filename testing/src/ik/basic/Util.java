@@ -305,10 +305,13 @@ public class Util {
         }
         case CONE_ELLIPSE: {
           if (!is3D) break;
-          float down = radians((float) Math.min(Math.max(random.nextGaussian() * 30 + 30, 0), 80));
-          float up = radians((float) Math.min(Math.max(random.nextGaussian() * 30 + 30, 0), 80));
-          float left = radians((float) Math.min(Math.max(random.nextGaussian() * 30 + 30, 0), 80));
-          float right = radians((float) Math.min(Math.max(random.nextGaussian() * 30 + 30, 0), 80));
+          float m = (3 * random.nextFloat() + 1) * 20;
+          float s = 20;
+
+          float down = radians((float) Math.min(Math.max(random.nextGaussian() * m + s, 0), 120));
+          float up = radians((float) Math.min(Math.max(random.nextGaussian() * m + s, 0), 120));
+          float left = radians((float) Math.min(Math.max(random.nextGaussian() * m + s, 0), 120));
+          float right = radians((float) Math.min(Math.max(random.nextGaussian() * m + s, 0), 120));
 
           //down = left = right = up = radians(40);
           constraint = new SphericalPolygon(down, up, left, right);
@@ -348,8 +351,10 @@ public class Util {
             vector.normalize();
             vector = Vector.projectVectorOnPlane(vector, structure.get(i + 1).translation());
           }
-          float min = (float) Math.min(Math.max(random.nextGaussian() * 30 + 30, 10), 120);
-          float max = (float) Math.min(Math.max(random.nextGaussian() * 30 + 30, 10), 120);
+          float m = (3 * random.nextFloat() + 1) * 20;
+          float s = 20;
+          float min = (float) Math.min(Math.max(random.nextGaussian() * m + s, 10), 120);
+          float max = (float) Math.min(Math.max(random.nextGaussian() * m + s, 10), 120);
 
           constraint = new Hinge(radians(min),
               radians(max),
@@ -359,6 +364,9 @@ public class Util {
         case HINGE_ALIGNED: {
           float min = (float) Math.min(Math.max(random.nextGaussian() * 30 + 30, 10), 120);
           float max = (float) Math.min(Math.max(random.nextGaussian() * 30 + 30, 10), 120);
+          //float min = (float) Math.min(Math.max(random.nextGaussian() * 60 + 30, 50), 150);
+          //float max = (float) Math.min(Math.max(random.nextGaussian() * 60 + 30, 50), 150);
+
           Vector vector = new Vector(0, 0, 1);
 
           constraint = new Hinge(radians(min),

@@ -4,7 +4,7 @@ import ik.basic.Util;
 import nub.core.Node;
 import nub.ik.solver.Solver;
 import nub.ik.solver.trik.NodeInformation;
-import nub.ik.solver.trik.heuristic.CombinedTRIK;
+import nub.ik.solver.trik.heuristic.TRIKECTIK;
 import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -78,8 +78,8 @@ public class GeneralizedDistanceVSIterations {
     if(solver instanceof IKSolver){
       IKSolver ikSolver = (IKSolver) solver;
       ikSolver.enableDeadLockResolution(true);
-      if(ikSolver.heuristic() instanceof CombinedTRIK){
-        CombinedTRIK heuristic = (CombinedTRIK) ikSolver.heuristic();
+      if(ikSolver.heuristic() instanceof TRIKECTIK){
+        TRIKECTIK heuristic = (TRIKECTIK) ikSolver.heuristic();
         heuristic.setTRIKFraction(0.05f); //First 5 iterations will use TRIK the others use combined heuristic
       }
     }

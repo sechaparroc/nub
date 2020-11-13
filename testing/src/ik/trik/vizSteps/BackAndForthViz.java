@@ -12,7 +12,7 @@ public class BackAndForthViz extends Heuristic {
   public enum Mode{ CCD, TRIK, TRIANGULATION }
 
   public Viz viz;
-  protected int _times = 2;
+  protected int _times = 3;
   protected BackAndForth.Mode _mode;
 
   public BackAndForthViz(Context context, BackAndForth.Mode mode, Viz viz) {
@@ -44,32 +44,58 @@ public class BackAndForthViz extends Heuristic {
 
   @Override
   public void applyActions(int i) {
+    //Show the final result after the main Heuristic is applied
+    if(viz != null){
+      viz.clearFigures();
+      viz.addFrame("Before main unhighlight");
+      //highlight current nodes
+      viz.clearFigures();
+      viz.addHighlightNode("", context().usableChain().get(i), Scene.pApplet.color(252, 186,3));
+      viz.addHighlightNode("", context().usableChain().get(i+1), Scene.pApplet.color(252, 186,3));
+      viz.addFrame("Before main");
+    }
+
+
     switch (_mode){
       case TRIANGULATION:{
-        TriangulationViz.applyTriangulation(viz, this, i, true, _context.applyDelegation());
+        TriangulationViz.applyTriangulation(null, this, i, true, _context.applyDelegation());
         break;
       }
       case TRIK:{
-        TRIKViz.applyTRIK(viz, this, i);
+        TRIKViz.applyTRIK(null, this, i);
         break;
       }
       case CCD:{
-        CCDViz.applyCCD(viz,this, i, _context.applyDelegation());
+        CCDViz.applyCCD(null,this, i, _context.applyDelegation());
+        break;
       }
     }
     if(i >= _context.endEffectorId() - 1){
       CCD.applyOrientationalCCD(this, i);
-      return;
     }
 
     //Show the final result after the main Heuristic is applied
     if(viz != null){
       viz.clearFigures();
-      //highlight current nodes
+      viz.addFrame("After main unhighlight");
       viz.addHighlightNode("", context().usableChain().get(i), Scene.pApplet.color(252, 186,3));
-      viz.addHighlightNode("", context().usableChain().get(i + 1), Scene.pApplet.color(0, 255, 255));
-      viz.addFrame("New Configuration after main heuristic");
+      viz.addHighlightNode("", context().usableChain().get(i + 1), Scene.pApplet.color(252, 186,3));
+      //highlight current nodes
+      viz.addFrame("After main");
+      viz.clearFigures();
+
+      viz.addHighlightNode("", context().usableChain().get(i), Scene.pApplet.color(0,255,255));
+      viz.addHighlightNode("", context().usableChain().get(i + 1), Scene.pApplet.color(0,255,255));
+      viz.addFrame("Before BF unhighlight");
+      //highlight current nodes
+      viz.clearFigures();
+      viz.addFrame("Before BF");
     }
+
+    if(i >= _context.endEffectorId() - 1){
+      return;
+    }
+
 
     //Apply CCD Back and Forth k times
     NodeInformation j_i1 = _context.usableChainInformation().get(i + 1);
@@ -83,10 +109,12 @@ public class BackAndForthViz extends Heuristic {
     //Show the final result after the ccd  pass is performed
     if(viz != null){
       viz.clearFigures();
+      viz.addFrame("After BF unhighlight");
       //highlight current nodes
-      viz.addHighlightNode("", context().usableChain().get(i), Scene.pApplet.color(252, 186,3));
-      viz.addHighlightNode("", context().usableChain().get(i + 1), Scene.pApplet.color(0, 255, 255));
-      viz.addFrame("New Configuration after CCD Pass");
+      viz.addHighlightNode("", context().usableChain().get(i), Scene.pApplet.color(0,255,255));
+      viz.addHighlightNode("", context().usableChain().get(i + 1), Scene.pApplet.color(0,255,255));
+      viz.addFrame("After BF");
+      viz.clearFigures();
     }
   }
 

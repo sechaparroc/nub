@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 public class IKSkeletonViewer  extends PApplet {
-  int id = 4;
+  int id = 0;
   String[] paths = new String[]{
       "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__SlowFly.bvh",
       "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Monkey/__Walk.bvh",
@@ -68,7 +68,7 @@ public class IKSkeletonViewer  extends PApplet {
 
     loader.skeleton().setColor(colors[id]);
     loader.skeleton().setRadius(scene.radius() * 0.02f);
-    loader.skeleton().setBoneWidth(scene.radius() * 0.01f);
+    //loader.skeleton().setBoneWidth(scene.radius() * 0.01f);
     loader.skeleton().setConstraintFactor(0.4f);
     loader.skeleton().setDepth(true);
     int c_joints = 0;

@@ -54,6 +54,7 @@ public class Viz {
     }
   }
 
+  boolean showAnnotations, first = true; //fist is used due to an annoying bug :/
   String path, name;
   String title;
   public Scene scene;
@@ -254,14 +255,15 @@ public class Viz {
     scene.context().shininess(10);
     //Render only usable chain
     heuristic.context().chain().get(0).cull = true;
-    scene.render();
+    //Render target
+    scene.render(heuristic.context().target());
+    scene.render(heuristic.context().usableChain().get(0));
     //Render auxiliary structure
     for(int i = 0; i < fromIdx.length; i++) {
       if (fromIdx[i] != -1)
         scene.render(structureCopies.get(i).get(fromIdx[i]));
     }
     heuristic.context().chain().get(0).cull = false;
-    //Render target
     scene.closeContext();
 
     setVizBounds();
@@ -309,7 +311,10 @@ public class Viz {
   }
 
   public void addFrame(String name){
+    showAnnotations = true;
     sequence.add(new Image(name, drawFrame(name)));
+    showAnnotations = false;
+    sequence.add(new Image("un" + name, drawFrame(name)));
   }
 
   public void saveFrames(){
@@ -318,6 +323,10 @@ public class Viz {
 
     PGraphics pg = Scene.pApplet.createGraphics(x_max - x_min + 10, y_max - y_min + 20, PConstants.P2D);
     int idx = 0;
+    pg.beginDraw();
+    pg.clear();
+    pg.endDraw();
+
     for(Image image : sequence){
       pg.beginDraw();
       pg.clear();
@@ -329,7 +338,7 @@ public class Viz {
       pg.endDraw();
       //crop image
       //image.pimage.get(x_min,y_min,x_max - x_min,y_max - y_min).save(path + "/" + name + idx++ + ".png");
-      pg.save(path + "/" + name + idx++ + ".png");
+      pg.save(path + "/" + idx++ / 2 + image.title + ".png");
       //p.save(path + "/" + name + idx++ + ".png");
     }
   }
@@ -387,7 +396,7 @@ public class Viz {
     pg.stroke(shape.color);
     pg.line(p2.x(), p2.y(), p3.x(), p3.y());
 
-    if(!shape.name.equals("")) {
+    if(!shape.name.equals("") && showAnnotations) {
       Vector l1 = Vector.add(v1, v2);
       l1.multiply(0.5f);
       //l1 = v2;
@@ -401,18 +410,18 @@ public class Viz {
 
       pg.stroke(0);
       pg.strokeWeight(3);
-      pg.line(l1.x(), l1.y(), l2.x(), l2.y() + 14 * 0.25f);
+      pg.line(l1.x(), l1.y(), l2.x(), l2.y() + 20 * 0.25f);
 
       pg.stroke(255);
       pg.strokeWeight(1);
-      pg.line(l1.x(), l1.y(), l2.x(), l2.y() + 14 * 0.25f);
+      pg.line(l1.x(), l1.y(), l2.x(), l2.y() + 20 * 0.25f);
 
       pg.stroke(0);
       pg.fill(255);
-      pg.ellipse(l2.x(), l2.y() + 14 * 0.25f, 18, 18);
+      pg.ellipse(l2.x(), l2.y() + 20 * 0.25f, 26, 26);
       pg.stroke(shape.textCol);
       pg.fill(shape.textCol);
-      pg.textSize(14);
+      pg.textSize(18);
       pg.textAlign(PConstants.CENTER, PConstants.CENTER);
       pg.text(shape.name, l2.x(), l2.y());
       drawingNames.add(l2);
@@ -421,7 +430,7 @@ public class Viz {
   }
 
   void drawName(PGraphics pg, HighlightNode highlightNode) {
-    if (!highlightNode.name.equals("")) {
+    if (!highlightNode.name.equals("") && showAnnotations) {
       Vector v1 = scene.screenLocation(highlightNode.node.reference());
       Vector v2 = scene.screenLocation(highlightNode.node);
       float dist = highlightNode.node._boneRadius * 6 * scene.sceneToPixelRatio(new Vector());
@@ -439,18 +448,18 @@ public class Viz {
 
       pg.stroke(0);
       pg.strokeWeight(3);
-      pg.line(l1.x(), l1.y(), l2.x(), l2.y() + 14 * 0.25f);
+      pg.line(l1.x(), l1.y(), l2.x(), l2.y() + 20 * 0.25f);
 
       pg.stroke(255);
       pg.strokeWeight(1);
-      pg.line(l1.x(), l1.y(), l2.x(), l2.y() + 14 * 0.25f);
+      pg.line(l1.x(), l1.y(), l2.x(), l2.y() + 20 * 0.25f);
 
       pg.stroke(0);
       pg.fill(255);
-      pg.ellipse(l2.x(), l2.y() + 14 * 0.25f, 18, 18);
+      pg.ellipse(l2.x(), l2.y() + 20 * 0.25f, 26, 26);
       pg.stroke(0);
       pg.fill(0);
-      pg.textSize(14);
+      pg.textSize(18);
       pg.textAlign(PConstants.CENTER, PConstants.CENTER);
       pg.text(highlightNode.name, l2.x(), l2.y());
       drawingNames.add(l2);

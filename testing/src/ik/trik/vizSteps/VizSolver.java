@@ -3,26 +3,114 @@ package ik.trik.vizSteps;
 import ik.basic.Util;
 import nub.core.Graph;
 import nub.core.Node;
+import nub.core.constraint.Constraint;
 import nub.ik.solver.trik.NodeInformation;
 import nub.ik.solver.trik.heuristic.BackAndForth;
 import nub.ik.solver.trik.implementations.IKSolver;
+import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import nub.processing.TimingTask;
 import processing.core.PApplet;
 import processing.event.MouseEvent;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class VizSolver extends PApplet {
   //Generate a simple Structure
-  Scene scene, vizScene;
-  int numJoints = 10;
+  Scene scene;
+  int numJoints = 5;
   float targetRadius;
   float boneLength = 50;
-  IKSolver solver;
+  Node target;
+  HashMap<IKSolver, Viz> visualizers = new HashMap<>();
+  ArrayList<IKSolver> solvers = new ArrayList<>();
   boolean solve = false;
-  Viz viz;
+
+
+  public void createSolver(String path, String name, String solverType, Util.ConstraintType constraintType, int seed, int color){
+    //Generate auxiliar scene
+    Scene vizScene = new Scene(createGraphics(width, height, P3D));
+    vizScene.setType(Graph.Type.ORTHOGRAPHIC);
+    vizScene.setBounds(numJoints * boneLength * 0.6f);
+    vizScene.leftHanded = false;
+    vizScene.fit(0);
+    //vizScene.enableHint(Graph.AXES);
+    vizScene.enableHint(Graph.BACKGROUND, color(255));
+    vizScene.context().smooth(8);
+    //Create viz helper
+    Viz viz = new Viz(vizScene);
+    viz.path = path;
+    viz.name = name;
+    List<Node> structure = Util.generateAttachedChain(numJoints, 0.7f * targetRadius, boneLength, new Vector(0, -0.25f * numJoints * boneLength, 0), 0, 100, 150);
+    structure.get(structure.size()-1).setConstraint(new Constraint() {
+      @Override
+      public Vector constrainTranslation(Vector translation, Node node) {
+        return new Vector();
+      }
+
+      @Override
+      public Quaternion constrainRotation(Quaternion rotation, Node node) {
+        return new Quaternion();
+      }
+    });
+
+    Util.generateConstraints(structure, constraintType, seed, scene.is3D());
+
+    IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.TRIK, true);
+    switch (solverType){
+      case "CCD":{
+        solver.setHeuristic(new CCDViz(solver.context(), viz));
+        break;
+      }
+      case "TIK":{
+        solver.setHeuristic(new TriangulationViz(solver.context(), viz));
+        break;
+      }
+      case "TRIK":{
+        solver.setHeuristic(new TRIKViz(solver.context(), viz));
+        break;
+      }
+      case "BFCCD":{
+        solver.setHeuristic(new BackAndForthViz(solver.context(), BackAndForth.Mode.CCD,viz));
+        break;
+      }
+      case "BFTIK":{
+        solver.setHeuristic(new BackAndForthViz(solver.context(), BackAndForth.Mode.TRIANGULATION,viz));
+        break;
+      }
+      case "BFTRIK":{
+        solver.setHeuristic(new BackAndForthViz(solver.context(), BackAndForth.Mode.TRIK,viz));
+        break;
+      }
+      case "ECTIK":{
+        solver.setHeuristic(new CombinedViz(solver.context(), viz));
+        break;
+      }
+    }
+    solver.setMaxError(-10f);
+    solver.setMinDistance(-10f);
+    solver.setTimesPerFrame(1);
+    solver.setMaxIterations(1);
+    solver.setTarget(structure.get(numJoints - 1), target);
+    solver.context().setTopToBottom(false);
+    target.setPosition(structure.get(numJoints - 1).position());
+    //Set the original color structure
+    for(Node node : structure){
+      node._boneColor = color;
+    }
+    TimingTask task = new TimingTask() {
+      @Override
+      public void execute() {
+        if (solve) solver.solve();
+      }
+    };
+    task.run(40);
+    solvers.add(solver);
+    visualizers.put(solver, viz);
+  }
 
 
   public void settings(){
@@ -40,49 +128,25 @@ public class VizSolver extends PApplet {
     scene.fit(0);
     //scene.enableHint(Graph.AXES);
     scene.enableHint(Graph.BACKGROUND, color(255));
-
-    //Generate auxiliar scene
-    vizScene = new Scene(createGraphics(width, height, P3D));
-    vizScene.setType(Graph.Type.ORTHOGRAPHIC);
-    vizScene.setBounds(numJoints * boneLength * 0.6f);
-    vizScene.leftHanded = false;
-    vizScene.fit(0);
-
-    //vizScene.enableHint(Graph.AXES);
-    vizScene.enableHint(Graph.BACKGROUND, color(255));
-
-    vizScene.context().smooth(8);
-
-    //Create viz helper
-    viz = new Viz(vizScene);
-    viz.path = "C:/Users/olgaa/Desktop/Sebas/Thesis/Results/Viz/COMBINED";
-    viz.name = "combined";
-
+    String path = "C:/Users/olgaa/Desktop/Sebas/Thesis/Results/Viz";
     //Create target
-    Node target = Util.createTarget(scene, targetRadius);
-    List<Node> structure = Util.generateAttachedChain(numJoints, 0.7f * targetRadius, boneLength, new Vector(0, -0.25f * numJoints * boneLength, 0), 0, 100, 150);
-    Util.generateConstraints(structure, Util.ConstraintType.HINGE_ALIGNED, 13, scene.is3D());
+    target = Util.createTarget(scene, targetRadius);
 
-    solver = new IKSolver(structure, IKSolver.HeuristicMode.COMBINED, true);
-    solver.setHeuristic(new TriangulationViz(  solver.context(), viz));
-    solver.setMaxError(-10f);
-    solver.setMinDistance(-10f);
-    solver.setTimesPerFrame(1);
-    solver.setMaxIterations(1);
-    solver.setTarget(structure.get(numJoints - 1), target);
-    solver.context().setTopToBottom(false);
-    target.setPosition(structure.get(numJoints - 1).position());
-    //Set the original color structure
-    for(Node node : structure){
-      node._boneColor = color(255,255,0, 100);
-    }
-    TimingTask task = new TimingTask() {
-      @Override
-      public void execute() {
-        if (solve) solver.solve();
-      }
-    };
-    task.run(40);
+    Util.ConstraintType type = Util.ConstraintType.NONE;
+
+    createSolver(path  + "/COMBINED/ECTIK", "ECTIK", "ECTIK",
+        type, 13, color(255,255,0, 100));
+    /*createSolver(path  + "/BACK_AND_FORTH/Last/BFTIK", "BF", "BFTIK",
+        type, 13, color(255,255,0, 100));
+    createSolver(path  + "/BACK_AND_FORTH/Last/BFTRIK", "BF", "BFTRIK",
+        type, 13, color(255,255,0, 100));
+    createSolver(path  + "/BACK_AND_FORTH/Last/CCD", "BF", "CCD",
+        type, 13, color(255,255,0, 100));
+    createSolver(path  + "/BACK_AND_FORTH/Last/TRIK", "BF", "TRIK",
+        type, 13, color(255,255,0, 100));
+    createSolver(path  + "/BACK_AND_FORTH/Last/TIK", "BF", "TIK",
+        type, 13, color(255,255,0, 100));*/
+
   }
 
   public void draw() {
@@ -97,6 +161,7 @@ public class VizSolver extends PApplet {
     pushStyle();
     text(mouseX + ", " + mouseY, mouseX, mouseY);
     noFill();
+    Viz viz = visualizers.get(solvers.get(0));
     rect(viz.x_min, viz.y_min, viz.x_max - viz.x_min, viz.y_max - viz.y_min);
     popStyle();
     scene.endHUD();
@@ -109,13 +174,19 @@ public class VizSolver extends PApplet {
     }
 
     if (key == 's' || key == 'S') {
-      vizScene.eye().set(scene.eye());
-      viz.resetBounds();
-      solver.solve();
+      for(IKSolver s : solvers){
+        Viz viz = visualizers.get(s);
+        viz.scene.eye().set(scene.eye());
+        viz.resetBounds();
+        s.solve();
+      }
     }
 
     if(key == 'p' || key == 'P'){
-      viz.saveFrames();
+      for(IKSolver s : solvers) {
+        Viz viz = visualizers.get(s);
+        viz.saveFrames();
+      }
     }
 
   }

@@ -24,7 +24,7 @@ public class NaiveLocomotion extends PApplet {
   Scene scene;
   float boneLength = 50;
   float radius = 10;
-  int segments = 14;
+  int segments = 25;
   float stepHeight = boneLength / 2 * segments / 6f, stepWidth = boneLength * segments * 0.75f;
   static boolean solve = true;
 

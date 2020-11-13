@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LowerLimb extends PApplet {
-  int numJoints = 20;
+  int numJoints = 28;
   float boneLength = 100;
   float radius = 10;
   float targetRadius = radius * 1.2f;
@@ -42,7 +42,7 @@ public class LowerLimb extends PApplet {
     createPath(target, 9f, 7, 2, boneLength * numJoints * 0.2f, 10);
 
     //Create the IK solver
-    IKSolver solver = new IKSolver(skeleton, IKSolver.HeuristicMode.COMBINED);
+    IKSolver solver = new IKSolver(skeleton, IKSolver.HeuristicMode.BACK_AND_FORTH_TRIK);
     solver.setTimesPerFrame(5);
     solver.setMaxIterations(5);
     solver.setMaxError(scene.radius() * 0.001f);

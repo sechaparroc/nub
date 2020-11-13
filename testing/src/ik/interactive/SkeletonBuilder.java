@@ -8,6 +8,7 @@ import nub.core.constraint.Hinge;
 import nub.ik.solver.Solver;
 import nub.ik.solver.geometric.TreeSolver;
 import nub.ik.solver.trik.Tree;
+import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import processing.core.PApplet;
@@ -24,7 +25,7 @@ import java.util.List;
   //TODO Check Fitting curve method for target path
   Scene scene;
   Scene[] views;
-  boolean showPath = false, showLast = false, debug = false;
+  boolean showPath = false, showLast = false, debug = true;
   //focus;
   //OptionPanel panel;
   //PGraphics canvas1;
@@ -100,6 +101,13 @@ import java.util.List;
     scene.beginHUD();
     if (fitCurve != null) fitCurve.drawCurves(scene.context());
     scene.endHUD();
+
+    if(debug && solve){
+      for(Solver s: solvers){
+        s.solve();
+      }
+    }
+
   }
 
   //mouse events
@@ -247,7 +255,12 @@ import java.util.List;
       }
     }
     if (key == '1') {
-      if (debug) solver.solve();
+      if (debug) {
+        for (Solver s : solvers) {
+          System.out.println("Entra!!");
+          s.solve();
+        }
+      }
     }
     if (key == '2') {
       if (debug) solve = !solve;
@@ -320,16 +333,19 @@ import java.util.List;
 
   }
 
-  Solver solver;
+  List<Solver> solvers = new ArrayList<Solver>();
 
   public void addTreeSolver() {
     if (scene.node() == null) return;
+    Solver solver = null;
     if (debug) {
-      solver = new TreeSolver(scene.node());
-      solver.setTimesPerFrame(1f);
+      solver = new Tree(scene.node(), IKSolver.HeuristicMode.BACK_AND_FORTH_TRIK);
+      //solver.setTimesPerFrame(1f);
+      solvers.add(solver);
     } else {
       if (scene.node() != null) {
         solver = scene.registerTreeSolver(scene.node());
+        solvers.add(solver);
       }
     }
 
