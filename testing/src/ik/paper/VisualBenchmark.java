@@ -4,8 +4,7 @@ import ik.basic.Util;
 import nub.core.Graph;
 import nub.core.Node;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.FABRIKSolver;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -36,15 +35,14 @@ public class VisualBenchmark extends PApplet {
     Util.SolverType solversType[] = {
             //Util.SolverType.TRIANGULATION_HEURISTIC,
             //Util.SolverType.BACK_AND_FORTH_TRIANGULATION_HEURISTIC,
-            Util.SolverType.CCD_HEURISTIC,
-            Util.SolverType.BACK_AND_FORTH_CCD_HEURISTIC,
-            Util.SolverType.TRIK_HEURISTIC,
-            Util.SolverType.TRIANGULATION_HEURISTIC,
-            Util.SolverType.BACK_AND_FORTH_TRIK_HEURISTIC,
-            Util.SolverType.COMBINED_HEURISTIC,
-            Util.SolverType.COMBINED_EXPRESSIVE,
-            Util.SolverType.COMBINED_TRIK,
-            Util.SolverType.FABRIK
+            Util.SolverType.CCD,
+            Util.SolverType.BFIK_CCD,
+            Util.SolverType.TRIK,
+            Util.SolverType.TIK,
+            Util.SolverType.BFIK_TRIK,
+            Util.SolverType.ECTIK,
+            Util.SolverType.ECTIK_DAMP,
+            Util.SolverType.TRIK_ECTIK,
     }; //Place Here Solvers that you want to compare
 
     ArrayList<ArrayList<Node>> structures = new ArrayList<>(); //Keep Structures
@@ -163,8 +161,8 @@ public class VisualBenchmark extends PApplet {
 
         if (key == 'm' || key == 'M') {
             for (Solver s : solvers) {
-                if (s instanceof IKSolver)
-                    ((IKSolver) s).context().setSingleStep(!((IKSolver) s).context().singleStep());
+                if (s instanceof GHIK)
+                    ((GHIK) s).context().setSingleStep(!((GHIK) s).context().singleStep());
             }
         }
         // /* Uncomment this to debug a Specific Solver
@@ -187,9 +185,6 @@ public class VisualBenchmark extends PApplet {
         }
         if (key == '5') {
             show5 = !show5;
-        }
-        if (key == '6') {
-            FABRIKSolver.rand = !FABRIKSolver.rand;
         }
     }
 

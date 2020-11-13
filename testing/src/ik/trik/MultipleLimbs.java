@@ -6,8 +6,8 @@ import nub.core.Interpolator;
 import nub.core.Node;
 import nub.core.constraint.Constraint;
 import nub.core.constraint.Hinge;
-import nub.ik.solver.trik.Tree;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.GHIKTree;
+import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -77,8 +77,8 @@ public class MultipleLimbs extends PApplet {
   }
 
 
-  public Tree createSolver(Node root, float radius) {
-    Tree solver = new Tree(root, IKSolver.HeuristicMode.COMBINED_TRIK);
+  public GHIKTree createSolver(Node root, float radius) {
+    GHIKTree solver = new GHIKTree(root, GHIK.HeuristicMode.TRIK_ECTIK);
     solver.setTimesPerFrame(10);
     solver.setMaxIterations(10);
     solver.setChainTimesPerFrame(15);

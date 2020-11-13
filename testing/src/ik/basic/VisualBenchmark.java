@@ -4,8 +4,6 @@ package ik.basic;
 import nub.core.Graph;
 import nub.core.Node;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.ChainSolver;
-import nub.ik.solver.geometric.FABRIKSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -37,8 +35,8 @@ public class VisualBenchmark extends PApplet {
   int randLength = 0; //Set seed to generate random segment lengths, otherwise set to -1
 
 
-  Util.SolverType solversType[] = {Util.SolverType.CCD_HEURISTIC, Util.SolverType.FABRIK, Util.SolverType.FABRIK_H1_H2, Util.SolverType.TRIK_HEURISTIC,
-      Util.SolverType.COMBINED_EXPRESSIVE, Util.SolverType.COMBINED_HEURISTIC, Util.SolverType.TRIANGULATION_HEURISTIC}; //Place Here Solvers that you want to compare
+  Util.SolverType solversType[] = {Util.SolverType.CCD, Util.SolverType.TRIK,
+      Util.SolverType.ECTIK_DAMP, Util.SolverType.ECTIK, Util.SolverType.TIK}; //Place Here Solvers that you want to compare
 
   ArrayList<ArrayList<Node>> structures = new ArrayList<>(); //Keep Structures
   ArrayList<Node> targets = new ArrayList<Node>(); //Keep targets
@@ -111,32 +109,6 @@ public class VisualBenchmark extends PApplet {
     //Draw Constraints
     scene.drawAxes();
 
-    //Debugging exploration
-    for (int i = 0; i < solvers.size(); i++) {
-      if (solvers.get(i) instanceof ChainSolver) {
-        if (show2)
-          Util.drawPositions(scene.context(), ((ChainSolver) solvers.get(i)).positions(), color(255, 0, 100), 3);
-        if (show4 && ((ChainSolver) solvers.get(i)).avoidHistory() != null) {
-          for (ArrayList<Vector> l : ((ChainSolver) solvers.get(i)).avoidHistory()) {
-            Util.drawPositions(scene.context(), l, color(255, 255, 0, 50), 3);
-          }
-        }
-        if (show5 && ((ChainSolver) solvers.get(i)).divergeHistory() != null) {
-          for (ArrayList<Vector> l : ((ChainSolver) solvers.get(i)).divergeHistory()) {
-            Util.drawPositions(scene.context(), l, color(255, 0, 0, 50), 3);
-          }
-        }
-
-        if (((ChainSolver) solvers.get(i)).bestAvoidPosition() != null && show1) {
-          Util.drawPositions(scene.context(), ((ChainSolver) solvers.get(i)).bestAvoidPosition(), color(255, 0, 0), 6);
-        }
-        if (((ChainSolver) solvers.get(i)).afterAvoidPosition() != null && show1) {
-          Util.drawPositions(scene.context(), ((ChainSolver) solvers.get(i)).afterAvoidPosition(), color(0, 255, 0), 6);
-        }
-
-      }
-    }
-
     scene.render();
     scene.beginHUD();
     for (int i = 0; i < solvers.size(); i++) {
@@ -197,9 +169,6 @@ public class VisualBenchmark extends PApplet {
     }
     if (key == '5') {
       show5 = !show5;
-    }
-    if (key == '6') {
-      FABRIKSolver.rand = !FABRIKSolver.rand;
     }
   }
 

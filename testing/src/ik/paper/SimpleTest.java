@@ -3,18 +3,13 @@ package ik.paper;
 import ik.basic.Util;
 import nub.core.Graph;
 import nub.core.Node;
-import nub.ik.solver.geometric.ChainSolver;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
-import nub.primitives.Vector;
 import nub.processing.Scene;
-import nub.processing.TimingTask;
 import processing.core.PApplet;
-import processing.core.PShape;
 import processing.event.MouseEvent;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class SimpleTest extends PApplet {
     Scene scene;
@@ -25,7 +20,7 @@ public class SimpleTest extends PApplet {
     boolean enableSolver = true;
     //Skeleton structure defined above
     ArrayList<Node> skeleton = new ArrayList<Node>();
-    IKSolver solver;
+    GHIK solver;
 
     public void settings() {
         size(700, 700, renderer);
@@ -176,7 +171,7 @@ public class SimpleTest extends PApplet {
         //3. Relate the structure with a Solver. In this example we instantiate a solver
         //As we're dealing with a Chain Structure a Chain Solver is preferable
         //A Chain solver constructor receives an ArrayList containing the Skeleton structure
-        solver = new IKSolver(skeleton, IKSolver.HeuristicMode.CCD, true);
+        solver = new GHIK(skeleton, GHIK.HeuristicMode.CCD, true);
         //4. relate targets with end effectors
         solver.setTarget(skeleton.get(skeleton.size() - 1), target);
         solver.setMaxError(-1);

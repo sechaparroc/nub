@@ -4,7 +4,7 @@ import nub.core.Graph;
 import nub.core.Interpolator;
 import nub.core.Node;
 import nub.ik.skinning.GPULinearBlendSkinning;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.GHIK;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import nub.processing.TimingTask;
@@ -64,7 +64,7 @@ public class InteractiveFish extends PApplet {
     Node endEffector = skeleton.get(skeleton.size() - 1);
 
     //4.2 relate a skeleton with an IK Solver
-    IKSolver solver = new IKSolver(skeleton, IKSolver.HeuristicMode.COMBINED_EXPRESSIVE);
+    GHIK solver = new GHIK(skeleton, GHIK.HeuristicMode.ECTIK_DAMP);
     //solver.smooth(true);
     solver.setTimesPerFrame(2);
     solver.setMaxIterations(2);

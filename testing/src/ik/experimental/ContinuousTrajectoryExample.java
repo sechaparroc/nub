@@ -3,7 +3,7 @@ package ik.experimental;
 import ik.basic.Util;
 import nub.core.Node;
 import nub.ik.solver.Solver;
-import nub.ik.solver.trik.NodeInformation;
+import nub.ik.solver.NodeInformation;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import processing.core.PApplet;
@@ -30,7 +30,7 @@ public class ContinuousTrajectoryExample {
 
   static Util.ConstraintType constraintTypes[] = {Util.ConstraintType.NONE}; //Choose what kind of constraints apply to chain
   static Util.SolverType solversType[] = {
-      Util.SolverType.CCD_HEURISTIC,
+      Util.SolverType.CCD,
       //Util.SolverType.TRIANGULATION_HEURISTIC,
       //Util.SolverType.COMBINED_HEURISTIC,
       //Util.SolverType.COMBINED_EXPRESSIVE,

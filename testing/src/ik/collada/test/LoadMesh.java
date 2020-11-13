@@ -10,11 +10,9 @@ import nub.ik.loader.collada.BlenderLoader;
 import nub.ik.loader.collada.data.Model;
 import nub.ik.skinning.GPULinearBlendSkinning;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.ChainSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
-import nub.processing.TimingTask;
 import processing.core.PApplet;
 import processing.event.MouseEvent;
 

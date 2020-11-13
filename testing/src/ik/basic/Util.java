@@ -3,8 +3,7 @@ package ik.basic;
 import nub.core.Node;
 import nub.core.constraint.*;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.ChainSolver;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -21,83 +20,57 @@ public class Util {
   public enum ConstraintType {NONE, HINGE, CONE_POLYGON, CONE_ELLIPSE, CONE_CIRCLE, MIX, HINGE_ALIGNED, MIX_CONSTRAINED}
 
   public enum SolverType {
-    FABRIK, FABRIK_H1, FABRIK_H2, FABRIK_H1_H2,
-    TRIANGULATION_HEURISTIC, BACK_AND_FORTH_TRIANGULATION_HEURISTIC,
-    CCD_HEURISTIC, BACK_AND_FORTH_CCD_HEURISTIC,
-    TRIK_HEURISTIC, BACK_AND_FORTH_TRIK_HEURISTIC,
-    COMBINED_HEURISTIC, COMBINED_EXPRESSIVE,
-    COMBINED_TRIK
+    CCD, BFIK_CCD,
+    TIK, BFIK_TIK,
+    TRIK, BFIK_TRIK,
+    ECTIK, ECTIK_DAMP,
+    TRIK_ECTIK
   }
 
   public static Solver createSolver(SolverType type, List<Node> structure) {
     switch (type) {
-      case FABRIK: {
-        ChainSolver solver = new ChainSolver(structure);
-        solver.setKeepDirection(false);
-        solver.setFixTwisting(false);
-        solver.explore(false);
-        return solver;
-      }
-      case FABRIK_H1: {
-        ChainSolver solver = new ChainSolver(structure);
-        solver.setKeepDirection(true);
-        solver.setFixTwisting(false);
-        return solver;
-      }
-      case FABRIK_H2: {
-        ChainSolver solver = new ChainSolver(structure);
-        solver.setKeepDirection(false);
-        solver.setFixTwisting(true);
-        return solver;
-      }
-      case FABRIK_H1_H2: {
-        ChainSolver solver = new ChainSolver(structure);
-        solver.setKeepDirection(true);
-        solver.setFixTwisting(true);
-        return solver;
-      }
-      case CCD_HEURISTIC:{
-        IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.CCD);
+      case CCD:{
+        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.CCD);
         return solver;
       }
 
-      case BACK_AND_FORTH_CCD_HEURISTIC:{
-        IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.BACK_AND_FORTH_CCD);
+      case BFIK_CCD:{
+        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.BFIK_CCD);
         return solver;
       }
 
-      case TRIK_HEURISTIC:{
-        IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.TRIK);
+      case TRIK:{
+        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.TRIK);
         return solver;
       }
 
-      case BACK_AND_FORTH_TRIK_HEURISTIC:{
-        IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.BACK_AND_FORTH_TRIK);
+      case BFIK_TRIK:{
+        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.BFIK_TRIK);
         return solver;
       }
 
-      case TRIANGULATION_HEURISTIC:{
-        IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.TRIANGULATION);
+      case TIK:{
+        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.TIK);
         return solver;
       }
 
-      case BACK_AND_FORTH_TRIANGULATION_HEURISTIC:{
-        IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.BACK_AND_FORTH_TRIANGULATION);
+      case BFIK_TIK:{
+        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.BFIK_TIK);
         return solver;
       }
 
-      case COMBINED_EXPRESSIVE:{
-        IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.COMBINED_EXPRESSIVE);
+      case ECTIK_DAMP:{
+        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.ECTIK_DAMP);
         return solver;
       }
 
-      case COMBINED_HEURISTIC:{
-        IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.COMBINED);
+      case ECTIK:{
+        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.ECTIK);
         return solver;
       }
 
-      case COMBINED_TRIK:{
-        IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.COMBINED_TRIK);
+      case TRIK_ECTIK:{
+        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.TRIK_ECTIK);
         return solver;
       }
 
@@ -385,23 +358,14 @@ public class Util {
     pg.fill(255);
     pg.textSize(15);
     Vector pos = scene.screenLocation(basePosition);
-    if (solver instanceof ChainSolver) {
-      ChainSolver s = (ChainSolver) solver;
-      String heuristics = "";
-      if (s.keepDirection()) heuristics += "\n Keep directions";
-      if (s.fixTwisting()) heuristics += "\n Fix Twisting";
-      heuristics += "\nAccum error : " + solver.accumulatedError();
-      pg.text("FABRIK" + heuristics + "\n Error: " + String.format("%.7f", solver.error()) + "\n Exploration : " + s.explorationTimes() + "\n iter : " + solver.lastIteration(), pos.x() - 30, pos.y() + 10, pos.x() + 30, pos.y() + 50);
-    }
+    if (solver instanceof GHIK) {
+      GHIK GHIK = (GHIK) solver;
 
-    if (solver instanceof IKSolver) {
-      IKSolver ikSolver = (IKSolver) solver;
-
-      String heuristics = String.join(" ", ikSolver.mode().name().split("_"));
-      if (ikSolver.enableTwist()) heuristics += "\nWITH TWIST";
-      String error = "\n Error (pos): " + String.format("%.7f", ikSolver.positionError());
-      if (ikSolver.direction()) {
-        error += "\n Error (or): " + String.format("%.7f", ikSolver.orientationError());
+      String heuristics = String.join(" ", GHIK.mode().name().split("_"));
+      if (GHIK.enableTwist()) heuristics += "\nWITH TWIST";
+      String error = "\n Error (pos): " + String.format("%.7f", GHIK.positionError());
+      if (GHIK.direction()) {
+        error += "\n Error (or): " + String.format("%.7f", GHIK.orientationError());
       }
       error += "\nAccum error : " + solver.accumulatedError();
       pg.text(heuristics + error + "\n iter : " + solver.lastIteration(), pos.x() - 30, pos.y() + 10, pos.x() + 30, pos.y() + 50);

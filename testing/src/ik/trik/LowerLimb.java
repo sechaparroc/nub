@@ -3,7 +3,7 @@ package ik.trik;
 import nub.core.Graph;
 import nub.core.Interpolator;
 import nub.core.Node;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.GHIK;
 import nub.processing.Scene;
 import nub.processing.TimingTask;
 import processing.core.PApplet;
@@ -42,14 +42,14 @@ public class LowerLimb extends PApplet {
     createPath(target, 9f, 7, 2, boneLength * numJoints * 0.2f, 10);
 
     //Create the IK solver
-    IKSolver solver = new IKSolver(skeleton, IKSolver.HeuristicMode.BACK_AND_FORTH_TRIK);
+    GHIK solver = new GHIK(skeleton, GHIK.HeuristicMode.BFIK_TRIK);
     solver.setTimesPerFrame(5);
     solver.setMaxIterations(5);
     solver.setMaxError(scene.radius() * 0.001f);
     solver.setTarget(skeleton.get(skeleton.size() - 1), target);
 
     List<Node> skeleton2 = createSkeleton(scene, numJoints, boneLength, radius, color(0, 255, 0));
-    IKSolver solver2 = new IKSolver(skeleton2, IKSolver.HeuristicMode.COMBINED_TRIK);
+    GHIK solver2 = new GHIK(skeleton2, GHIK.HeuristicMode.TRIK_ECTIK);
     solver2.context().enableDelegation(true);
 
     //solver2.enableSmooth(true);

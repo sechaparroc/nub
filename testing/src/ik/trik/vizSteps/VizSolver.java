@@ -4,9 +4,9 @@ import ik.basic.Util;
 import nub.core.Graph;
 import nub.core.Node;
 import nub.core.constraint.Constraint;
-import nub.ik.solver.trik.NodeInformation;
-import nub.ik.solver.trik.heuristic.BackAndForth;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.NodeInformation;
+import nub.ik.solver.heuristic.BackAndForth;
+import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -25,8 +25,8 @@ public class VizSolver extends PApplet {
   float targetRadius;
   float boneLength = 50;
   Node target;
-  HashMap<IKSolver, Viz> visualizers = new HashMap<>();
-  ArrayList<IKSolver> solvers = new ArrayList<>();
+  HashMap<GHIK, Viz> visualizers = new HashMap<>();
+  ArrayList<GHIK> solvers = new ArrayList<>();
   boolean solve = false;
 
 
@@ -59,7 +59,7 @@ public class VizSolver extends PApplet {
 
     Util.generateConstraints(structure, constraintType, seed, scene.is3D());
 
-    IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.TRIK, true);
+    GHIK solver = new GHIK(structure, GHIK.HeuristicMode.TRIK, true);
     switch (solverType){
       case "CCD":{
         solver.setHeuristic(new CCDViz(solver.context(), viz));
@@ -174,7 +174,7 @@ public class VizSolver extends PApplet {
     }
 
     if (key == 's' || key == 'S') {
-      for(IKSolver s : solvers){
+      for(GHIK s : solvers){
         Viz viz = visualizers.get(s);
         viz.scene.eye().set(scene.eye());
         viz.resetBounds();
@@ -183,7 +183,7 @@ public class VizSolver extends PApplet {
     }
 
     if(key == 'p' || key == 'P'){
-      for(IKSolver s : solvers) {
+      for(GHIK s : solvers) {
         Viz viz = visualizers.get(s);
         viz.saveFrames();
       }

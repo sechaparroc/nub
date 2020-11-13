@@ -8,9 +8,7 @@ import nub.core.constraint.Hinge;
 import nub.ik.loader.collada.URDFLoader;
 import nub.ik.loader.collada.data.Model;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.ChainSolver;
-import nub.ik.solver.geometric.FABRIKSolver;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -48,7 +46,6 @@ public class UR10 extends PApplet {
 
   public void setup() {
     if (debug) {
-      FABRIKSolver.debug = true;
       for (int i = 0; i < show.length; i++) show[i] = true;
     }
 
@@ -102,12 +99,9 @@ public class UR10 extends PApplet {
 
 
     if (!ccd) {
-      solver = new IKSolver(branch, IKSolver.HeuristicMode.COMBINED_TRIK);
+      solver = new GHIK(branch, GHIK.HeuristicMode.TRIK_ECTIK);
     } else {
-      solver = new ChainSolver(branch);
-      ((ChainSolver) solver).setKeepDirection(true);
-      ((ChainSolver) solver).setFixTwisting(true);
-      ((ChainSolver) solver).explore(false);
+      solver = new GHIK(branch, GHIK.HeuristicMode.ECTIK);
     }
 
     solver.setTimesPerFrame(10);
@@ -146,44 +140,6 @@ public class UR10 extends PApplet {
     }
     Util.printInfo(scene, solver, base);
     scene.endHUD();
-
-    if (debug && solver instanceof ChainSolver) {
-      hint(DISABLE_DEPTH_TEST);
-      ChainSolver s = (ChainSolver) solver;
-            /*if(s.iterationsHistory() != null && !s.iterationsHistory().isEmpty() && show[0]) {
-                int last = s.iterationsHistory().size() - 1;
-                int prev1 = last > 0 ? last - 1 : 0;
-                int prev2 = last > 1 ? last - 2 : 0;
-                int prev3 = last > 1 ? last - 3 : 0;
-                Util.drawPositions(scene.context(), s.iterationsHistory().get(prev3), color(255,150), 5);
-                Util.drawPositions(scene.context(), s.iterationsHistory().get(prev2), color(0, 0, 255,150), 3);
-                Util.drawPositions(scene.context(), s.iterationsHistory().get(prev1), color(0, 255, 0,150), 3);
-                Util.drawPositions(scene.context(), s.iterationsHistory().get(last), color(255, 0, 0,150), 3);
-            }*/
-      if (s.divergeHistory() != null && !s.divergeHistory().isEmpty() && show[1]) {
-        for (ArrayList<Vector> l : s.divergeHistory()) {
-          Util.drawPositions(scene.context(), l, color(255, 255, 0, 50), 3);
-        }
-      }
-      if (s.avoidHistory() != null && !s.avoidHistory().isEmpty() && show[2]) {
-        for (ArrayList<Vector> l : s.avoidHistory()) {
-          Util.drawPositions(scene.context(), l, color(255, 0, 255, 50), 3);
-        }
-      }
-
-      for (int i = 0; i < ((ChainSolver) solver).dir_temp.size(); i++) {
-        pushStyle();
-        strokeWeight(5);
-        stroke(255, 255, 0);
-        Vector v = ((ChainSolver) solver).dir_temp_i.get(i);
-        Vector u = ((ChainSolver) solver).dir_temp.get(i);
-        line(v.x(), v.y(), v.z(), u.x(), u.y(), u.z());
-
-        popStyle();
-      }
-
-      hint(ENABLE_DEPTH_TEST);
-    }
   }
 
   @Override
@@ -222,19 +178,6 @@ public class UR10 extends PApplet {
       Node f = generateRandomReachablePosition(Node.path(model.skeleton().get("vkmodel0_node1"), model.skeleton().get("vkmodel0_node2")), scene.is3D());
       Vector delta = Vector.subtract(f.position(), target.position());
       target.setPosition(Vector.add(target.position(), delta));
-    } else if (key == 'k' || key == 'K') {
-      ((ChainSolver) solver).setKeepDirection(!((ChainSolver) solver).keepDirection());
-      System.out.println("Keep direction : " + (((ChainSolver) solver).keepDirection() ? "True" : "False"));
-    } else if (key == 't' || key == 'T') {
-      ((ChainSolver) solver).setFixTwisting(!((ChainSolver) solver).fixTwisting());
-      System.out.println("Fix twisting : " + (((ChainSolver) solver).fixTwisting() ? "True" : "False"));
-    } else if (key == 'e' || key == 'E') {
-      ((ChainSolver) solver).explore(!((ChainSolver) solver).explore());
-      System.out.println("Explore : " + (((ChainSolver) solver).explore() ? "True" : "False"));
-    } else if (key == 'd' || key == 'D') {
-      ((ChainSolver) solver).dir_temp.clear();
-      ((ChainSolver) solver).dir_temp_i.clear();
-      System.out.println("Dir temp cleared");
     } else {
       try {
         int i = Integer.parseInt("" + key) - 1;

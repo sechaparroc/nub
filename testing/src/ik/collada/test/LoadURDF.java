@@ -5,7 +5,7 @@ import nub.core.Graph;
 import nub.core.Node;
 import nub.ik.loader.collada.URDFLoader;
 import nub.ik.loader.collada.data.Model;
-import nub.ik.solver.geometric.ChainSolver;
+import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -49,9 +49,8 @@ public class LoadURDF extends PApplet {
 
       List<Node> branch = Node.path(model.skeleton().get("node1"), model.skeleton().get(dae == 0 ? "node10" : "node8"));
 
-      ChainSolver solver = new ChainSolver(branch);
-      solver.setKeepDirection(true);
-      solver.setFixTwisting(true);
+      GHIK solver = new GHIK(branch, GHIK.HeuristicMode.TRIK);
+      solver.setDirection(true);
 
       solver.setTimesPerFrame(5);
       solver.setMaxIterations(50);

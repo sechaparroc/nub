@@ -3,8 +3,8 @@ package ik.trik;
 import ik.basic.Util;
 import nub.core.Graph;
 import nub.core.Node;
-import nub.ik.solver.trik.NodeInformation;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.NodeInformation;
+import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -30,7 +30,7 @@ public class StructureViewer extends PApplet {
   List<Node> idle;
   List<Vector> positions;
   List<List<Node>> structures = new ArrayList<>();
-  List<IKSolver> solvers = new ArrayList<>();
+  List<GHIK> solvers = new ArrayList<>();
   boolean continuous = true;
   int n_structures = 3;
 
@@ -65,7 +65,7 @@ public class StructureViewer extends PApplet {
 
       //Util.generateConstraints(structure, Util.ConstraintType.MIX_CONSTRAINED, 13, scene.is3D());
 
-      IKSolver solver = new IKSolver(structure, IKSolver.HeuristicMode.TRIK, false);
+      GHIK solver = new GHIK(structure, GHIK.HeuristicMode.TRIK, false);
       //solver.setHeuristic(new CCDViz(  solver.context(), viz));
       solver.setMaxError(-10f);
       solver.setMinDistance(-10f);
@@ -192,7 +192,7 @@ public class StructureViewer extends PApplet {
     }
 
     if (key == 's' || key == 'S') {
-      for(IKSolver solver : solvers) solver.solve();
+      for(GHIK solver : solvers) solver.solve();
     }
 
     if(key == 'q' || key == 'Q'){

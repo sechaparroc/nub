@@ -5,7 +5,7 @@ import nub.core.Node;
 import nub.core.constraint.Constraint;
 import nub.ik.animation.Skeleton;
 import nub.ik.loader.bvh.BVHLoader;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -81,7 +81,7 @@ public class Viewer extends PApplet {
         IKSkeleton2.setRadius(scene.radius() * 0.01f);
         IKSkeleton2.setBoneWidth(scene.radius() * 0.01f);
 
-        IKSkeleton2.enableIK(IKSolver.HeuristicMode.BACK_AND_FORTH_TRIK);
+        IKSkeleton2.enableIK(GHIK.HeuristicMode.BFIK_TRIK);
         IKSkeleton2.enableDirection(true);
         IKSkeleton2.setMaxError(0.01f * height);
         println("Height : " + height + " Max error " + 0.01f * height);

@@ -8,8 +8,7 @@ import nub.core.constraint.Hinge;
 import nub.ik.loader.collada.URDFLoader;
 import nub.ik.loader.collada.data.Model;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.ChainSolver;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -93,25 +92,16 @@ public class BenchmarkUR10 extends PApplet {
       List<Node> branch = Node.path(model.skeleton().get("node1"), model.skeleton().get("node2"));
 
       switch (solvers_type[i]) {
-        case "FABRIK": {
-          solver = new ChainSolver(branch);
-          ((ChainSolver) solver).setKeepDirection(true);
-          ((ChainSolver) solver).setFixTwisting(true);
-          ((ChainSolver) solver).explore(true);
-          break;
-        }
         case "CCD": {
-          solver = new IKSolver(branch, IKSolver.HeuristicMode.CCD);
+          solver = new GHIK(branch, GHIK.HeuristicMode.CCD);
           break;
         }
         case "TRIK": {
-          solver = new IKSolver(branch, IKSolver.HeuristicMode.COMBINED_EXPRESSIVE);
+          solver = new GHIK(branch, GHIK.HeuristicMode.ECTIK_DAMP);
           break;
         }
         default: {
-          solver = new ChainSolver(branch);
-          ((ChainSolver) solver).setKeepDirection(true);
-          ((ChainSolver) solver).setFixTwisting(true);
+          solver = new GHIK(branch, GHIK.HeuristicMode.TRIK);
           break;
         }
       }

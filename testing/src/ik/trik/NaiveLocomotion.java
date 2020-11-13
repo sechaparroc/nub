@@ -5,8 +5,7 @@ import nub.core.Node;
 import nub.core.constraint.BallAndSocket;
 import nub.core.constraint.Hinge;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.ChainSolver;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.GHIK;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import nub.processing.TimingTask;
@@ -20,7 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public class NaiveLocomotion extends PApplet {
-  public enum IKMode {FABRIK, CCD, TRIK, COMBINED}
+  public enum IKMode {CCD, TRIK, ECTIK}
   Scene scene;
   float boneLength = 50;
   float radius = 10;
@@ -44,7 +43,7 @@ public class NaiveLocomotion extends PApplet {
 
     scene.enableHint(Graph.BACKGROUND | Graph.AXES);
 
-    createStructure(segments, boneLength, radius, color(0, 255, 0), new Vector(-boneLength * 3, 0, 0), IKMode.COMBINED, 20, 0);
+    createStructure(segments, boneLength, radius, color(0, 255, 0), new Vector(-boneLength * 3, 0, 0), IKMode.ECTIK, 20, 0);
   }
 
   public void draw() {
@@ -87,25 +86,19 @@ public class NaiveLocomotion extends PApplet {
     Solver solver;
     switch (mode) {
       case CCD: {
-        solver = new IKSolver(limb, IKSolver.HeuristicMode.CCD);
-        ((IKSolver) solver).setTarget(target);
-        break;
-      }
-      case FABRIK: {
-        solver = new ChainSolver(limb);
-        ((ChainSolver) solver).setTarget(target);
-        ((ChainSolver) solver).setTargetDirection(new Vector(0, 0, 1));
+        solver = new GHIK(limb, GHIK.HeuristicMode.CCD);
+        ((GHIK) solver).setTarget(target);
         break;
       }
       case TRIK: {
-        solver = new IKSolver(limb, IKSolver.HeuristicMode.TRIK);
-        ((IKSolver) solver).setTarget(target);
+        solver = new GHIK(limb, GHIK.HeuristicMode.TRIK);
+        ((GHIK) solver).setTarget(target);
         break;
       }
 
-      case COMBINED: {
-        solver = new IKSolver(limb, IKSolver.HeuristicMode.COMBINED_TRIK);
-        ((IKSolver) solver).setTarget(target);
+      case ECTIK: {
+        solver = new GHIK(limb, GHIK.HeuristicMode.TRIK_ECTIK);
+        ((GHIK) solver).setTarget(target);
         break;
       }
 

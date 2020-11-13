@@ -2,7 +2,7 @@ package ik.basic;
 
 import nub.core.Node;
 import nub.core.constraint.BallAndSocket;
-import nub.ik.solver.trik.NodeInformation;
+import nub.ik.solver.NodeInformation;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 

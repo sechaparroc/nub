@@ -3,9 +3,9 @@ package ik.paper;
 import ik.basic.Util;
 import nub.core.Node;
 import nub.ik.solver.Solver;
-import nub.ik.solver.trik.NodeInformation;
-import nub.ik.solver.trik.heuristic.TRIKECTIK;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.NodeInformation;
+import nub.ik.solver.heuristic.TRIKECTIK;
+import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import processing.core.PApplet;
@@ -48,14 +48,14 @@ public class AccuracyVSTime {
     }; //Choose what kind of constraints apply to chain
 
     static Util.SolverType solversType[] = {
-        Util.SolverType.CCD_HEURISTIC,
-        Util.SolverType.BACK_AND_FORTH_CCD_HEURISTIC,
-        Util.SolverType.TRIANGULATION_HEURISTIC,
-        Util.SolverType.BACK_AND_FORTH_TRIANGULATION_HEURISTIC,
-        Util.SolverType.TRIK_HEURISTIC,
-        Util.SolverType.BACK_AND_FORTH_TRIK_HEURISTIC,
-        Util.SolverType.COMBINED_HEURISTIC,
-        Util.SolverType.COMBINED_TRIK,
+        Util.SolverType.CCD,
+        Util.SolverType.BFIK_CCD,
+        Util.SolverType.TIK,
+        Util.SolverType.BFIK_TIK,
+        Util.SolverType.TRIK,
+        Util.SolverType.BFIK_TRIK,
+        Util.SolverType.ECTIK,
+        Util.SolverType.TRIK_ECTIK,
         //Util.SolverType.COMBINED_EXPRESSIVE,
     }; //Place Here Solvers that you want to compare
 
@@ -87,15 +87,15 @@ public class AccuracyVSTime {
         solver.setMaxIterations(iterations);
         solver.setTimesPerFrame(1);
         solver.setMinDistance(-1);
-        if(solver instanceof IKSolver){
-            IKSolver ikSolver = (IKSolver) solver;
-            ikSolver.enableDeadLockResolution(false);
-            if(ikSolver.heuristic() instanceof TRIKECTIK){
-                TRIKECTIK heuristic = (TRIKECTIK) ikSolver.heuristic();
+        if(solver instanceof GHIK){
+            GHIK GHIK = (GHIK) solver;
+            GHIK.enableDeadLockResolution(false);
+            if(GHIK.heuristic() instanceof TRIKECTIK){
+                TRIKECTIK heuristic = (TRIKECTIK) GHIK.heuristic();
                 heuristic.setTRIKFraction(continuousPath ? 0.3f : 0.05f); //First 5 iterations will use TRIK the others use combined heuristic
             }
-            if(ikSolver.mode() == IKSolver.HeuristicMode.COMBINED_EXPRESSIVE){
-                ikSolver.context().setDelegationIterationsRatio(continuousPath ? 0.4f : 0.1f);  //Apply smoothing on first ten iterations
+            if(GHIK.mode() == nub.ik.solver.GHIK.HeuristicMode.ECTIK_DAMP){
+                GHIK.context().setDelegationIterationsRatio(continuousPath ? 0.4f : 0.1f);  //Apply smoothing on first ten iterations
             }
         }
 
@@ -124,7 +124,7 @@ public class AccuracyVSTime {
                 elapsedTime += System.nanoTime() - start;
                 minError = solver.error();
                 lastIteration = i + 1;
-                if(IKSolver.log){
+                if(GHIK.log){
                     System.out.println("Error " + minError);
                 }
                 if(minError <= accuracyThreshold){
@@ -135,24 +135,24 @@ public class AccuracyVSTime {
             if(minError > Float.MAX_VALUE){
                 solver.error();
                 System.out.println("Auxiliar");
-                for(NodeInformation ni : ((IKSolver)solver).context().usableChainInformation()){
+                for(NodeInformation ni : ((GHIK)solver).context().usableChainInformation()){
                     Vector cache = ni.positionCache();
                     Vector real = ni.node().position();
                     System.out.println("Cache : " + cache + " Real : " + real + " Diff" + Vector.distance(cache, real));
                 }
 
                 System.out.println("Current");
-                for(NodeInformation ni : ((IKSolver)solver).context().chainInformation()){
+                for(NodeInformation ni : ((GHIK)solver).context().chainInformation()){
                     Vector cache = ni.positionCache();
                     Vector real = ni.node().position();
                     System.out.println("Cache : " + cache + " Real : " + real + " Diff" + Vector.distance(cache, real));
                 }
                 //Last rotation
-                System.out.println("Rot " + ((IKSolver)solver).context().chainInformation().get(structure.size() - 3).node().rotation());
-                System.out.println("Rot " + ((IKSolver)solver).context().usableChainInformation().get(structure.size() - 3).node().rotation());
+                System.out.println("Rot " + ((GHIK)solver).context().chainInformation().get(structure.size() - 3).node().rotation());
+                System.out.println("Rot " + ((GHIK)solver).context().usableChainInformation().get(structure.size() - 3).node().rotation());
 
-                System.out.println("Rot " + ((IKSolver)solver).context().chainInformation().get(structure.size() - 2).node().rotation());
-                System.out.println("Rot " + ((IKSolver)solver).context().usableChainInformation().get(structure.size() - 2).node().rotation());
+                System.out.println("Rot " + ((GHIK)solver).context().chainInformation().get(structure.size() - 2).node().rotation());
+                System.out.println("Rot " + ((GHIK)solver).context().usableChainInformation().get(structure.size() - 2).node().rotation());
                 System.out.println("target " + target.position());
                 //solver.change(true);
                 //solver.solve();

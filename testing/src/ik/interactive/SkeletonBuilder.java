@@ -6,9 +6,8 @@ import nub.core.Node;
 import nub.core.constraint.BallAndSocket;
 import nub.core.constraint.Hinge;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.TreeSolver;
-import nub.ik.solver.trik.Tree;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.GHIKTree;
+import nub.ik.solver.GHIK;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import processing.core.PApplet;
@@ -284,7 +283,7 @@ import java.util.List;
     if (key == CODED) {
       if (keyCode == SHIFT) {
         for (Solver solver : scene.treeSolvers()) {
-          if (solver instanceof Tree) ((Tree) solver).setDirection(true);
+          if (solver instanceof GHIKTree) ((GHIKTree) solver).setDirection(true);
         }
       }
     }
@@ -294,7 +293,7 @@ import java.util.List;
     if (key == CODED) {
       if (keyCode == SHIFT) {
         for (Solver solver : scene.treeSolvers()) {
-          if (solver instanceof Tree) ((Tree) solver).setDirection(false);
+          if (solver instanceof GHIKTree) ((GHIKTree) solver).setDirection(false);
         }
       }
     }
@@ -339,7 +338,7 @@ import java.util.List;
     if (scene.node() == null) return;
     Solver solver = null;
     if (debug) {
-      solver = new Tree(scene.node(), IKSolver.HeuristicMode.BACK_AND_FORTH_TRIK);
+      solver = new GHIKTree(scene.node(), GHIK.HeuristicMode.BFIK_TRIK);
       //solver.setTimesPerFrame(1f);
       solvers.add(solver);
     } else {
@@ -357,7 +356,7 @@ import java.util.List;
       endEffector.tagging = false;
       Target target = new Target(radius * 1.2f, endEffector.position().get(), endEffector.orientation().get());
       target.setReference(scene.node().reference());
-      if (solver instanceof Tree) ((Tree) solver).addTarget(endEffector, target);
+      if (solver instanceof GHIKTree) ((GHIKTree) solver).addTarget(endEffector, target);
       targets.add(target);
     }
   }

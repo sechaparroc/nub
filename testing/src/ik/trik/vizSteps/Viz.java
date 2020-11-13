@@ -2,7 +2,7 @@ package ik.trik.vizSteps;
 
 import nub.core.Node;
 import nub.core.constraint.Constraint;
-import nub.ik.solver.trik.heuristic.Heuristic;
+import nub.ik.solver.heuristic.Heuristic;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;

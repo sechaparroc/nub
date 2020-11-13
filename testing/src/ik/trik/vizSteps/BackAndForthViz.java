@@ -1,8 +1,8 @@
 package ik.trik.vizSteps;
 
-import nub.ik.solver.trik.Context;
-import nub.ik.solver.trik.NodeInformation;
-import nub.ik.solver.trik.heuristic.*;
+import nub.ik.solver.Context;
+import nub.ik.solver.NodeInformation;
+import nub.ik.solver.heuristic.*;
 import nub.processing.Scene;
 
 public class BackAndForthViz extends Heuristic {

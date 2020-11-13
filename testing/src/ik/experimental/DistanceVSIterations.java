@@ -3,7 +3,7 @@ package ik.experimental;
 import ik.basic.Util;
 import nub.core.Node;
 import nub.ik.solver.Solver;
-import nub.ik.solver.trik.NodeInformation;
+import nub.ik.solver.NodeInformation;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import processing.core.PApplet;
@@ -33,7 +33,7 @@ public class DistanceVSIterations {
   static Util.ConstraintType constraintTypes[] = {Util.ConstraintType.NONE, Util.ConstraintType.HINGE, Util.ConstraintType.HINGE_ALIGNED, Util.ConstraintType.CONE_CIRCLE, Util.ConstraintType.CONE_ELLIPSE, Util.ConstraintType.MIX, Util.ConstraintType.MIX_CONSTRAINED}; //Choose what kind of constraints apply to chain
   //static Util.ConstraintType constraintTypes[] = {Util.ConstraintType.CONE_CIRCLE, Util.ConstraintType.CONE_ELLIPSE, Util.ConstraintType.MIX}; //Choose what kind of constraints apply to chain
   //static Util.ConstraintType constraintTypes[] = {Util.ConstraintType.HINGE_ALIGNED}; //Choose what kind of constraints apply to chain
-  static Util.SolverType solversType[] = {Util.SolverType.CCD_HEURISTIC, Util.SolverType.TRIANGULATION_HEURISTIC, Util.SolverType.COMBINED_HEURISTIC, Util.SolverType.COMBINED_EXPRESSIVE, Util.SolverType.FABRIK};
+  static Util.SolverType solversType[] = {Util.SolverType.CCD, Util.SolverType.TIK, Util.SolverType.ECTIK, Util.SolverType.ECTIK_DAMP};
   static List<Vector> targetPositions;
 
 

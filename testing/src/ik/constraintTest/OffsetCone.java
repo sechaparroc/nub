@@ -6,8 +6,7 @@ import nub.core.Node;
 import nub.core.constraint.BallAndSocket;
 import nub.core.constraint.FixedConstraint;
 import nub.ik.solver.Solver;
-import nub.ik.solver.geometric.ChainSolver;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.GHIK;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import nub.processing.TimingTask;
@@ -71,29 +70,10 @@ public class OffsetCone extends PApplet {
 
     int i = 0;
     //CCD
-    solvers.add(new IKSolver(structures.get(i++), IKSolver.HeuristicMode.CCD));
-    //Standard FABRIK
-    ChainSolver chainSolver;
-    chainSolver = new ChainSolver(structures.get(i++));
-    chainSolver.setKeepDirection(false);
-    chainSolver.setFixTwisting(false);
-    solvers.add(chainSolver);
-    //FABRIK Keeping directions (H1)
-    chainSolver = new ChainSolver(structures.get(i++));
-    chainSolver.setFixTwisting(true);
-    chainSolver.setKeepDirection(false);
-    solvers.add(chainSolver);
-    //FABRIK Fix Twisting (H2)
-    chainSolver = new ChainSolver(structures.get(i++));
-    chainSolver.setFixTwisting(false);
-    chainSolver.setKeepDirection(true);
-    solvers.add(chainSolver);
-    //FABRIK Fix Twisting (H1 & H2)
-    chainSolver = new ChainSolver(structures.get(i++));
-    chainSolver.setFixTwisting(true);
-    chainSolver.setKeepDirection(true);
-    solvers.add(chainSolver);
-
+    solvers.add(new GHIK(structures.get(i++), GHIK.HeuristicMode.CCD));
+    solvers.add(new GHIK(structures.get(i++), GHIK.HeuristicMode.TRIK));
+    solvers.add(new GHIK(structures.get(i++), GHIK.HeuristicMode.TIK));
+    solvers.add(new GHIK(structures.get(i++), GHIK.HeuristicMode.BFIK_TRIK));
     for (i = 0; i < solvers.size(); i++) {
       Solver solver = solvers.get(i);
       //6. Define solver parameters

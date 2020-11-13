@@ -3,9 +3,8 @@ package ik.paper;
 import nub.core.Node;
 import nub.core.constraint.Constraint;
 import nub.ik.loader.bvh.BVHLoader;
-import nub.ik.solver.trik.Context;
-import nub.ik.solver.trik.Tree;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.GHIKTree;
+import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import processing.core.PApplet;
@@ -21,16 +20,16 @@ import java.util.*;
 public class MoCapPerformance {
     static String dir = "C:/Users/olgaa/Desktop/Sebas/Thesis/Results/MoCapPerformance/";
 
-    static IKSolver.HeuristicMode heuristicsMode[] = {
-            IKSolver.HeuristicMode.CCD,
-            IKSolver.HeuristicMode.BACK_AND_FORTH_CCD,
-            IKSolver.HeuristicMode.TRIANGULATION,
-            IKSolver.HeuristicMode.BACK_AND_FORTH_TRIANGULATION,
-            IKSolver.HeuristicMode.TRIK,
-            IKSolver.HeuristicMode.BACK_AND_FORTH_TRIK,
-            IKSolver.HeuristicMode.COMBINED,
-            IKSolver.HeuristicMode.COMBINED_TRIK,
-            IKSolver.HeuristicMode.COMBINED_EXPRESSIVE,
+    static GHIK.HeuristicMode heuristicsMode[] = {
+            GHIK.HeuristicMode.CCD,
+            GHIK.HeuristicMode.BFIK_CCD,
+            GHIK.HeuristicMode.TIK,
+            GHIK.HeuristicMode.BFIK_TIK,
+            GHIK.HeuristicMode.TRIK,
+            GHIK.HeuristicMode.BFIK_TRIK,
+            GHIK.HeuristicMode.ECTIK,
+            GHIK.HeuristicMode.TRIK_ECTIK,
+            GHIK.HeuristicMode.ECTIK_DAMP,
     }; //Place Here Solvers that you want to compare
 
     static int iterationsChain = 5;
@@ -80,7 +79,7 @@ public class MoCapPerformance {
         return loader;
     }
 
-    public static void generateExperiment(BVHLoader loader, IKSolver.HeuristicMode mode, BVHStats stats, float height){
+    public static void generateExperiment(BVHLoader loader, GHIK.HeuristicMode mode, BVHStats stats, float height){
         //1. reset the loader
         loader.postureAt(0);
         //2. create the appropriate skeleton
@@ -332,8 +331,8 @@ public class MoCapPerformance {
 
 
     public static class Skeleton{
-        Tree solver;
-        IKSolver.HeuristicMode mode;
+        GHIKTree solver;
+        GHIK.HeuristicMode mode;
         BVHLoader loader;
         HashMap<String, Node> structure;
         HashMap<String, Node> targets;
@@ -343,7 +342,7 @@ public class MoCapPerformance {
 
         Node root;
 
-        public Skeleton(BVHLoader loader, IKSolver.HeuristicMode mode){
+        public Skeleton(BVHLoader loader, GHIK.HeuristicMode mode){
             this.loader = loader;
             this.mode = mode;
             createSkeleton();
@@ -368,7 +367,7 @@ public class MoCapPerformance {
         }
 
         void createSolver(float maxError, int iterationsChain, int iterations, float height){
-            solver = new Tree(root, mode);
+            solver = new GHIKTree(root, mode);
             //define attributes
             solver.setMaxError(maxError * height); //1% of the skeleton height
             solver.setDirection(true);

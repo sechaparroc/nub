@@ -5,7 +5,7 @@ import nub.core.Graph;
 import nub.core.Interpolator;
 import nub.core.Node;
 import nub.ik.solver.Solver;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -34,7 +34,7 @@ public class HeuristicBenchmark extends PApplet {
   int randLength = 0; //Set seed to generate random segment lengths, otherwise set to -1
 
  // Util.SolverType solversType[] = {Util.SolverType.FABRIK, Util.SolverType.CCD_HEURISTIC};
-  Util.SolverType solversType[] = {Util.SolverType.COMBINED_TRIK, Util.SolverType.FABRIK, Util.SolverType.COMBINED_HEURISTIC, Util.SolverType.CCD_HEURISTIC, Util.SolverType.TRIK_HEURISTIC, Util.SolverType.BACK_AND_FORTH_CCD_HEURISTIC};
+  Util.SolverType solversType[] = {Util.SolverType.TRIK_ECTIK, Util.SolverType.ECTIK, Util.SolverType.CCD, Util.SolverType.TRIK, Util.SolverType.BFIK_CCD};
   //Util.SolverType solversType [] = {Util.SolverType.FINAL_TRIK, Util.SolverType.FORWARD_TRIANGULATION_TRIK};
   ArrayList<ArrayList<Node>> structures = new ArrayList<>(); //Keep Structures
   ArrayList<Node> idleSkeleton;
@@ -232,17 +232,17 @@ public class HeuristicBenchmark extends PApplet {
 
     if (key == 'm' || key == 'M') {
       for (Solver s : solvers) {
-        if (s instanceof IKSolver)
-          ((IKSolver) s).context().setSingleStep(!((IKSolver) s).context().singleStep());
-        if (s instanceof IKSolver)
-          ((IKSolver) s).context().setSingleStep(!((IKSolver) s).context().singleStep());
+        if (s instanceof GHIK)
+          ((GHIK) s).context().setSingleStep(!((GHIK) s).context().singleStep());
+        if (s instanceof GHIK)
+          ((GHIK) s).context().setSingleStep(!((GHIK) s).context().singleStep());
       }
     }
 
     if (key == 'n' || key == 'N') {
       for (Solver s : solvers) {
-        if (s instanceof IKSolver)
-          ((IKSolver) s).context().enableDelegation(!((IKSolver) s).context().enableDelegation());
+        if (s instanceof GHIK)
+          ((GHIK) s).context().enableDelegation(!((GHIK) s).context().enableDelegation());
       }
     }
 
@@ -252,8 +252,8 @@ public class HeuristicBenchmark extends PApplet {
 
     if (key == '0') {
       for (Solver s : solvers) {
-        if (s instanceof IKSolver)
-          ((IKSolver) s).context().setDirection(!((IKSolver) s).context().direction());
+        if (s instanceof GHIK)
+          ((GHIK) s).context().setDirection(!((GHIK) s).context().direction());
       }
 
     }

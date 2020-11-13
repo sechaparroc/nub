@@ -3,7 +3,7 @@ package ik.constraintTest;
 import nub.core.Graph;
 import nub.core.Node;
 import nub.core.constraint.BallAndSocket;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -27,7 +27,7 @@ public class DrawingConstraint extends PApplet {
   BaseControl base;
   Joint j0, j1, target;
 
-  IKSolver solver;
+  GHIK solver;
   boolean solve = false;
 
   static PFont font;
@@ -89,7 +89,7 @@ public class DrawingConstraint extends PApplet {
     structure.add(j0);
     structure.add(j1);
 
-    solver = new IKSolver(structure, IKSolver.HeuristicMode.COMBINED, false);
+    solver = new GHIK(structure, GHIK.HeuristicMode.ECTIK, false);
     //target = new Joint(constraintScene, color(255, 0, 0), 0.2f * constraintScene.radius());
     //target.setRoot(true);
     //target.setReference(constraintRoot);

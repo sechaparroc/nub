@@ -1,10 +1,10 @@
 package ik.trik.vizSteps;
 
 import nub.core.constraint.Hinge;
-import nub.ik.solver.trik.Context;
-import nub.ik.solver.trik.NodeInformation;
-import nub.ik.solver.trik.heuristic.CCD;
-import nub.ik.solver.trik.heuristic.Heuristic;
+import nub.ik.solver.Context;
+import nub.ik.solver.NodeInformation;
+import nub.ik.solver.heuristic.CCD;
+import nub.ik.solver.heuristic.Heuristic;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;

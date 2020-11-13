@@ -4,7 +4,7 @@ import ik.basic.Util;
 import nub.core.Graph;
 import nub.core.Node;
 import nub.ik.solver.Solver;
-import nub.ik.solver.trik.implementations.IKSolver;
+import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -78,7 +78,7 @@ public class TRIKTest extends PApplet {
         target.setPosition(endEffector.position());
         targets.add(target);
         //3. Relate the structure with a Solver. In this example we instantiate a solver
-        solver = new IKSolver(skeleton, IKSolver.HeuristicMode.COMBINED_EXPRESSIVE);
+        solver = new GHIK(skeleton, GHIK.HeuristicMode.ECTIK_DAMP);
         //Optionally you could modify the following parameters of the Solver:
         //Maximum distance between end effector and target, If is below maxError, then we stop executing IK solver (Default value is 0.01)
         //solver.setMaxError(1);

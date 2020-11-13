@@ -2,19 +2,12 @@ package ik.trik;
 
 import nub.core.Graph;
 import nub.core.Node;
-import nub.core.constraint.Constraint;
-import nub.ik.animation.Skeleton;
 import nub.ik.loader.bvh.BVHLoader;
-import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import processing.core.PApplet;
 import processing.event.MouseEvent;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 public class IKSkeletonViewer  extends PApplet {
   int id = 0;
