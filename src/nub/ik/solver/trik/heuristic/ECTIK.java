@@ -70,10 +70,7 @@ public class Combined extends Heuristic {
       j_i1.updateCacheUsingReference();
       //Apply solution find by triangulation
       Quaternion q = solutions[s];
-      j_i1.rotateAndUpdateCache(q, false, endEffector);
-      //Apply CCD t times (best local action if joint rotation constraints are quite different)
-      j_i.rotateAndUpdateCache(findCCD(context, i, j_i, j_i.locationWithCache(endEffector.positionCache()), j_i.locationWithCache(target), true), true, endEffector);
-      j_i1.updateCacheUsingReference();
+      j_i.rotateAndUpdateCache(q, false, endEffector);
 
       for (int t = 0; t < times; t++) {
         j_i1.updateCacheUsingReference();
@@ -143,84 +140,50 @@ public class Combined extends Heuristic {
 
 
   protected static Quaternion[] findTriangulationSolutions(Context context, int i, NodeInformation j_i, NodeInformation j_i1, Vector endEffector, Vector target) {
-    Vector v_i = j_i1.locationWithCache(j_i.positionCache());
-    Vector normal;
-    //In this case we apply triangulation over j_i1
-    if (j_i1.node().constraint() instanceof Hinge) {
-      //Project endEffector to lie on the plane defined by the axis of rotation
-      Hinge h_i1 = ((Hinge) j_i1.node().constraint());
-      //1. find rotation axis
-      normal = h_i1.orientation().rotate(new Vector(0, 0, 1));
-      normal = j_i1.node().rotation().inverse().rotate(normal);
-      normal.normalize();
-      //2. project target and end effector
-      v_i = Vector.projectVectorOnPlane(v_i, normal);
-      endEffector = Vector.projectVectorOnPlane(endEffector, normal);
-      target = Vector.projectVectorOnPlane(target, normal);
-    } else {
-      //find the normal vector (we know in advance that normal = Z axis if the scene is 2D)
-      normal = context.is2D() ? new Vector(0,0,1) : Vector.cross(endEffector, target, null);
-      //If target and eff are collinear compare v_i against target
-      if (normal.squaredNorm() < 0.0001f) {
-        normal = Vector.cross(target, v_i, null);
-        //If v_i and target are collinear use any vector
-        if (normal.squaredNorm() < 0.0001f) {
-          normal = target.orthogonalVector();
-        }
-      }
-      normal.normalize();
+    Vector a = j_i1.node().translation();
+    Vector b = j_i.locationWithCache(context.endEffectorInformation());
+    b.subtract(a);
+    Vector c = j_i.locationWithCache(context.worldTarget().position());
+
+    if (j_i.node().constraint() != null && j_i.node().constraint() instanceof Hinge) {
+      Hinge h = (Hinge) j_i.node().constraint();
+      Quaternion quat = Quaternion.compose(j_i.node().rotation().inverse(), h.idleRotation());
+      Vector tw = h.restRotation().rotate(new Vector(0, 0, 1));
+      tw = quat.rotate(tw);
+      //Project b & c on the plane of rot
+      a = Vector.projectVectorOnPlane(a, tw);
+      b = Vector.projectVectorOnPlane(b, tw);
+      c = Vector.projectVectorOnPlane(c, tw);
     }
-    //Find the two solutions of the triangulation problem assuming no constraints
-    Vector a = v_i;
-    Vector a_neg = Vector.multiply(a, -1);
-    Vector b = endEffector;
-    Vector c = Vector.subtract(target, a);
+
     float a_mag = a.magnitude(), b_mag = b.magnitude(), c_mag = c.magnitude();
-
-    float angle = Vector.angleBetween(a,b);
-
-    float angle_1, angle_2;
-
-    if (Vector.dot(Vector.cross(b, a_neg, null), normal) < 0) {
-      angle = -angle;
-    }
-
+    Quaternion[] deltas;
     if (a_mag + b_mag <= c_mag) {
-      if (angle == 0) {
-        angle_1 = (float) (Math.PI);
-        angle_2 = -(float) (Math.PI);
-      } else {
-        angle_1 = Math.signum(angle) * (float) (Math.PI) - angle;
-        angle_2 = (float) (-Math.signum(angle_1) * 2 * Math.PI + angle_1);
-      }
+      //Chain must be extended as much as possible
+      deltas = new Quaternion[]{new Quaternion(a, c)};
     } else if (c_mag < Math.abs(a_mag - b_mag)) {
-      angle_1 = -angle;
-      angle_2 = (float) (-Math.signum(angle_1) * 2 * Math.PI + angle_1);
+      //Chain must be contracted as much as possible
+      deltas = new Quaternion[]{new Quaternion(a, Vector.multiply(c, -1))};
     } else {
       //Apply law of cosines
-      float current = angle;
-      float expected = Triangulation.findCfromTriangle(a_mag, b_mag, c_mag);
-      angle_1 = expected - current;
-      angle_2 = -current - expected;
+      float B = Triangulation.findCfromTriangle(a_mag,c_mag,b_mag);
+      float angle_1 = Vector.angleBetween(a,c) - B;
+      float angle_2 = -Vector.angleBetween(a,c) - B;
+      Vector normal = Vector.cross(a, c, null);
+      if (normal.squaredNorm() < 0.0001f) {
+        normal = a.orthogonalVector();
+      }
+      deltas = new Quaternion[]{new Quaternion(normal, angle_1), new Quaternion(normal, angle_2)};
     }
-
-    Quaternion[] deltas = new Quaternion[2];
-    deltas[0] = new Quaternion(normal, angle_1);
-    deltas[1] = new Quaternion(normal, angle_2);
 
     for (int k = 0; k < deltas.length; k++) {
-      if (j_i1.node().constraint() != null) {
-        deltas[k] = j_i1.node().constraint().constrainRotation(deltas[k], j_i1.node());
+      if (j_i.node().constraint() != null) {
+        deltas[k] = j_i.node().constraint().constrainRotation(deltas[k], j_i.node());
       }
       if (context.applyDelegation()) {
-        deltas[k] = Util.clampRotation(deltas[k], context.maxAngleAtJoint(i + 1), context.clamping(0));
+        deltas[k] = Util.clampRotation(deltas[k], context.maxAngleAtJoint(i), context.clamping(0));
       }
       deltas[k].normalize();
-    }
-
-    //If the rotation is the same then explore only one rotation
-    if(Context.quaternionDistance(deltas[0], deltas[1]) < 0.0001f){
-      return new Quaternion[]{deltas[0]};
     }
     return deltas;
   }
