@@ -62,13 +62,15 @@ public class Tree extends Solver {
 
   protected TreeNode _root;
   protected IKSolver.HeuristicMode _mode;
-  protected float _current = 10e10f, _best = 10e10f;
+  protected List<List<NodeState>> _initial, _bestSubchains;
+  protected float _bestVal = 99999f, _bestDist = 999999f;
+
   protected HashMap<Node, Node> _endEffectorMap = new HashMap<>();
-  protected float _distanceFactor = 5;
+  protected float _distanceFactor = 2;
 
 
   public Tree(Node root) {
-    this(root, IKSolver.HeuristicMode.COMBINED_TRIK);
+    this(root, IKSolver.HeuristicMode.BACK_AND_FORTH_TRIK);
   }
 
   public Tree(Node root, IKSolver.HeuristicMode mode) {
@@ -79,10 +81,10 @@ public class Tree extends Solver {
     //dummy must have only a child,
     this._root = dummy._children().get(0);
     this._root._parent = null;
-    this.setMaxIterations(5);
-    this.setTimesPerFrame(5);
+    this.setMaxIterations(10);
+    this.setTimesPerFrame(10);
     this.setChainTimesPerFrame(1);
-    this.setChainMaxIterations(3);
+    this.setChainMaxIterations(5);
   }
 
 
@@ -122,7 +124,10 @@ public class Tree extends Solver {
   protected void _findLeafNodesTargets(TreeNode treeNode, List<Vector> effs, List<Vector> targets, Vector effs_centroid, Vector targets_centroid){
     effs.clear();
     targets.clear();
+    effs_centroid.set(0,0,0);
+    targets_centroid.set(0,0,0);
     Node node = treeNode._solver.context().chain().get(treeNode._solver.context().endEffectorId());
+    int i = 0;
     for(TreeNode leaf : treeNode._reachableLeafNodes){
       Vector eff = node.location(leaf._solver.context().chain().get(leaf._solver.context().endEffectorId()));
       if(eff.magnitude() < 0.1) continue; //Too near from current node
@@ -131,12 +136,13 @@ public class Tree extends Solver {
       targets.add(target);
       effs_centroid.add(eff);
       targets_centroid.add(target);
+      i++;
     }
-    effs_centroid.divide(effs.size());
-    targets_centroid.divide(effs.size());
+    effs_centroid.divide(i);
+    targets_centroid.divide(i);
   }
 
-  protected float _applyBestRotation(TreeNode treeNode, List<Vector> effs, List<Vector> targets){
+  protected float _applyBestRotation(TreeNode treeNode, Node target, List<Vector> effs, List<Vector> targets){
       IKSolver solver = treeNode._solver;
       Quaternion rotation = FA3R.FA3R(targets, effs, new Vector(), new Vector());
       if(solver.context().chain().get(solver.context().endEffectorId()).constraint() != null)
@@ -157,10 +163,27 @@ public class Tree extends Solver {
       if(next_error < prev_error) {
           Quaternion expected = Quaternion.compose(solver.context().chain().get(solver.context().endEffectorId()).rotation(), rotation);
           expected.normalize();
+          Quaternion q = solver.context().chain().get(solver.context().endEffectorId()).orientation().get();
+          q.compose(rotation);
+          target.setOrientation(q);
           solver.context().chain().get(solver.context().endEffectorId()).rotate(rotation);
           return next_error;
       }
       return prev_error;
+  }
+
+  protected void moveParent(TreeNode node){
+    if(node._parent == null) return;
+    Node subbase = node._parent._solver.context().chain().get(node._parent._solver.context().chain().size() - 1);
+    IKSolver solver = node._solver;
+    if(solver.target() == null) return;
+    //target w.r.t subbase
+    Vector v1 = subbase.location(solver.context().chain().get(solver.context().endEffectorId()).position());
+    Vector v2 = subbase.location(solver.target().position());
+    Quaternion q = new Quaternion(v1, v2);
+    q = new Quaternion(q.axis(), q.angle() * 0.2f);
+    //Rotate parent
+    subbase.rotate(q);
   }
 
   protected boolean _solve(TreeNode treeNode) {
@@ -172,6 +195,7 @@ public class Tree extends Solver {
       for(int i = 0; i < solver.maxIterations(); i++) {
         solver.solve(); //Perform a given number of iterations
       }
+      moveParent(treeNode);
       return true;
     }
 
@@ -179,66 +203,83 @@ public class Tree extends Solver {
     for (TreeNode child : treeNode._children()) {
       _solve(child);
     }
+    solver.reset();
 
     List<Vector> effs = new ArrayList<Vector>();
     List<Vector> targets = new ArrayList<Vector>();
     Vector effs_centroid = new Vector();
     Vector targets_centroid = new Vector();
-
     if(!treeNode._reachableLeafNodes.isEmpty()) {
       //Get the information of the leaf nodes
       _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid);
 
       //Define the target position
       Vector targetTranslation = Vector.subtract(targets_centroid, effs_centroid);
+      targetTranslation.multiply(_trust);
       Node target = solver.target() == null ? Node.detach(new Vector(), new Quaternion(), 1f) : solver.target();
-      target.setPosition(solver.context().chain().get(solver.context().endEffectorId()).worldLocation(targetTranslation));
+      target.setPosition(solver.context().chain().get(solver.context().endEffectorId()).worldLocation(targetTranslation).get());
       solver.setTarget(target);
-
-      solver.context().setDirection(false);
+      //solver.context().setDirection(true);
+      solver.context().setOrientationWeight(0.3f);
       //Apply best rotation
-      float minError = _applyBestRotation(treeNode, effs, targets);
-      //Apply IK
+      float minError = _applyBestRotation(treeNode, target, effs, targets);
+      _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid);
+      targetTranslation = Vector.subtract(targets_centroid, effs_centroid);
+      target.setPosition(solver.context().chain().get(solver.context().endEffectorId()).worldLocation(targetTranslation));
       if (solver.context().chain().size() >= 2) {//If the solver has only a node we require to update manually
         if (!(solver.context().chain().size() == 2 && solver.context().chain().get(1).translation().magnitude() < 0.1)) {
           solver.reset();
           //Apply best rotation & keep best state
           List<NodeState> bestState = Context.saveState(solver.context().chainInformation());
-          for (int i = 0; i < solver.maxIterations(); i++) {
+          for (int i = 0; i < 1; i++) {
             solver.solve(); //Perform a given number of iterations
             //Fix eff rotation
             _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid);
-            float err = _applyBestRotation(treeNode, effs, targets);
+            float err = _applyBestRotation(treeNode, target, effs, targets);
             //Keep best configuration
-            if (err < minError) {
-              bestState = Context.saveState(solver.context().chainInformation());
-              minError = err;
+            err = minError;
+
+            //bestState = Context.saveState(solver.context().chainInformation());
+            minError = err;
+            _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid);
+            targetTranslation = Vector.subtract(targets_centroid, effs_centroid);
+            targetTranslation.multiply(_trust);
+            target.setPosition(solver.context().chain().get(solver.context().endEffectorId()).worldLocation(targetTranslation));
+
+            /*
+            if (err <= minError) {
+              //...
             } else {
               Context.restoreState(bestState);
               //reduce the distance to the target
-              targetTranslation.multiply(0.5f);
+              _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid);
+              targetTranslation = Vector.subtract(targets_centroid, effs_centroid);
+              targetTranslation.multiply(_trust);
               solver.reset();
-              solver.target().setPosition(solver.context().chain().get(solver.context().endEffectorId()).worldLocation(targetTranslation));
+              target.setPosition(solver.context().chain().get(solver.context().endEffectorId()).worldLocation(targetTranslation));
             }
+            */
           }
+          moveParent(treeNode);
           //update to best state
-          Context.restoreState(bestState);
+          //Context.restoreState(bestState);
         }
       }
     }
-
     return true;
   }
 
   @Override
   protected boolean _iterate() {
     _solve(_root);
+    //Keep best
+    _saveBest();
     return false;
   }
 
   @Override
   protected void _update() {
-
+    _updateToBest();
   }
 
   protected boolean _changed(TreeNode treeNode) {
@@ -292,8 +333,10 @@ public class Tree extends Solver {
   @Override
   protected void _reset() {
     _iterations = 0;
-    _best = 0;
-    _current = 10e10f;
+    _bestVal = 10e10f;
+    _bestDist = 10e10f;
+    _saveInitial();
+    _saveBest();
     _reset(_root);
   }
 
@@ -401,6 +444,71 @@ public class Tree extends Solver {
 
   }
 
+  protected List<List<NodeState>> _obtainSubchains(){
+    List<List<NodeState>> subchains = new ArrayList<>();
+    List<TreeNode> frontier = new ArrayList<>();
+    frontier.add(_root);
+    while(!frontier.isEmpty()){
+      TreeNode current = frontier.remove(0);
+      if(current._children != null) frontier.addAll(current._children);
+      subchains.add(Context.saveState(current._solver.context().chainInformation()));
+    }
+    return subchains;
+  }
+
+  protected void _saveInitial(){
+    _initial = _obtainSubchains();
+  }
+
+  protected float distance(List<List<NodeState>> stateA, List<List<NodeState>> stateB){
+    float dist = 0;
+    for(int i = 0; i < stateA.size(); i++){
+      List<NodeState> sa = stateA.get(i);
+      List<NodeState> sb = stateB.get(i);
+      float d = 0;
+      for(int j = 0; j < sa.size(); j++){
+        NodeState na = sa.get(j);
+        NodeState nb = sb.get(j);
+        d += Context.quaternionDistance(na.orientation(), nb.orientation());
+      }
+      dist += d;
+    }
+    return dist / stateA.size();
+  }
+
+
+  protected void _updateToBest(){
+    for(List<NodeState> state : _bestSubchains){
+      Context.restoreState(state);
+    }
+  }
+
+  protected float _trust = 1;
+  protected void _saveBest(){
+    float curError = error();
+    if(Math.abs(curError - _bestVal) < _maxError * 5){
+      List<List<NodeState>> sc = _obtainSubchains();
+      float dist = distance(sc, _initial);
+
+      if(dist < _bestDist){
+        _bestVal = curError;
+        _bestSubchains = sc;
+        _bestDist = dist;
+        _trust = 1;
+      } else{
+        _trust *= 0.8f;
+      }
+    } else if(curError < _bestVal){
+      List<List<NodeState>> sc = _obtainSubchains();
+      float dist = distance(sc, _initial);
+      _bestVal = curError;
+      _bestSubchains = sc;
+      _bestDist = dist;
+      _trust = 1;
+    } else{
+      _trust *= 0.8f;
+    }
+  }
 
   public void setOrientationWeight(float orientationWeight) {
     setOrientationWeight(orientationWeight, _root);
