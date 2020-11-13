@@ -113,6 +113,7 @@ public class Scene extends Graph {
 
   //TODO: Move this
   protected PShape _sphere;
+  public static boolean _retainedBones = false;
 
   // CONSTRUCTORS
 
@@ -298,6 +299,7 @@ public class Scene extends Graph {
     if(is3D()){
       _sphere = pGraphics.createShape(PConstants.SPHERE, 1);
       _sphere.setStroke(false);
+      _sphere.setFill(pGraphics.color(0,255,0));
     }
   }
 
@@ -1057,10 +1059,10 @@ public class Scene extends Graph {
       }
     }
     if (node.isHintEnable(Node.CONSTRAINT)){
-      drawConstraint(pg, node, _constraintFactor(node), _constraintColor(node));
+      if(!_retainedBones) drawConstraint(pg, node, _constraintFactor(node), _constraintColor(node));
     }
     if(node.isHintEnable(Node.BONE)){
-      drawBone(pg, node, _boneDepth(node), _boneColor(node), _boneRadius(node), _boneWidth(node), _sphere);
+      drawBone(pg, node, _boneDepth(node), _boneColor(node), _boneRadius(node), _boneWidth(node), _sphere, _retainedBones);
     }
 
     if (node.isHintEnable(Node.AXES)) {
@@ -1118,11 +1120,11 @@ public class Scene extends Graph {
       _drawEye(pg, _cameraLength(node) == 0 ? _radius : _cameraLength(node));
     }
     if (node.isHintEnable(Node.CONSTRAINT) && node.isPickingModeEnable(Node.CONSTRAINT)){
-      drawConstraint(pg, node, _constraintFactor(node), _constraintColor(node));
+      if(!_retainedBones)drawConstraint(pg, node, _constraintFactor(node), _constraintColor(node));
     }
 
     if(node.isHintEnable(Node.BONE) && node.isPickingModeEnable(Node.BONE)){
-      drawBone(pg, node, _boneDepth(node), _boneColor(node), _boneRadius(node), _boneWidth(node), _sphere);
+      drawBone(pg, node, _boneDepth(node), _boneColor(node), _boneRadius(node), _boneWidth(node), _sphere, _retainedBones);
     }
   }
 
@@ -3525,7 +3527,7 @@ public class Scene extends Graph {
     pGraphics.popStyle();
   }
 
-  public static void drawBone(PGraphics pGraphics, Node node, boolean depth, int boneColor, float radius, float width, PShape sphere){
+  public static void drawBone(PGraphics pGraphics, Node node, boolean depth, int boneColor, float radius, float width, PShape sphere, boolean retained){
     pGraphics.pushStyle();
 //    pGraphics.colorMode(PApplet.RGB, 255);
     if(!depth) pGraphics.hint(PConstants.DISABLE_DEPTH_TEST);
@@ -3539,7 +3541,7 @@ public class Scene extends Graph {
       pGraphics.ellipse(0, 0, radius * 2, radius * 2);
     } else{
       if(m > radius) {
-        if (width <= 0) {
+        if (width <= 0 || retained) {
           pGraphics.line(radius * v.x(), radius * v.y(), radius * v.z(),
                   (m - radius) * v.x(), (m - radius) * v.y(), (m - radius) * v.z());
         } else {
@@ -3554,14 +3556,17 @@ public class Scene extends Graph {
         }
       }
       pGraphics.noStroke();
-      //sphere.setFill(boneColor);
-      pGraphics.sphere(radius);
+      if(retained){
+        pGraphics.pushMatrix();
+        pGraphics.scale(radius);
+        pGraphics.shape(sphere);
+        pGraphics.popMatrix();
+      } else{
+        sphere.setFill(boneColor);
+        pGraphics.sphere(radius);
+      }
       //int du = pGraphics.sphereDetailU, dv = pGraphics.sphereDetailV;
       //pGraphics.sphereDetail(8,8);
-      //pGraphics.pushMatrix();
-      //pGraphics.scale(radius);
-      //pGraphics.shape(sphere);
-      //pGraphics.popMatrix();
       //pGraphics.sphereDetail(du, dv);
     }
     if(!depth) pGraphics.hint(PConstants.ENABLE_DEPTH_TEST);
