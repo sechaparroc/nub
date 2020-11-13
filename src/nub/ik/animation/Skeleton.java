@@ -18,6 +18,7 @@ import nub.core.constraint.BallAndSocket;
 import nub.core.constraint.Constraint;
 import nub.core.constraint.Hinge;
 import nub.ik.solver.Solver;
+import nub.ik.solver.trik.Tree;
 import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
 import nub.processing.Scene;
@@ -481,10 +482,20 @@ public class Skeleton {
   public void enableIK(IKSolver.HeuristicMode mode) {
     for (Node child : _reference.children()) {
       if (!_solvers.containsKey(child)) {
-        Solver s = Graph.registerTreeSolver(child, mode);
+        Tree s = Graph.registerTreeSolver(child, mode);
         _solvers.put(child, s);
       } else {
         Graph.executeSolver(_solvers.get(child));
+      }
+    }
+  }
+
+  public void enableDirection(boolean direction){
+    for(Solver s : solvers()){
+      if(s instanceof Tree){
+        ((Tree) s).setDirection(direction);
+      } else if(s instanceof IKSolver){
+        ((IKSolver) s).setDirection(direction);
       }
     }
   }
