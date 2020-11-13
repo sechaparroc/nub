@@ -22,6 +22,7 @@ import nub.ik.solver.trik.implementations.IKSolver;
 import nub.primitives.Quaternion;
 import nub.processing.Scene;
 import processing.core.PConstants;
+import processing.core.PShape;
 import processing.data.JSONArray;
 import processing.data.JSONObject;
 
@@ -248,11 +249,14 @@ public class Skeleton {
    */
   public Node addTarget(String name) {
     Node endEffector = _joints.get(name);
+    PShape sphere = Scene.pApplet.g.createShape(PConstants.SPHERE, _targetRadius);
+    sphere.setStroke(false);
+    sphere.setFill(Scene.pApplet.g.color(255,0,0));
     //Create a Basic target
     Node target = new Node( pg -> {
         pg.noStroke();
         pg.fill(255, 0, 0);
-        if (pg.is3D()) pg.sphere(_targetRadius);
+        if (pg.is3D()) pg.shape(sphere);
         else pg.ellipse(0, 0, 2 * _targetRadius, 2 * _targetRadius);
     });
     _targets.put(name, target);
@@ -489,6 +493,11 @@ public class Skeleton {
     for (Solver solver : _solvers.values()) {
       Graph.stopSolver(solver);
     }
+  }
+
+  public void solveIK(){
+    for (Solver solver : _solvers.values())
+      solver.solve();
   }
 
   /**
