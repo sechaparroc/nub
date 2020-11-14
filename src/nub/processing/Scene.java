@@ -1060,10 +1060,10 @@ public class Scene extends Graph {
         }
       }
     }
-    if (node.isHintEnable(Node.CONSTRAINT)){
+    if (node.isHintEnabled(Node.CONSTRAINT)){
       if(!_retainedBones) drawConstraint(pg, node, _constraintFactor(node), _constraintColor(node));
     }
-    if(node.isHintEnable(Node.BONE)){
+    if(node.isHintEnabled(Node.BONE)){
       drawBone(pg, node, _boneDepth(node), _boneColor(node), _boneRadius(node), _boneWidth(node), _sphere, _retainedBones);
     }
     if (node.isHintEnabled(Node.AXES)) {
@@ -1120,11 +1120,11 @@ public class Scene extends Graph {
     if (node.isHintEnabled(Node.CAMERA) && node.isPickingEnabled(Node.CAMERA)) {
       _drawEye(pg, _cameraLength(node) == 0 ? _radius : _cameraLength(node));
     }
-    if (node.isHintEnable(Node.CONSTRAINT) && node.isPickingModeEnable(Node.CONSTRAINT)){
+    if (node.isHintEnabled(Node.CONSTRAINT) && node.isPickingEnabled(Node.CONSTRAINT)){
       if(!_retainedBones)drawConstraint(pg, node, _constraintFactor(node), _constraintColor(node));
     }
 
-    if(node.isHintEnable(Node.BONE) && node.isPickingModeEnable(Node.BONE)){
+    if(node.isHintEnabled(Node.BONE) && node.isPickingEnabled(Node.BONE)){
       drawBone(pg, node, _boneDepth(node), _boneColor(node), _boneRadius(node), _boneWidth(node), _sphere, _retainedBones);
     }
   }
@@ -1465,6 +1465,17 @@ public class Scene extends Graph {
     _matrixHandler.translate(0.0f, 0.0f, -length * (1.0f - head));
   }
 
+  public static void drawArrow(PGraphics pg, float length, float radius) {
+    float head = 2.5f * (radius / length) + 0.1f;
+    float coneRadiusCoef = 4.0f - 5.0f * head;
+
+    drawCylinder(pg,20, radius, length * (1.0f - head / coneRadiusCoef));
+    pg.translate(0.0f, 0.0f, length * (1.0f - head));
+    drawCone(pg,12, 0, 0, coneRadiusCoef * radius, head * length);
+    pg.translate(0.0f, 0.0f, -length * (1.0f - head));
+  }
+
+
   /**
    * Same as {@code drawArrow(vector, 0.05f * vector.magnitude())}.
    *
@@ -1495,6 +1506,17 @@ public class Scene extends Graph {
     drawArrow(Vector.subtract(to, from).magnitude(), radius);
     _matrixHandler.popMatrix();
   }
+
+  public static void drawArrow(PGraphics pg, Vector from, Vector to, float radius) {
+    pg.push();
+    pg.translate(from.x(), from.y(), from.z());
+    Quaternion rotation = new Quaternion(new Vector(0, 0, 1), Vector.subtract(to, from));
+    Vector axis = rotation.axis();
+    pg.rotate(rotation.angle(), axis.x(), axis.y(), axis.z());
+    drawArrow(pg, Vector.subtract(to, from).magnitude(), radius);
+    pg.pop();
+  }
+
 
   /**
    * Same as {@code drawCylinder(20, radius, height)}.

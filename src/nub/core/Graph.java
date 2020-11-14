@@ -4917,7 +4917,7 @@ public class Graph {
     solver = new GHIKTree(node, mode);
     _solvers.add(solver);
     //Add task
-    Task task = new Task(TimingHandler) {
+    Task task = new Task() {
       @Override
       public void execute() {
         solver.solve();
@@ -4989,7 +4989,7 @@ public class Graph {
   public static void executeSolver(Solver solver, long period) {
     if (!_solverTasks.containsKey(solver)) {
       //Add task
-      Task task = new Task(TimingHandler) {
+      Task task = new Task() {
         @Override
         public void execute() {
           solver.solve();
