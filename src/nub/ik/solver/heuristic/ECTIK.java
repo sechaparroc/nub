@@ -155,7 +155,6 @@ public class ECTIK extends Heuristic {
       b = Vector.projectVectorOnPlane(b, tw);
       c = Vector.projectVectorOnPlane(c, tw);
     }
-
     float a_mag = a.magnitude(), b_mag = b.magnitude(), c_mag = c.magnitude();
     Quaternion[] deltas;
     if (a_mag + b_mag <= c_mag) {
@@ -168,7 +167,7 @@ public class ECTIK extends Heuristic {
       //Apply law of cosines
       float B = TIK.findCfromTriangle(a_mag,c_mag,b_mag);
       float angle_1 = Vector.angleBetween(a,c) - B;
-      float angle_2 = -Vector.angleBetween(a,c) - B;
+      float angle_2 = Vector.angleBetween(a,c) + B;
       Vector normal = Vector.cross(a, c, null);
       if (normal.squaredNorm() < 0.0001f) {
         normal = a.orthogonalVector();
