@@ -1,6 +1,7 @@
 package nub.ik.solver;
 
 import nub.core.Node;
+import nub.ik.solver.heuristic.CCD;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 
@@ -190,6 +191,7 @@ public class GHIKTree extends Solver {
       if (solver.target() == null) return false;
       //solve ik for current chain
       solver.reset();
+      if(solver.direction()) CCD.applyOrientationalCCD(solver.heuristic(), solver.context().endEffectorId());
       for(int i = 0; i < solver.maxIterations(); i++) {
         solver.solve(); //Perform a given number of iterations
       }
@@ -218,7 +220,7 @@ public class GHIKTree extends Solver {
       target.setPosition(solver.context().chain().get(solver.context().endEffectorId()).worldLocation(targetTranslation).get());
       solver.setTarget(target);
       //solver.context().setDirection(true);
-      solver.context().setOrientationWeight(0.3f);
+      //solver.context().setOrientationWeight(0.6f);
       //Apply best rotation
       float minError = _applyBestRotation(treeNode, target, effs, targets);
       _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid);
@@ -481,13 +483,12 @@ public class GHIKTree extends Solver {
     }
   }
 
-  protected float _trust = 1;
+  protected float _trust = 1f;
   protected void _saveBest(){
     float curError = error();
-    if(Math.abs(curError - _bestVal) < _maxError * 5){
+    if(Math.abs(curError - _bestVal) < _maxError*2){
       List<List<NodeState>> sc = _obtainSubchains();
       float dist = distance(sc, _initial);
-
       if(dist < _bestDist){
         _bestVal = curError;
         _bestSubchains = sc;
@@ -505,6 +506,9 @@ public class GHIKTree extends Solver {
       _trust = 1;
     } else{
       _trust *= 0.8f;
+    }
+    if(_trust < 0.6){
+      _updateToBest();
     }
   }
 
