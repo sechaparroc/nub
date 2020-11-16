@@ -21,28 +21,16 @@ import java.util.List;
  * */
 
  public class SkeletonBuilder extends PApplet {
-  //TODO Check Fitting curve method for target path
   Scene scene;
-  Scene[] views;
   boolean showPath = false, showLast = false, debug = true;
-  //focus;
-  //OptionPanel panel;
-  //PGraphics canvas1;
-
   FitCurve fitCurve;
 
   float radius = 30;
   int w = 1000, h = 700;
-  //Create different skeletons to interact with
-
-  //Choose FX2D, JAVA2D, P2D or P3D
   String renderer = P3D;
-
   //Constraint Parameters
-
   float minAngle = radians(60);
   float maxAngle = radians(60);
-
   List<Target> targets = new ArrayList<Target>();
 
 
@@ -70,10 +58,8 @@ import java.util.List;
     directionalLight(102, 102, 102, 0, 0, -1);
     specular(255, 255, 255);
     shininess(10);
-    //canvas1.stroke(255,0,0);
     stroke(255);
     stroke(255, 0, 0);
-    //scene.drawAxes();
     scene.render();
     for (Target target : targets) {
       if (showPath) target._interpolator.enableHint(Interpolator.SPLINE);
@@ -121,7 +107,7 @@ import java.util.List;
     if (mouseButton == RIGHT && event.isControlDown()) {
       Vector vector = new Vector(scene.mouseX(), scene.mouseY());
       if (scene.node() != null)
-        scene.node().interact("OnAdding", scene, vector);
+        scene.node().interact(new Object[]{"OnAdding", scene, vector});
     } else if (mouseButton == LEFT) {
       if (event.isControlDown() && fitCurve != null) {
         if (fitCurve.started()) {
@@ -137,7 +123,7 @@ import java.util.List;
     } else if (mouseButton == CENTER) {
       scene.scale(scene.mouseDX());
     } else if (scene.node() != null)
-      scene.node().interact("Reset");
+      scene.node().interact(new Object[]{"Reset"});
     if (!Target.selectedTargets().contains(scene.node())) {
       Target.clearSelectedTargets();
     }
@@ -170,14 +156,14 @@ import java.util.List;
     Vector vector = new Vector(scene.mouseX(), scene.mouseY());
     if (scene.node() != null)
       if (scene.node() instanceof InteractiveJoint)
-        scene.node().interact("Add", scene, vector);
+        scene.node().interact(new Object[]{"Add", scene, vector});
         //else focus.trackedFrame().interact("Add", vector, false);
       else {
         if (fitCurve != null) {
           fitCurve.setStarted(false);
           fitCurve.getCatmullRomCurve(scene, scene.node(), 0);
           //fitCurve._interpolator.run();
-          scene.node().interact("AddCurve", scene, fitCurve);
+          scene.node().interact(new Object[]{"AddCurve", scene, fitCurve});
         }
       }
     fitCurve = null;
@@ -194,12 +180,12 @@ import java.util.List;
         //panel.setFrame(scene.trackedFrame());
         if (event.isControlDown()) {
           if (scene.node() != null)
-            scene.node().interact("KeepSelected");
+            scene.interact(scene.node(),"KeepSelected");
         }
       } else if (event.getCount() == 2) {
         if (event.isShiftDown())
           if (scene.node() != null)
-            scene.node().interact("Remove");
+            scene.node().interact(new Object[]{"Remove"});
           else
             scene.focus();
       } else {

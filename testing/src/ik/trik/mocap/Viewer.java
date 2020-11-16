@@ -18,7 +18,7 @@ import java.util.Map;
 
 public class Viewer extends PApplet {
     String[] paths = new String[]{
-            "/testing/data/bvh/0007_Cartwheel001.bvh",
+            "/testing/data/bvh/0017_ParkourRoll001.bvh",
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/SpiderG/__Walk.bvh",
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__SlowFly.bvh",
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/cmu-mocap-master/data/001/01_02.bvh",
@@ -28,8 +28,8 @@ public class Viewer extends PApplet {
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Puppy/Puppy_IdleEnergetic.bvh"
     };
 
-    String path = paths[2];
-    boolean absolute = true;
+    String path = paths[0];
+    boolean absolute = false;
     Scene scene;
     BVHLoader loader;
     List<Skeleton> skeletons;
@@ -81,7 +81,7 @@ public class Viewer extends PApplet {
         IKSkeleton2.setRadius(scene.radius() * 0.01f);
         IKSkeleton2.setBoneWidth(scene.radius() * 0.01f);
 
-        IKSkeleton2.enableIK(GHIK.HeuristicMode.BFIK_TRIK);
+        IKSkeleton2.enableIK(GHIK.HeuristicMode.TRIK_ECTIK);
         IKSkeleton2.enableDirection(true);
         IKSkeleton2.setMaxError(0.01f * height);
         println("Height : " + height + " Max error " + 0.01f * height);
@@ -106,7 +106,7 @@ public class Viewer extends PApplet {
         scene.setBounds(height * 3);
         scene.fit(0);
         scene.enableHint(Graph.BACKGROUND | Graph.AXES);
-        loader.skeleton().cull(true);
+        //loader.skeleton().cull(true);
 
         //IKSkeleton1.enableIK(false);
         IKSkeleton2.enableIK(false);
@@ -151,6 +151,7 @@ public class Viewer extends PApplet {
     }
 
     public void mouseClicked(MouseEvent event){
+        if(scene.node() != null ) System.out.println(scene.node().id());
         if(event.getCount() == 2)
             if(event.getButton() == LEFT)
                 scene.focus();

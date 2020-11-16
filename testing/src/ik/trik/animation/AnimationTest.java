@@ -36,7 +36,7 @@ public class AnimationTest extends PApplet {
     mainScene.enableHint(Scene.BACKGROUND | Scene.AXES);
 
     skeleton = new Skeleton(jsonPath);
-    skeleton.enableIK();
+    //skeleton.enableIK();
     skeleton.addTargets();
     skeleton.setTargetRadius(0.03f * mainScene.radius());
     //Relate the shape with a skinning method (CPU or GPU)
@@ -147,7 +147,7 @@ public class AnimationTest extends PApplet {
         else
           focus.align();
     } else if (focus == controlScene) {
-      if (focus.node() != null) focus.node().interact("onClicked", event.getButton());
+      if (focus.node() != null) focus.node().interact(new Object[]{"onClicked", event.getButton()});
     }
   }
 

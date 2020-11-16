@@ -72,7 +72,6 @@ public class Eagle extends PApplet {
     //4.2 relate a skeleton with an IK Solver
     Solver solver = scene.registerTreeSolver(root);
     //Update params
-    solver.setMaxError(1f);
 
     for (Node endEffector : endEffectors) {
       //4.3 Create target(s) to relate with End Effector(s)

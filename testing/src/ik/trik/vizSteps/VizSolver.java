@@ -21,7 +21,7 @@ import java.util.List;
 public class VizSolver extends PApplet {
   //Generate a simple Structure
   Scene scene;
-  int numJoints = 5;
+  int numJoints = 4;
   float targetRadius;
   float boneLength = 50;
   Node target;
@@ -134,7 +134,7 @@ public class VizSolver extends PApplet {
 
     Util.ConstraintType type = Util.ConstraintType.NONE;
 
-    createSolver(path  + "/COMBINED/ECTIK", "ECTIK", "ECTIK",
+    createSolver(path  + "/TRIANGULATION", "TIK", "TIK",
         type, 13, color(255,255,0, 100));
     /*createSolver(path  + "/BACK_AND_FORTH/Last/BFTIK", "BF", "BFTIK",
         type, 13, color(255,255,0, 100));

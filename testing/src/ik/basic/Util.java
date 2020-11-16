@@ -391,25 +391,4 @@ public class Util {
     }
     return copy;
   }
-
-  public static void drawPositions(PGraphics pg, ArrayList<Vector> positions, int color, float str) {
-    pg.sphereDetail(5);
-    if (positions == null) return;
-    Vector prev = null;
-    for (Vector p : positions) {
-      pg.pushMatrix();
-      pg.pushStyle();
-      pg.stroke(color);
-      pg.strokeWeight(str);
-      if (prev != null) pg.line(prev.x(), prev.y(), prev.z(), p.x(), p.y(), p.z());
-      pg.noStroke();
-      pg.fill(color);
-      pg.translate(p.x(), p.y(), p.z());
-      pg.sphere(3);
-      pg.popStyle();
-      pg.popMatrix();
-      prev = p;
-    }
-    pg.sphereDetail(40);
-  }
 }
