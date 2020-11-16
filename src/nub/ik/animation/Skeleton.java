@@ -250,14 +250,19 @@ public class Skeleton {
    */
   public Node addTarget(String name) {
     Node endEffector = _joints.get(name);
-    PShape sphere = Scene.pApplet.g.createShape(PConstants.SPHERE, _targetRadius);
+    PShape sphere = Scene.pApplet.g.createShape(PConstants.SPHERE, 1);
     sphere.setStroke(false);
     sphere.setFill(Scene.pApplet.g.color(255,0,0));
     //Create a Basic target
     Node target = new Node( pg -> {
         pg.noStroke();
         pg.fill(255, 0, 0);
-        if (pg.is3D()) pg.shape(sphere);
+        if (pg.is3D()){
+          pg.push();
+          pg.scale(_targetRadius);
+          pg.shape(sphere);
+          pg.pop();
+        }
         else pg.ellipse(0, 0, 2 * _targetRadius, 2 * _targetRadius);
     });
     _targets.put(name, target);

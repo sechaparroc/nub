@@ -84,6 +84,7 @@ public class GHIKTree extends Solver {
     this.setTimesPerFrame(10);
     this.setChainTimesPerFrame(1);
     this.setChainMaxIterations(5);
+    _reset();
   }
 
 
