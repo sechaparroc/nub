@@ -27,8 +27,7 @@
 import nub.primitives.*;
 import nub.core.*;
 import nub.processing.*;
-import nub.ik.solver.geometric.*;
-import nub.ik.solver.implementations.SimpleTRIK;
+import nub.ik.solver.GHIK;
 import nub.timing.*;
 
 int w = 700;
@@ -52,7 +51,7 @@ void setup() {
     //Setting the scene
     scene = new Scene(this);
     if(scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRadius(280);
+    scene.setBounds(280);
     scene.fit(1);
     //1. Create the Skeleton (chain described above)
     skeleton.add(new Joint(null, new Vector(0, -scene.radius()/2), jointRadius, false));
@@ -64,7 +63,7 @@ void setup() {
     Node endEffector = new Joint(skeleton.get(4), new Vector(0, length), jointRadius, true);
     skeleton.add(endEffector);
     //As targets and effectors lie on the same spot, is preferable to disable End Effectors tracking
-    endEffector.enableTagging(false);
+    endEffector.tagging = false;
 
     //2. Lets create a Target (a bit bigger than a Joint in the structure)
     Node target = new Target(scene, jointRadius * 1.5f);
@@ -75,17 +74,23 @@ void setup() {
     //3. Relate the structure with a Solver. In this example we instantiate a solver
     //As we're dealing with a Chain Structure we could use a SimpleTRIK solver (this option is only valid for chain structures).
     //The heuristic mode defines the kind of algorithm to use most common options are:
-    //SimpleTRIK.HeuristicMode.EXPRESSIVE_FINAL
-    //SimpleTRIK.HeuristicMode.FINAL
-    //SimpleTRIK.HeuristicMode.CCD
-    final SimpleTRIK solver = new SimpleTRIK(skeleton, SimpleTRIK.HeuristicMode.FINAL);
-    
-    
+    /*
+      Choose among these solvers: 
+        * GHIK.HeuristicMode.CCD
+        * GHIK.HeuristicMode.BFIK_CCD
+        * GHIK.HeuristicMode.TIK
+        * GHIK.HeuristicMode.BFIK_TIK
+        * GHIK.HeuristicMode.TRIK
+        * GHIK.HeuristicMode.BFIK_TRIK
+        * GHIK.HeuristicMode.ECTIK
+        * GHIK.HeuristicMode.TRIK_ECTIK
+    */
+    final GHIK solver = new GHIK(skeleton, GHIK.HeuristicMode.BFIK_TRIK);
     //Optionally you could modify the following parameters of the Solver:
     //Maximum distance between end effector and target, If is below maxError, then we stop executing IK solver (Default value is 0.01)
-    solver.setMaxError(1);
+    solver.setMaxError(0.1);
     //Number of iterations to perform in order to reach the target (Default value is 50)
-    solver.setMaxIterations(15);
+    solver.setMaxIterations(5);
     //Times a solver will iterate on a single Frame (Default value is 5)
     solver.setTimesPerFrame(5);
     //Minimum distance between previous and current solution to consider that Solver converges (Default value is 0.01)
@@ -96,26 +101,24 @@ void setup() {
 
     //5. Create a Timing Task such that the solver executes each amount of time
     TimingTask solverTask = new TimingTask() {
-        @Override
-        public void execute() {
-            //a solver perform an iteration when solve method is called
-            if(enableSolver){
-                solver.solve();
-            }
+      @Override
+      public void execute() {
+        //a solver perform an iteration when solve method is called
+        if (enableSolver) {
+          solver.solve();
         }
+      }
     };
-    scene.registerTask(solverTask); //Add solverTask to the Graph scene
     solverTask.run(40); //Execute the solverTask each 40 ms
-
     //Define Text Properties
     textAlign(CENTER);
     textSize(24);
+    scene.enableHint(Scene.AXES);
 }
 
 void draw() {
     background(0);
     if(scene.is3D()) lights();
-    scene.drawAxes();
     scene.render();
     noLights();
     scene.beginHUD();

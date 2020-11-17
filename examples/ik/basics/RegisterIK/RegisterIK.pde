@@ -50,7 +50,7 @@ void setup() {
     //Setting the scene
     scene = new Scene(this);
     if(scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRadius(200);
+    scene.setBounds(200);
     scene.fit(1);
     //1. Create the Skeleton (Y-Shape described above)
     skeleton[0] = new Joint(null, new Vector(0,-scene.radius()/2), jointRadius, false);
@@ -65,8 +65,8 @@ void setup() {
     skeleton[6] = new Joint(skeleton[4], new Vector(length, length), jointRadius, true);
 
     //As targets and effectors lie on the same spot, is preferable to disable End Effectors tagging
-    skeleton[5].enableTagging(false);
-    skeleton[6].enableTagging(false);
+    skeleton[5].tagging = false;
+    skeleton[6].tagging = false;
 
     //2. Lets create two Targets (a bit bigger than a Joint structure)
     leftTarget = new Target(scene, jointRadius * 1.3f);
@@ -77,14 +77,25 @@ void setup() {
     rightTarget.setPosition(skeleton[6].position());
 
     //3. Relate the structure with a Solver. In this example we register a solver in the graph scene
-    Solver solver = Scene.registerTreeSolver(skeleton[0]);
+    /*
+      Choose among these solvers: 
+        * GHIK.HeuristicMode.CCD
+        * GHIK.HeuristicMode.BFIK_CCD
+        * GHIK.HeuristicMode.TIK
+        * GHIK.HeuristicMode.BFIK_TIK
+        * GHIK.HeuristicMode.TRIK
+        * GHIK.HeuristicMode.BFIK_TRIK
+        * GHIK.HeuristicMode.ECTIK
+        * GHIK.HeuristicMode.TRIK_ECTIK
+   */
+    Solver solver = Scene.registerTreeSolver(skeleton[0], GHIK.HeuristicMode.TRIK_ECTIK);
 
     //Optionally you could modify the following parameters of the Solver:
     //Maximum distance between end effector and target, If is below maxError, then we stop executing IK solver (Default value is 0.01)
-    solver.setMaxError(1);
-    //Number of iterations to perform in order to reach the target (Default value is 50)
-    solver.setMaxIterations(15);
-    //Times a solver will iterate on a single Frame (Default value is 5)
+    solver.setMaxError(0.1);
+    //Number of iterations to perform in order to reach the target (Default value is 10)
+    solver.setMaxIterations(5);
+    //Times a solver will iterate on a single Frame (Default value is 10)
     solver.setTimesPerFrame(5);
     //Minimum distance between previous and current solution to consider that Solver converges (Default value is 0.01)
     solver.setMinDistance(0.5f);
@@ -101,7 +112,6 @@ void setup() {
 void draw() {
     background(0);
     if(scene.is3D()) lights();
-    scene.drawAxes();
     scene.render();
     noLights();
     scene.beginHUD();

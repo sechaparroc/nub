@@ -23,7 +23,6 @@ import nub.core.constraint.*;
 import nub.processing.*;
 import nub.ik.solver.*;
 import nub.ik.skinning.*;
-import nub.ik.animation.Joint; //Joint provides default way to visualize the skeleton
 import java.util.List;
 
 Scene scene;
@@ -43,7 +42,7 @@ ArrayList<Skinning> skinning = new ArrayList<Skinning>();
 void setup() {
   size(1000, 800, P3D);
   scene = new Scene(this);
-  scene.setFrustum(new Vector(0, 0, 0), new Vector(flockWidth, flockHeight, flockDepth));
+  scene.setBounds(new Vector(flockWidth / 2, flockWidth / 3), flockWidth / 2);
   scene.fit();
   // create and fill the list of boids
   for(int k = 0; k < numFlocks; k++){
@@ -115,15 +114,7 @@ void resetEye() {
 
 // picks up a boid avatar, may be null
 void mouseClicked() {
-  // two options to update the boid avatar:
-  // 1. Synchronously
   updateAvatar(scene.updateMouseTag("mouseClicked"));
-  // which is the same as these two lines:
-  // scene.updateMouseTag("mouseClicked");
-  // updateAvatar(scene.node("mouseClicked"));
-  // 2. Asynchronously
-  // which requires updateAvatar(scene.node("mouseClicked")) to be called within draw()
-  // scene.mouseTag("mouseClicked");
 }
 
 // 'first-person' interaction
@@ -209,12 +200,12 @@ Node generateEagle(){
   objShape.rotate(new Quaternion(new Vector(0, 0, 1), PI));
 
   List<Node> skeleton = loadSkeleton(null);
-  skeleton.get(0).cull();
+  skeleton.get(0).cull = true;
   setConstraints(skeleton);
   objShape.rotate(new Quaternion(new Vector(0, 1, 0), -PI/2.f));
   objShape.scale(1);
 
-  skinning.add(new GPULinearBlendSkinning(skeleton, this.g, shapeFile, textureFile, 100, false));
+  skinning.add(new GPULinearBlendSkinning(skeleton, shapeFile, textureFile, 100, false));
   
   //Adding IK behavior
   //Identify root and end effector(s)
@@ -233,29 +224,28 @@ Node generateEagle(){
   for(Node endEffector : endEffectors){
       //4.3 Create target(s) to relate with End Effector(s)
       Node target = new Node();
-      target.setPickingThreshold(0);
       target.setPosition(endEffector.position().get());
       //4.4 Relate target(s) with end effector(s)
       scene.addIKTarget(endEffector, target);
       //disable enf effector tracking
-      endEffector.enableTagging(false);
+      endEffector.tagging = false;
 
       //If desired generates a default Path that target must follow
       if(endEffector == skeleton.get(14)){
         setupTargetInterpolator(target, new Vector[]{
           new Vector(-36,3,0), 
-          new Vector(-34,-11,0), 
+          new Vector(-34,-16,0), 
           new Vector(-36,3,0) , 
-          new Vector(-34,15,0), 
+          new Vector(-34,20,0), 
           new Vector(-36,3,0)});
       }
 
       if(endEffector == skeleton.get(18)){
         setupTargetInterpolator(target, new Vector[]{
           new Vector(33,3,0), 
-          new Vector(31,-11,0), 
+          new Vector(31,-16,0), 
           new Vector(33,3,0) , 
-          new Vector(31,15,0), 
+          new Vector(31,20,0), 
           new Vector(33,3,0)});
       } 
   }
@@ -264,17 +254,21 @@ Node generateEagle(){
 
 List<Node> loadSkeleton(Node reference){
   JSONArray skeleton_data = loadJSONArray("skeleton.json");
-  HashMap<String, Joint> dict = new HashMap<String, Joint>();
+  HashMap<String, Node> dict = new HashMap<String, Node>();
   List<Node> skeleton = new ArrayList<Node>();
   for(int i = 0; i < skeleton_data.size(); i++){
     JSONObject joint_data = skeleton_data.getJSONObject(i);
-    Joint joint = new Joint(joint_data.getFloat("radius"));
-    joint.setPickingThreshold(joint_data.getFloat("picking"));
-    if(i == 0){
-      joint.setRoot(true);
+    Node joint = new Node();
+    if(i != 0){
+      joint.enableHint(Node.BONE, joint_data.getFloat("radius"));
+      joint.setReference(dict.get(joint_data.getString("reference")));      
+    }
+    else{
+      PShape shape = createShape(SPHERE, joint_data.getFloat("radius"));
+      shape.setFill(color(255));
+      shape.setStroke(false);
+      joint.setShape(shape);
       joint.setReference(reference);
-    }else{
-      joint.setReference(dict.get(joint_data.getString("reference")));
     }
     joint.setTranslation(joint_data.getFloat("x"), joint_data.getFloat("y"), joint_data.getFloat("z"));
     joint.setRotation(joint_data.getFloat("q_x"), joint_data.getFloat("q_y"), joint_data.getFloat("q_z"), joint_data.getFloat("q_w"));
@@ -332,13 +326,11 @@ Interpolator setupTargetInterpolator(Node target, Vector[] positions) {
     targetInterpolator.setSpeed(1f);
     // Create a path
     for(int i = 0; i < positions.length; i++){
-        Node iFrame = new Node();
-        iFrame.setPickingThreshold(5);
-        iFrame.setReference(target.reference());
-        iFrame.setTranslation(positions[i]);
-        targetInterpolator.addKeyFrame(iFrame);
+        Node node = new Node();
+        node.setReference(target.reference());
+        node.setTranslation(positions[i]);
+        targetInterpolator.addKeyFrame(node);
     }
     targetInterpolator.run();
-    targetInterpolator.setTime(random(positions.length));
     return targetInterpolator;
 }
