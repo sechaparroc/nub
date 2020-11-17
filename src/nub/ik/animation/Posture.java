@@ -60,7 +60,8 @@ public class Posture {
    */
   public Posture(PApplet pApplet, String file){
     this();
-    _load(pApplet, file);
+    JSONObject jsonObject = pApplet.loadJSONObject(file);
+    _load(jsonObject);
   }
 
   /**
@@ -152,8 +153,7 @@ public class Posture {
 
 
   //Load and Save a Posture
-  protected void _load(PApplet pApplet, String filename){
-    JSONObject jsonObject = pApplet.loadJSONObject(filename);
+  protected void _load(JSONObject jsonObject){
     JSONArray jointsArray = jsonObject.getJSONArray("Joints");
     for(int i = 0; i < jointsArray.size(); i++) {
       JSONObject jsonJoint = jointsArray.getJSONObject(i);
