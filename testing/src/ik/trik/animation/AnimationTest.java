@@ -15,9 +15,11 @@ import processing.event.MouseEvent;
 
 public class AnimationTest extends PApplet {
   Scene mainScene, controlScene, focus;
-  String jsonPath = "/testing/data/skeletons/Hand_constrained.json";
-  String shapePath = "/testing/data/objs/Rigged_Hand.obj";
-  String texturePath = "/testing/data/objs/HAND_C.jpg";
+  String jsonPath = "./testing/data/skeletons/Hand_constrained.json";
+  String shapePath = "./testing/data/objs/Rigged_Hand.obj";
+  String texturePath = "./testing/data/objs/HAND_C.jpg";
+  String interpolatorPath = "./testing/data/skeletons/HAND_interpolator.json";
+
   AnimationPanel panel;
   Skeleton skeleton;
   Skinning skinning;
@@ -137,6 +139,18 @@ public class AnimationTest extends PApplet {
     if (key == ' ') {
       showSkeleton = !showSkeleton;
     }
+    if(key == 'n' || key == 'N'){
+      try {
+        panel.loadInterpolator(this, interpolatorPath);
+
+      } catch (Exception e){
+        e.printStackTrace();
+      }
+    }
+    if(key == 'm' || key == 'M'){
+      panel.saveInterpolator(this, interpolatorPath);
+    }
+
   }
 
   public void mouseClicked(MouseEvent event) {
@@ -147,7 +161,7 @@ public class AnimationTest extends PApplet {
         else
           focus.align();
     } else if (focus == controlScene) {
-      if (focus.node() != null) focus.node().interact("onClicked", event.getButton());
+      if (focus.node() != null) focus.interact(focus.node(),"onClicked", event.getButton());
     }
   }
 

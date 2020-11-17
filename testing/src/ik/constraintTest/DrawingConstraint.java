@@ -703,8 +703,8 @@ public class DrawingConstraint extends PApplet {
     Scene prev = focus;
     focus = mouseX < w / 3 ? constraintScene : mouseX < 2 * w / 3 ? thetaScene : baseScene;
     if (prev != focus && prev != null && prev.node() != null) {
-      prev.node().interact("Clear");
-      if (focus != null && focus.node() != null) focus.node().interact("Clear");
+      prev.interact(prev.node(),"Clear");
+      if (focus != null && focus.node() != null) focus.interact(focus.node(),"Clear");
     }
 
   }
@@ -715,7 +715,7 @@ public class DrawingConstraint extends PApplet {
 
   public void mouseDragged() {
     if (focus == thetaScene || focus == baseScene) {
-      if (focus.node() != null) focus.node().interact("OnScaling", new Vector(focus.mouseX(), focus.mouseY()));
+      if (focus.node() != null) focus.interact(focus.node(),"OnScaling", new Vector(focus.mouseX(), focus.mouseY()));
       return;
     }
     if (mouseButton == LEFT)
@@ -728,7 +728,7 @@ public class DrawingConstraint extends PApplet {
 
   public void mouseReleased() {
     if (focus == thetaScene || focus == baseScene) {
-      if (focus.node() != null) focus.node().interact("Scale");
+      if (focus.node() != null) focus.interact(focus.node(), "Scale");
       return;
     }
   }

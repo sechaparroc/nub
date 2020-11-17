@@ -123,7 +123,7 @@ public class Multiple_Test extends PApplet {
     if (mouseButton == RIGHT && event.isControlDown()) {
       Vector vector = new Vector(scene.mouseX(), scene.mouseY());
       if (scene.node() != null)
-        scene.node().interact("OnAdding", scene, vector);
+        scene.interact(scene.node(),"OnAdding", scene, vector);
     } else if (mouseButton == LEFT) {
       scene.spin(scene.pmouseX(), scene.pmouseY(), scene.mouseX(), scene.mouseY());
     } else if (mouseButton == RIGHT) {
@@ -132,7 +132,7 @@ public class Multiple_Test extends PApplet {
     } else if (mouseButton == CENTER) {
       scene.scale(scene.mouseDX());
     } else if (scene.node() != null)
-      scene.node().interact("Reset");
+      scene.interact(scene.node(),"Reset");
     if (!Target.selectedTargets().contains(scene.node())) {
       Target.clearSelectedTargets();
     }
@@ -147,7 +147,7 @@ public class Multiple_Test extends PApplet {
       if (event.getButton() == LEFT) {
         if (event.isControlDown()) {
           if (scene.node() != null)
-            scene.node().interact("KeepSelected");
+            scene.interact(scene.node(), "KeepSelected");
         }
       }
     } else if (event.getCount() == 2)

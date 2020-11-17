@@ -435,8 +435,8 @@ public class DrawingHinge extends PApplet {
     Scene prev = focus;
     focus = mouseX < w / 2 ? constraintScene : thetaScene;
     if (prev != focus && prev != null) {
-      if (prev.node() != null) prev.node().interact("Clear");
-      if (focus != null && focus.node() != null) focus.node().interact("Clear");
+      if (prev.node() != null) prev.interact(prev.node(),"Clear");
+      if (focus != null && focus.node() != null) focus.interact(focus.node(),"Clear");
     }
 
   }
@@ -447,7 +447,7 @@ public class DrawingHinge extends PApplet {
 
   public void mouseDragged() {
     if (focus == thetaScene) {
-      if (focus.node() != null) focus.node().interact("OnScaling", new Vector(focus.mouseX(), focus.mouseY()));
+      if (focus.node() != null) focus.interact(focus.node(),"OnScaling", new Vector(focus.mouseX(), focus.mouseY()));
       return;
     }
     if (mouseButton == LEFT)
@@ -460,7 +460,7 @@ public class DrawingHinge extends PApplet {
 
   public void mouseReleased() {
     if (focus == thetaScene) {
-      if (focus.node() != null) focus.node().interact("Scale");
+      if (focus.node() != null) focus.interact(focus.node(),"Scale");
       return;
     }
   }

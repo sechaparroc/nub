@@ -112,10 +112,10 @@ public class SimpleBuilder extends PApplet {
       Vector vector = new Vector(scene.mouseX(), scene.mouseY());
       if (scene.node() != null) {
         if (scene.node() instanceof InteractiveJoint) {
-          scene.node().interact("OnAdding", scene, vector);
+          scene.interact(scene.node(),"OnAdding", scene, vector);
           lastCommand = "Extruding from a Joint";
         } else {
-          scene.node().interact("OnAdding", vector);
+          scene.interact(scene.node(),"OnAdding", vector);
         }
       }
     } else if (mouseButton == LEFT) {
@@ -132,7 +132,7 @@ public class SimpleBuilder extends PApplet {
     if (scene.node() != null)
       if (scene.node() instanceof InteractiveJoint) {
         if (((InteractiveJoint) scene.node()).desiredTranslation() != null) lastCommand = "Adding Joint";
-        scene.node().interact("Add", scene, vector, skeleton);
+        scene.interact(scene.node(),"Add", scene, vector, skeleton);
       }
   }
 
@@ -146,7 +146,7 @@ public class SimpleBuilder extends PApplet {
         if (event.isShiftDown())
           if (scene.node() != null) {
             lastCommand = "Removing Joint and its children";
-            scene.node().interact("Remove");
+            scene.interact(scene.node(),"Remove");
           } else
             scene.focus();
       } else {

@@ -64,7 +64,7 @@ public class ConstraintHint extends PApplet {
         n2.enableHint(Node.CONSTRAINT);
 
         //disable picking with constraint
-        n2.disablePickingMode(Node.CONSTRAINT);
+        n2.disablePicking(Node.CONSTRAINT);
 
         //Enable bone Hint
         n2.enableHint(Node.BONE, color(255,255,0), 2, true);

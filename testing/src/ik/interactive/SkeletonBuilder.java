@@ -121,7 +121,7 @@ import java.util.List;
     if (mouseButton == RIGHT && event.isControlDown()) {
       Vector vector = new Vector(scene.mouseX(), scene.mouseY());
       if (scene.node() != null)
-        scene.node().interact("OnAdding", scene, vector);
+        scene.interact(scene.node(),"OnAdding", scene, vector);
     } else if (mouseButton == LEFT) {
       if (event.isControlDown() && fitCurve != null) {
         if (fitCurve.started()) {
@@ -137,7 +137,7 @@ import java.util.List;
     } else if (mouseButton == CENTER) {
       scene.scale(scene.mouseDX());
     } else if (scene.node() != null)
-      scene.node().interact("Reset");
+      scene.interact(scene.node(),"Reset");
     if (!Target.selectedTargets().contains(scene.node())) {
       Target.clearSelectedTargets();
     }
@@ -170,14 +170,14 @@ import java.util.List;
     Vector vector = new Vector(scene.mouseX(), scene.mouseY());
     if (scene.node() != null)
       if (scene.node() instanceof InteractiveJoint)
-        scene.node().interact("Add", scene, vector);
+        scene.interact(scene.node(),"Add", scene, vector);
         //else focus.trackedFrame().interact("Add", vector, false);
       else {
         if (fitCurve != null) {
           fitCurve.setStarted(false);
           fitCurve.getCatmullRomCurve(scene, scene.node(), 0);
           //fitCurve._interpolator.run();
-          scene.node().interact("AddCurve", scene, fitCurve);
+          scene.interact(scene.node(),"AddCurve", scene, fitCurve);
         }
       }
     fitCurve = null;
@@ -194,12 +194,12 @@ import java.util.List;
         //panel.setFrame(scene.trackedFrame());
         if (event.isControlDown()) {
           if (scene.node() != null)
-            scene.node().interact("KeepSelected");
+            scene.interact(scene.node(),"KeepSelected");
         }
       } else if (event.getCount() == 2) {
         if (event.isShiftDown())
           if (scene.node() != null)
-            scene.node().interact("Remove");
+            scene.interact(scene.node(),"Remove");
           else
             scene.focus();
       } else {

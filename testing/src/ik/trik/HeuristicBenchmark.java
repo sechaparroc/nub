@@ -116,7 +116,7 @@ public class HeuristicBenchmark extends PApplet {
 
     interpolator = new Interpolator(targets.get(0));
     //define the interpolator task
-    task = new Task(scene.TimingHandler) { //TODO : Make this task work
+    task = new Task() { //TODO : Make this task work
       @Override
       public void execute() {
         Vector pos = targets.get(0).position().get();
