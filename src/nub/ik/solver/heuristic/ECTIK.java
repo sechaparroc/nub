@@ -46,11 +46,9 @@ public class ECTIK extends Heuristic {
 
     NodeInformation j_i1 = context.usableChainInformation().get(i + 1);
     j_i1.updateCacheUsingReference();
-    Vector eff_wrt_j_i1 = j_i1.locationWithCache(context.endEffectorInformation().positionCache());
-    Vector target_wrt_j_i1 = j_i1.locationWithCache(target);
     //Find the two solutions of the triangulation problem on joint j_i1
     Quaternion[] solutions;
-    solutions = findTriangulationSolutions(context, i, j_i, j_i1, eff_wrt_j_i1, target_wrt_j_i1);
+    solutions = findTriangulationSolutions(heuristic, i, true, context.applyDelegation());
 
     //Keep original State of J_i and J_i1
     NodeInformation endEffector = context.endEffectorInformation();
@@ -71,16 +69,14 @@ public class ECTIK extends Heuristic {
       //Apply solution find by triangulation
       Quaternion q = solutions[s];
       j_i.rotateAndUpdateCache(q, false, endEffector);
-
+      j_i1.updateCacheUsingReference();
+      CCD.applyCCD(heuristic, i + 1, heuristic.context().applyDelegation());
       for (int t = 0; t < times; t++) {
         j_i1.updateCacheUsingReference();
-        Quaternion q_i1 = findCCD(context, i + 1, j_i1, j_i1.locationWithCache(endEffector.positionCache()), j_i1.locationWithCache(target), true);
-        j_i1.rotateAndUpdateCache(q_i1, false, endEffector);
-        Quaternion q_i = findCCD(context, i, j_i, j_i.locationWithCache(endEffector.positionCache()), j_i.locationWithCache(target), true);
-        j_i.rotateAndUpdateCache(q_i, false, endEffector);
+        CCD.applyCCD(heuristic, i + 1, heuristic.context().applyDelegation());
+        CCD.applyCCD(heuristic, i, heuristic.context().applyDelegation());
       }
       j_i1.updateCacheUsingReference();
-
       CCD.applyOrientationalCCD(heuristic, i + 1);
       //store state in final vector
       final_j_i[s] = new NodeState(j_i);
@@ -116,6 +112,7 @@ public class ECTIK extends Heuristic {
       j_i.node().setRotation(initial_j_i.rotation().get());
       j_i1.setCache(initial_j_i1.position().get(), initial_j_i1.orientation().get());
       j_i1.node().setRotation(initial_j_i1.rotation().get());
+      endEffector.node().setRotation(initial_eff.rotation().get());
       endEffector.setCache(initial_eff.position().get(), initial_eff.orientation().get());
     }
 
@@ -130,6 +127,7 @@ public class ECTIK extends Heuristic {
     j_i1.node().setConstraint(null);
     j_i1.node().setRotation(final_j_i1[best].rotation().get());
     j_i1.node().setConstraint(c_i1);
+    endEffector.node().setRotation(final_eff[best].rotation().get());
     endEffector.setCache(final_eff[best].position().get(), final_eff[best].orientation().get());
   }
 
@@ -139,11 +137,15 @@ public class ECTIK extends Heuristic {
   }
 
 
-  protected static Quaternion[] findTriangulationSolutions(Context context, int i, NodeInformation j_i, NodeInformation j_i1, Vector endEffector, Vector target) {
+  protected static Quaternion[] findTriangulationSolutions(Heuristic heuristic, int i, boolean updateCouple, boolean applyDelegation) {
+    Context context = heuristic._context;
+    NodeInformation j_i = context.usableChainInformation().get(i);
+    NodeInformation j_i1 = context.usableChainInformation().get(i + 1);
     Vector a = j_i1.node().translation();
     Vector b = j_i.locationWithCache(context.endEffectorInformation());
     b.subtract(a);
     Vector c = j_i.locationWithCache(context.worldTarget().position());
+
 
     if (j_i.node().constraint() != null && j_i.node().constraint() instanceof Hinge) {
       Hinge h = (Hinge) j_i.node().constraint();
@@ -155,6 +157,8 @@ public class ECTIK extends Heuristic {
       b = Vector.projectVectorOnPlane(b, tw);
       c = Vector.projectVectorOnPlane(c, tw);
     }
+
+
     float a_mag = a.magnitude(), b_mag = b.magnitude(), c_mag = c.magnitude();
     Quaternion[] deltas;
     if (a_mag + b_mag <= c_mag) {

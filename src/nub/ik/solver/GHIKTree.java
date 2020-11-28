@@ -199,13 +199,11 @@ public class GHIKTree extends Solver {
       moveParent(treeNode);
       return true;
     }
-
     GHIK solver = treeNode._solver;
     for (TreeNode child : treeNode._children()) {
       _solve(child);
     }
     solver.reset();
-
     List<Vector> effs = new ArrayList<Vector>();
     List<Vector> targets = new ArrayList<Vector>();
     Vector effs_centroid = new Vector();
@@ -213,17 +211,14 @@ public class GHIKTree extends Solver {
     if(!treeNode._reachableLeafNodes.isEmpty()) {
       //Get the information of the leaf nodes
       _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid);
-
       //Define the target position
       Vector targetTranslation = Vector.subtract(targets_centroid, effs_centroid);
-      targetTranslation.multiply(_trust);
+      targetTranslation.multiply(_trust < 0.6f ? 0.8f : 1);
       Node target = solver.target() == null ? Node.detach(new Vector(), new Quaternion(), 1f) : solver.target();
       target.setPosition(solver.context().chain().get(solver.context().endEffectorId()).worldLocation(targetTranslation).get());
       solver.setTarget(target);
-      //solver.context().setDirection(true);
-      //solver.context().setOrientationWeight(0.6f);
       //Apply best rotation
-      float minError = _applyBestRotation(treeNode, target, effs, targets);
+      _applyBestRotation(treeNode, target, effs, targets);
       _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid);
       targetTranslation = Vector.subtract(targets_centroid, effs_centroid);
       target.setPosition(solver.context().chain().get(solver.context().endEffectorId()).worldLocation(targetTranslation));
@@ -231,39 +226,11 @@ public class GHIKTree extends Solver {
         if (!(solver.context().chain().size() == 2 && solver.context().chain().get(1).translation().magnitude() < 0.1)) {
           solver.reset();
           //Apply best rotation & keep best state
-          List<NodeState> bestState = Context.saveState(solver.context().chainInformation());
-          for (int i = 0; i < 1; i++) {
-            solver.solve(); //Perform a given number of iterations
-            //Fix eff rotation
-            _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid);
-            float err = _applyBestRotation(treeNode, target, effs, targets);
-            //Keep best configuration
-            err = minError;
-
-            //bestState = Context.saveState(solver.context().chainInformation());
-            minError = err;
-            _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid);
-            targetTranslation = Vector.subtract(targets_centroid, effs_centroid);
-            targetTranslation.multiply(_trust);
-            target.setPosition(solver.context().chain().get(solver.context().endEffectorId()).worldLocation(targetTranslation));
-
-            /*
-            if (err <= minError) {
-              //...
-            } else {
-              Context.restoreState(bestState);
-              //reduce the distance to the target
-              _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid);
-              targetTranslation = Vector.subtract(targets_centroid, effs_centroid);
-              targetTranslation.multiply(_trust);
-              solver.reset();
-              target.setPosition(solver.context().chain().get(solver.context().endEffectorId()).worldLocation(targetTranslation));
-            }
-            */
-          }
+          solver.solve(); //Perform a given number of iterations
+          //Fix eff rotation
+          _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid);
+          _applyBestRotation(treeNode, target, effs, targets);
           moveParent(treeNode);
-          //update to best state
-          //Context.restoreState(bestState);
         }
       }
     }

@@ -41,6 +41,7 @@ public class BackAndForth extends Heuristic {
             }
             case CCD:{
                 CCD.applyCCD(this, i, _context.applyDelegation());
+                break;
             }
         }
         if(i >= _context.endEffectorId() - 1){
