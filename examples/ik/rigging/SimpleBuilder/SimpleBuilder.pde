@@ -55,33 +55,30 @@ public void setup(){
   // Create a scene
   scene = new Scene(this);
   scene.setType(Graph.Type.ORTHOGRAPHIC);
-  //Import model
-  /*
-    If you have a mesh with quad faces use:
-    model = createShapeQuad(loadShape(shapePath), texturePath, 100);
-    Although It is recommended to use triangular meshes
-  */
-  model = createShapeTri(loadShape(shapePath), texturePath, 100);
+  model = loadShape(shapePath);
+  model.setTexture(loadImage(texturePath));
   //Scale scene
   float size = max(model.getHeight(), model.getWidth());
-  scene.setRightHanded();
-  scene.setRadius(size);
+  scene.leftHanded = false;
+  scene.setBounds(size);
   scene.fit();
+  scene.enableHint(Graph.BACKGROUND | Graph.AXES);
+  scene.enableHint(Graph.SHAPE);
   //Create the Skeleton and add an Interactive Joint at the center of the scene
-  skeleton = new Skeleton(scene);
+  skeleton = new Skeleton();
   //Create the interactive joint
   radius = scene.radius() * 0.01f;
-  InteractiveJoint initial = new InteractiveJoint(radius);
-  initial.setRoot(true);
-  initial.setPickingThreshold(-0.01f);
+  InteractiveJoint initial = new InteractiveJoint(true, color(random(255),random(255),random(255)), radius, false);
   //Add the joint to the skeleton
   skeleton.addJoint("J0", initial);
+  scene.enableHint(Scene.BACKGROUND, 0);
+  scene.enableHint(Scene.AXES);
+  scene.setShape(model);
   textSize(18);
   textAlign(CENTER, CENTER);
 }
 
 public void draw() {
-  background(0);
   ambientLight(102, 102, 102);
   lightSpecular(204, 204, 204);
   directionalLight(102, 102, 102, 0, 0, -1);
@@ -90,9 +87,8 @@ public void draw() {
   stroke(255);
   stroke(255,0,0);
   scene.drawAxes();
-  shape(model);
+  //shape(model);
   scene.render();
-
   noLights();
   scene.beginHUD();
   text("Last action: " + lastCommand, width/2, 50);
@@ -109,10 +105,10 @@ public void mouseDragged(MouseEvent event) {
     Vector vector = new Vector(scene.mouseX(), scene.mouseY());
     if(scene.node() != null){
       if(scene.node() instanceof  InteractiveJoint){
-        scene.node().interact("OnAdding", scene, vector);
+        scene.interact(scene.node(),"OnAdding", scene, vector);
         lastCommand = "Extruding from a Joint";
       } else{
-        scene.node().interact("OnAdding", vector);
+        scene.interact(scene.node(),"OnAdding", vector);
       }
     }
   } else if (mouseButton == LEFT) {
@@ -129,7 +125,7 @@ public void mouseReleased(MouseEvent event){
   if(scene.node() != null)
     if(scene.node() instanceof  InteractiveJoint){
       if(((InteractiveJoint) scene.node()).desiredTranslation() != null) lastCommand = "Adding Joint";
-        scene.node().interact("Add", scene, vector, skeleton);
+        scene.interact(scene.node(), "Add", scene, vector, skeleton);
     }
 }
 
@@ -143,7 +139,7 @@ public void mouseClicked(MouseEvent event) {
       if (event.isShiftDown())
         if(scene.node() != null){
           lastCommand = "Removing Joint and its children";
-          scene.node().interact("Remove");
+          scene.interact(scene.node(),"Remove");
         }
         else
           scene.focus();
@@ -154,25 +150,22 @@ public void mouseClicked(MouseEvent event) {
   }
 }
 
-public void keyPressed(){
-  if(key == 'J' || key == 'j'){
+public void keyPressed() {
+  if (key == 'J' || key == 'j') {
     lastCommand = "Adding Joint on the middle of the scene";
-    InteractiveJoint initial = new InteractiveJoint(radius);
-    initial.setRoot(true);
-    initial.setPickingThreshold(-0.01f);
-  }else if(key == 'P' || key == 'p'){
-    lastCommand = "Skeleton information saved on : " + jsonPath;
-    skeleton.save(jsonPath);
-  }else if(key == 'A' || key == 'a'){
-    Joint.axes = !Joint.axes;
-  }else if(key == 'E' || key == 'e'){
-    if(scene.node() != null){
+    InteractiveJoint initial = new InteractiveJoint(true, color(random(255),random(255),random(255)), radius, false);
+  } else if (key == 'P' || key == 'p') {
+    lastCommand = "Skeleton information saved on : " + sketchPath() + jsonPath;
+    skeleton.save(sketchPath() + jsonPath);
+  } else if (key == 'E' || key == 'e') {
+    if (scene.node() != null) {
       lastCommand = "Setting Joint translation to (0,0,0)";
       scene.node().setTranslation(new Vector());
-      scene.node().enableTagging(false);
+      scene.node().tagging = false;
     }
   }
 }
+
 
 //Adapted from http://www.cutsquash.com/2015/04/better-obj-model-loading-in-processing/
 public  PShape createShapeTri(PShape r, String texture, float size) {

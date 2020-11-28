@@ -22,7 +22,6 @@
 import nub.primitives.*;
 import nub.core.*;
 import nub.processing.*;
-
 //this packages are required for ik behavior
 import nub.ik.animation.*;
 import nub.ik.solver.*;
@@ -45,33 +44,45 @@ void settings() {
 void setup() {
     //Setting the scene
     scene = new Scene(this);
-    scene.setRadius(200);
+    scene.setBounds(200);
     scene.fit(1);
     //1. Create the Skeleton (Y-Shape described above)
-    skeleton = new Skeleton(scene);
+    skeleton = new Skeleton();
     /*
       A joint is a node with a predefined visual representation.
       To add a joint to the Skeleton you must use either the method skeleton.addJoint(name)
       or skeleton.addJoint(name, reference_name).
       Each joint has a unique name that will be use later by the IK solver.            
     */
-    Joint joint0 = skeleton.addJoint("Joint 0");
+    Node joint0 = skeleton.addJoint("Joint 0");
     joint0.translate(new Vector(0,-scene.radius()/2));
-    Joint joint1 = skeleton.addJoint("Joint 1", "Joint 0"); 
+    Node joint1 = skeleton.addJoint("Joint 1", "Joint 0"); 
     joint1.translate(new Vector(0,length));
-    Joint joint2 = skeleton.addJoint("Joint 2","Joint 0");
+    Node joint2 = skeleton.addJoint("Joint 2","Joint 0");
     joint2.translate(new Vector(0,length));
-    Joint joint3 = skeleton.addJoint("Joint 3", "Joint 1");
+    Node joint3 = skeleton.addJoint("Joint 3", "Joint 1");
     joint3.translate(new Vector(-length,length));
-    Joint joint4 = skeleton.addJoint("Joint 4", "Joint 2");
+    Node joint4 = skeleton.addJoint("Joint 4", "Joint 2");
     joint4.translate(new Vector(length,length));
-    Joint joint5 = skeleton.addJoint("Joint 5", "Joint 3");
+    Node joint5 = skeleton.addJoint("Joint 5", "Joint 3");
     joint5.translate(new Vector(-length,length));
-    Joint joint6 = skeleton.addJoint("Joint 6", "Joint 4");
+    Node joint6 = skeleton.addJoint("Joint 6", "Joint 4");
     joint6.translate(new Vector(length,length));
 
     //2. Enable IK functionallity
-    skeleton.enableIK();
+    /*
+      Choose among these solvers: 
+        * GHIK.HeuristicMode.CCD
+        * GHIK.HeuristicMode.BFIK_CCD
+        * GHIK.HeuristicMode.TIK
+        * GHIK.HeuristicMode.BFIK_TIK
+        * GHIK.HeuristicMode.TRIK
+        * GHIK.HeuristicMode.BFIK_TRIK
+        * GHIK.HeuristicMode.ECTIK
+        * GHIK.HeuristicMode.TRIK_ECTIK
+   */
+
+    skeleton.enableIK(GHIK.HeuristicMode.TRIK);
     //3. Lets create two Targets indicating the name of the leaf nodes. 
     skeleton.addTarget("Joint 5");
     skeleton.addTarget("Joint 6");

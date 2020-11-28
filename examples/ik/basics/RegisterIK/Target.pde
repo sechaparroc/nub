@@ -12,8 +12,6 @@ class Target extends Node{
       else  redBall = createShape(SPHERE, radius);
       redBall.setStroke(false);
       redBall.setFill(color(255,0,0));
-      //Exact picking precision
       this.setShape(redBall);
-      this.setPickingThreshold(0);
     }
 }

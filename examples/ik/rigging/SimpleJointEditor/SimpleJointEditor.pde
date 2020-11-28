@@ -20,7 +20,6 @@ import nub.core.*;
 import nub.processing.*;
 import nub.core.constraint.*;
 import nub.ik.animation.*;
-import nub.ik.solver.*;
 
 
 //Edit easily the Skeleton's joints
@@ -44,19 +43,21 @@ void settings() {
 
 void setup() {
   Graph.inertia = 0;
-  Joint.axes = true;
   // Create a scene
-  scene = new Scene(this, renderer, w, h);
+  scene = new Scene(createGraphics( w, h, P3D));
   scene.setType(Graph.Type.ORTHOGRAPHIC);
-  scene.setRightHanded();
+  scene.leftHanded = false;
   //Create the Skeleton and add an Interactive Joint at the center of the scene
-  skeleton = new Skeleton(scene, skeletonInputPath);
+  skeleton = new Skeleton(skeletonInputPath);
+  skeleton.enableIK();
+  skeleton.addTargets();
   //Set the radius of the scene
   setSceneRadius(skeleton);
   scene.fit();
   //Create the Joint editor panel
   float offset = w * 0.7f;
   panel = new JointPanel(this, offset, 0, width - offset, height);
+  scene.enableHint(Scene.BACKGROUND, 0);
 }
 
 void setSceneRadius(Skeleton skeleton){
@@ -66,21 +67,13 @@ void setSceneRadius(Skeleton skeleton){
     float d = n.position().magnitude();
     max_dist = d > max_dist ? d : max_dist;
   } 
-  skeleton.scene().setRadius(max_dist * 1.5f);
+  scene.setBounds(max_dist * 1.5f);
 }
 
 void draw() {
-  background(0);
-  // 1. Fill in and display front-buffer
-  scene.beginDraw();
-  scene.context().background(0);
-  scene.drawAxes();
-  scene.render();
-  //Draw panel information
-  panel.drawInformation();
-  scene.endDraw();
   scene.display();
-  
+  panel.drawInformation();
+  scene.image();
 }
 
 void mouseClicked(MouseEvent event){

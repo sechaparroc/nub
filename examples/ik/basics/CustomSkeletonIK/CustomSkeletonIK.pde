@@ -30,10 +30,10 @@ void settings() {
 void setup() {
     //Setting the scene
     scene = new Scene(this);
-    scene.setRadius(200);
+    scene.setBounds(200);
     scene.fit(1);
     //1. Create the Skeleton (Luxo Lamp)
-    skeleton = new Skeleton(scene);
+    skeleton = new Skeleton();
     
     Piece base = new Piece();
     base.mode = 1;

@@ -13,8 +13,6 @@ class Joint extends Node{
         this.radius = radius;
         this.drawBone = drawBone;
         this.setReference(node);
-        //Exact picking precision
-        this.setPickingThreshold(0);
         this.setTranslation(translation);
     }
     

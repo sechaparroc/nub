@@ -98,7 +98,11 @@ class Boid extends Node {
   @Override
   public void graphics(PGraphics pg) {
     pg.pushMatrix();
-    scene.applyTransformation(obj);
+    Vector v = obj.position();
+    Quaternion q = obj.orientation();
+    Vector u = q.axis();
+    pg.translate(v.x(), v.y(), v.z());
+    pg.rotate(q.angle(), u.x(), u.y(), u.z());
     skinning.render(pg);
     pg.popMatrix();
   }

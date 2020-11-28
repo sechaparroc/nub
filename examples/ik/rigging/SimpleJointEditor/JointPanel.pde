@@ -37,7 +37,7 @@ class JointPanel{
   float _minTheta, _maxTheta;
   float _upTheta, _downTheta, _leftTheta, _rightTheta, _twistMaxTheta, _twistMinTheta;
   
-  Joint _joint;
+  Node _joint;
   
   
   public JointPanel(PApplet pApplet, float x, float y, float w, float h){
@@ -66,7 +66,6 @@ class JointPanel{
         pg.popStyle();
       }
     };
-    _twist.setPickingThreshold(0);
 
     _up = new Node(){
       @Override
@@ -78,7 +77,6 @@ class JointPanel{
         pg.popStyle();
       }
     };
-    _up.setPickingThreshold(0);
 
     _twist.setTranslation(new Vector(0,0,_twistMag));
     _up.setTranslation(new Vector(0,_upMag,0));
@@ -111,7 +109,7 @@ class JointPanel{
             newTranslation = Vector.projectVectorOnPlane(newTranslation, _twist.translation());
             newTranslation.normalize();
             newTranslation.multiply(_upMag);
-            if(!_up.isCulled()){
+            if(!_up.cull){
               updateConstraintControls();
               if(_joint.constraint() instanceof Hinge) setHingeFromInformation();
               if(_joint.constraint() instanceof BallAndSocket) setBallFromInformation();
@@ -129,8 +127,8 @@ class JointPanel{
   }
   
   void _enableVectorPoints(boolean enable){
-      _twist.cull(!enable);
-      _up.cull(!enable);
+      _twist.cull = !enable;
+      _up.cull = !enable;
   }
   
   boolean isOver(float x, float y){
@@ -154,12 +152,12 @@ class JointPanel{
   
   
   void getInformationFromJoint(Skeleton skeleton, Node node){
-    if(!(node instanceof Joint)){
+    if(!skeleton.joints().containsValue(node)){
       setEnabled(false);
       return;
     }
     setEnabled(true);
-    _joint = (Joint) node;
+    _joint = node;
     //1. Get name and set textField
     String name = skeleton.jointName(_joint);
     _nameField.setText(name);
@@ -188,7 +186,7 @@ class JointPanel{
     }
   }
   
-  void getHingeInformation(Joint joint, Hinge hinge){
+  void getHingeInformation(Node joint, Hinge hinge){
     Vector tw = hinge.orientation().rotate(new Vector(0,0,1));
     Vector up = hinge.orientation().rotate(new Vector(0,1,0));
     _twist.setTranslation(joint.displacement(tw, joint.reference()));
@@ -197,7 +195,7 @@ class JointPanel{
     _maxTheta = hinge.maxAngle();
   }
   
-  void getBallInformation(Joint joint, BallAndSocket ball){
+  void getBallInformation(Node joint, BallAndSocket ball){
     Vector tw = ball.orientation().rotate(new Vector(0,0,1));
     Vector up = ball.orientation().rotate(new Vector(0,1,0));
     _twist.setTranslation(joint.displacement(tw, joint.reference()));
@@ -328,15 +326,21 @@ class JointPanel{
     if(!_enabled || _joint == null) return;
     scene.context().pushStyle();
     if(_joint.constraint() != null){
+      //scene.openContext();
       //Draw twist and up vector
-      scene.context().pushMatrix();
+      scene.context().push();
       scene.context().noStroke();
-      scene.applyWorldTransformation(_joint);
+      Vector v = _joint.position();
+      Quaternion q = _joint.orientation().get();
+      Vector u = q.axis();
+      scene.context().translate(v.x(), v.y(), v.z());
+      scene.context().rotate(q.angle(), u.x(), u.y(), u.z());
       scene.context().fill(0,255,0);
       scene.drawArrow(_up.translation());
       scene.context().fill(0,0,255);    
       scene.drawArrow(_twist.translation());
-      scene.context().popMatrix();
+      scene.context().pop();
+      //scene.closeContext();
     }
     
     scene.beginHUD();

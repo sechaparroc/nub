@@ -47,31 +47,32 @@ void setup() {
     //1. Create and set the scene
     scene = new Scene(this);
     scene.setType(Graph.Type.ORTHOGRAPHIC);
-    scene.setRightHanded();
+    scene.leftHanded = false;
     scene.fit(1);
-    //2. Load the Skeleton
-    skeleton = new Skeleton(scene, skeletonPath);
+    //2. Load the Skeleton (using skeleton builder)
+    skeleton = new Skeleton(skeletonPath);
     //3. Enable IK and add targets at the leaf nodes
     skeleton.enableIK();
     skeleton.addTargets();
     //Set the radius of the targets (optional)
-    skeleton.setTargetRadius(0.03f * scene.radius());
+    skeleton.setTargetRadius(0.01f * scene.radius());
     //4 Define constraints according to the model
     //5. Relate the shape with a skinning method (CPU or GPU)
     resetSkinning(gpu);
     //use this method to visualize which node influences the most on a region of the mesh.
     if(skinning instanceof GPULinearBlendSkinning)
         ((GPULinearBlendSkinning) skinning).paintAllJoints();
+        
+    scene.enableHint(Scene.AXES);
 }
 
 void draw(){
     background(0);
     lights();
-    scene.drawAxes();
     //Render mesh with respect to the node
     skinning.render(scene, skeleton.reference());
     if(showSkeleton){
-      scene.render();
+      scene.render(skeleton.reference());
     }
     
     //Optionally print some info:
