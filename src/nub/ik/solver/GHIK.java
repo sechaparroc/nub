@@ -117,6 +117,10 @@ public class GHIK extends Solver {
         return _context.direction();
     }
 
+    public void setSwapOrder(boolean swap){
+        _swapOrder = swap;
+    }
+
     public void setHeuristic(Heuristic heuristic){
         _heuristic = heuristic;
     }
