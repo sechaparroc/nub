@@ -20,7 +20,7 @@ public class Viewer extends PApplet {
     String[] paths = new String[]{
             "/testing/data/bvh/0017_ParkourRoll001.bvh",
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/SpiderG/__Walk.bvh",
-            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__SlowFly.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Tyranno/__TailWhip.bvh",
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/cmu-mocap-master/data/001/01_02.bvh",
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Horse/__SlowWalk.bvh",
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Monkey/__Run.bvh",
@@ -37,11 +37,11 @@ public class Viewer extends PApplet {
     boolean readNext = false, solve = false;
 
     public void settings(){
-        size(800, 600, P3D);
+        size(1900, 1000, P3D);
     }
 
     public void setup(){
-        Scene._retainedBones = true;
+        Scene._retainedBones = false;
         //frameRate(24);
         //1. Setup Scene
         scene = new Scene(this);
@@ -89,7 +89,7 @@ public class Viewer extends PApplet {
         skeletons.add(IKSkeleton2);
 
         //Relocate the skeletons
-        loader.skeleton().reference().translate(0,0,-height * 2f);
+        loader.skeleton().reference().translate(0,0,-height * 1.5f);
         IKSkeleton2.reference().translate(0,0,height * 2f);
 
 
@@ -97,8 +97,8 @@ public class Viewer extends PApplet {
             pg.pushStyle();
             //pg.text("# Joints" + + IKSkeleton1.BFS().size() + " # End Effectors " + IKSkeleton1.endEffectors().size(), 50 , 50);
             //pg.text("S1 error " + IKSkeleton1.solvers().get(0).error() / IKSkeleton1.endEffectors().size(), 50 , 100);
-            pg.text("S2 error " + IKSkeleton2.solvers().get(0).error() / IKSkeleton2.endEffectors().size(), 50 , 150);
-            pg.text("FPS " + frameRate, 50 , 200);
+            //pg.text("S2 error " + IKSkeleton2.solvers().get(0).error() / IKSkeleton2.endEffectors().size(), 50 , 150);
+            //pg.text("FPS " + frameRate, 50 , 200);
             pg.popStyle();
         });
 
@@ -109,7 +109,7 @@ public class Viewer extends PApplet {
         //loader.skeleton().cull(true);
 
         //IKSkeleton1.enableIK(false);
-        IKSkeleton2.enableIK(false);
+        //IKSkeleton2.enableIK(false);
 
     }
 

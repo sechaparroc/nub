@@ -10,6 +10,7 @@ import nub.primitives.Vector;
 import nub.processing.Scene;
 import nub.processing.TimingTask;
 import processing.core.PApplet;
+import processing.core.PConstants;
 import processing.event.MouseEvent;
 
 
@@ -19,7 +20,7 @@ import java.util.List;
 public class StructureViewer extends PApplet {
   Scene scene;
   String renderer = P3D;
-  int numJoints = 8;
+  int numJoints = 5;
   float targetRadius;
   float boneLength = 50;
   boolean solve = false;
@@ -34,7 +35,7 @@ public class StructureViewer extends PApplet {
   boolean continuous = true;
   int n_structures = 3;
 
-  int n = 100;
+  int n = 10;
 
   public void settings(){
     size(1900,1000, renderer);
@@ -58,28 +59,29 @@ public class StructureViewer extends PApplet {
 
     //Create target
     for(int i = 0; i < n_structures; i++) {
-      Node target = Util.createTarget(scene, targetRadius);
-      float inc = i == 0 ? 0.01f : 0;
+      //Node target = Util.createTarget(scene, targetRadius);
+      float inc = 0.01f*i;
       List<Node> structure = Util.generateAttachedChain(numJoints, (0.7f + inc) * targetRadius, boneLength, !axes ? new Vector(0, -0.25f * numJoints * boneLength, 0) : new Vector(), 0, 100, 150);
+      structures.add(structure);
       idle = Util.detachedCopy(structure);
+      Util.generateConstraints(structure, Util.ConstraintType.HINGE_ALIGNED, 13, scene.is3D());
+      Util.generateConstraints(idle, Util.ConstraintType.HINGE_ALIGNED, 13, scene.is3D());
 
-      //Util.generateConstraints(structure, Util.ConstraintType.MIX_CONSTRAINED, 13, scene.is3D());
-
-      GHIK solver = new GHIK(structure, GHIK.HeuristicMode.TRIK, false);
+      GHIK solver = new GHIK(structure, GHIK.HeuristicMode.TRIK_ECTIK, false);
       //solver.setHeuristic(new CCDViz(  solver.context(), viz));
       solver.setMaxError(-10f);
       solver.setMinDistance(-10f);
       solver.setTimesPerFrame(5);
       solver.setMaxIterations(5);
-      solver.setTarget(structure.get(numJoints - 1), target);
+      //solver.setTarget(structure.get(numJoints - 1), target);
       solver.context().setTopToBottom(false);
-      target.setPosition(structure.get(numJoints - 1).position());
+      //target.setPosition(structure.get(numJoints - 1).position());
       //Set the original color structure
       for (Node node : structure) {
         println(10 + 240.f * i / n_structures);
-        if(i == 1) node._boneColor = color(204, 255, 179);
-        if(i == 0) node._boneColor = color(0, 0, 255, 255);
-        if(i == 2) node._boneColor = color(222, 135, 135);
+        if(i == 1) node._boneColor = color(0, 100, 150, 150);
+        if(i == 0) node._boneColor = color(0, 100, 150, 150);
+        if(i == 2) node._boneColor = color(0, 100, 150, 150);
       }
       TimingTask task = new TimingTask() {
         @Override
@@ -95,19 +97,25 @@ public class StructureViewer extends PApplet {
       pg.pushStyle();
       int s = 0;
       Vector prev = null;
+      System.out.println(positions.size());
       for(Vector p : positions){
+        pg.hint(PConstants.DISABLE_DEPTH_TEST);
         pg.pushMatrix();
         pg.strokeWeight(4);
         pg.fill(10 + 235.f * s++ / n,0,0, 255);
         pg.stroke(10 + 235.f * s++ / n,0,0, 255);
         if(prev != null && continuous) pg.line(prev.x(), prev.y(), prev.z(), p.x(), p.y(), p.z());
-        else sphere(targetRadius);
+        pg.push();
+        pg.translate(p.x(), p.y(), p.z());
+        pg.sphere(targetRadius * 0.25f);
+        pg.pop();
         prev = p;
         pg.popMatrix();
+        pg.hint(PConstants.ENABLE_DEPTH_TEST);
       }
       pg.popStyle();
     });
-    positions = generatePath(idle, n);
+    positions = generatePath(idle, n, false);
   }
 
   public void draw() {
@@ -134,43 +142,53 @@ public class StructureViewer extends PApplet {
 
 
   //Random continuous path
-  public List<Vector> generatePath(List<? extends Node> structure, int n) {
+  public List<Vector> generatePath(List<? extends Node> structure, int n, boolean continuous) {
     noiseSeed((int) random(1000));
     ArrayList<Vector> targetPositions = new ArrayList<Vector>();
     //Generate a random near pose
     Node node = structure.get(structure.size() - 1);
     float maxDist = 0, minDist = Float.MAX_VALUE, meanDist = 0;
     Vector prev = node.position();
-    float step = 0.01f;
+    float step = 0.1f;
     float last = step * n;
-
-
+    int counter = 0;
     for (float t = 0; t < last; t += step) {
       for (int i = 0; i < structure.size(); i++) {
-        float angle = TWO_PI * noise(1000 * i + t) - PI;
-        Vector dir = new Vector(noise(10000 * i + t), noise(20000 * i + t), noise(30000 * i + t));
-        structure.get(i).setRotation(new Quaternion(dir, angle));
+        if(continuous) {
+          float angle = TWO_PI * noise(1000 * i + t) - PI;
+          Vector dir = new Vector(noise(10000 * i + t), noise(20000 * i + t), noise(30000 * i + t));
+          structure.get(i).setRotation(new Quaternion(dir, angle));
+        } else{
+          if (random(0,1) > 0.4f) {
+            structure.get(i).rotate(new Quaternion(new Vector(0, 0, 1), random(0,1) * 2 * PI - PI));
+            structure.get(i).rotate(new Quaternion(new Vector(0, 1, 0), random(0,1) * 2 * PI - PI));
+            structure.get(i).rotate(new Quaternion(new Vector(1, 0, 0), random(0,1) * 2 * PI - PI));
+          }
+        }
       }
       targetPositions.add(node.position());
-      Vector curr = node.position();
-      if (t != 0) {
-        if (Vector.distance(prev, curr) > maxDist) {
-          maxDist = Vector.distance(prev, curr);
-        }
-        if (Vector.distance(prev, curr) < minDist) {
-          minDist = Vector.distance(prev, curr);
-        }
-        meanDist += Vector.distance(prev, curr);
-        n++;
-      }
-      prev = curr;
+      if(counter == 0) copyStructure(structure, structures.get(0));
+      if(counter == n / 2) copyStructure(structure, structures.get(1));
+      counter++;
     }
-    solvers.get(0).target().setPosition(targetPositions.get(targetPositions.size() / 2).get());
-    solvers.get(1).target().setPosition(targetPositions.get(0).get());
-    solvers.get(2).target().setPosition(targetPositions.get(targetPositions.size() - 1).get());
+    copyStructure(structure, structures.get(2));
+
+    //solvers.get(0).target().setPosition(targetPositions.get(targetPositions.size() / 2).get());
+    //solvers.get(1).target().setPosition(targetPositions.get(0).get());
+    //solvers.get(2).target().setPosition(targetPositions.get(targetPositions.size() - 1).get());
 
     return targetPositions;
   }
+
+
+  public static void copyStructure(List<? extends Node> structureA, List<? extends Node> structureB){
+    for(int i = 0; i < structureA.size(); i++){
+      structureB.get(i).setRotation(structureA.get(i).rotation().get());
+    }
+  }
+
+
+
 
   public ArrayList<Vector> generateLissajousCurve(int n, float x_speed, float y_speed, float z_speed, float radius) {
     ArrayList<Vector> targetPositions = new ArrayList<Vector>();
@@ -196,7 +214,11 @@ public class StructureViewer extends PApplet {
     }
 
     if(key == 'q' || key == 'Q'){
-      positions = generatePath(idle, n);
+      positions = generatePath(idle, n, false);
+    }
+
+    if(key == 'w' || key == 'W'){
+      positions = generatePath(idle, n, true);
     }
 
     if(key == 'p' || key == 'P'){

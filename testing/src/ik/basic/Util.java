@@ -155,7 +155,7 @@ public class Util {
               pg.popStyle();
           });
       } else{
-          joint.enableHint(Node.BONE, Scene.pApplet.color(red, green, blue), radius, radius / 4);
+          joint.enableHint(Node.BONE, Scene.pApplet.color(red, green, blue), radius, radius / 4, true);
       }
       joint.enableHint(Node.CONSTRAINT);
       if (prevJoint != null) joint.setReference(prevJoint);

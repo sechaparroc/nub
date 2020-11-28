@@ -38,7 +38,7 @@ public class SimpleBuilder extends PApplet {
   PShape model;
 
   //Set this path to load your objs
-  String jsonPath = "/testing/data/skeletons/Hand.json";
+  String jsonPath = "/testing/data/skeletons/Dummy.json";
   String shapePath = "/testing/data/objs/Rigged_Hand.obj";
   String texturePath = "/testing/data/objs/HAND_C.jpg";
 
@@ -93,7 +93,7 @@ public class SimpleBuilder extends PApplet {
   public void draw() {
     ambientLight(102, 102, 102);
     lightSpecular(204, 204, 204);
-    directionalLight(102, 102, 102, 0, 0, -1);
+    directionalLight(102, 102, 102, 0, -1,  0.4f);
     specular(255, 255, 255);
     shininess(10);
     scene.render();

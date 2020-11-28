@@ -21,15 +21,15 @@ import java.util.*;
 public class AccuracyVSTime {
     static float PI = (float) Math.PI;
     static Random random = new Random();
-    static int seed = 0;
+    static int seed = 29;
     //Benchmark Parameters
     static boolean continuousPath = true;
     static boolean lissajous = false;
 
-    static String dir = "C:/Users/olgaa/Desktop/Sebas/Thesis/Results/AccuracyVSTime/";
+    static String dir = "C:/Users/olgaa/Desktop/Sebas/Thesis/Results/AccuracyVSTime/Paper/";
 
-    static int numStructures = 100;
-    static int numPostures = 500; //Set the number of different postures to solve
+    static int numStructures = 500;
+    static int numPostures = 100; //Set the number of different postures to solve
     static int randRotation = -1; //Set seed to generate initial random rotations, otherwise set to -1
     static int randLength = 0; //Set seed to generate random segment lengths, otherwise set to -1
     static float boneLength = 50; //Define length of segments (bones)
@@ -64,10 +64,10 @@ public class AccuracyVSTime {
 
     static HashMap<Util.SolverType, SolverStats> _statisticsPerSolver = new HashMap<>();
 
-    public static void generateExperiment(Util.SolverType type, SolverStats solverStats, Util.ConstraintType constraintType, int iterations, int seed) {
+    public static void generateExperiment(Util.SolverType type, SolverStats solverStats, Util.ConstraintType constraintType, int iterations, int seed, boolean continuous) {
         //1. Generate structure
         List<Node> structure = Util.generateDetachedChain(numJoints, boneLength, randRotation, randLength);
-        if(continuousPath){
+        if(continuous){
           for(int i = 0; i < initialConfig.size(); i++){
             structure.get(i).setRotation(initialConfig.get(i).get());
           }
@@ -92,10 +92,10 @@ public class AccuracyVSTime {
             GHIK.enableDeadLockResolution(false);
             if(GHIK.heuristic() instanceof TRIKECTIK){
                 TRIKECTIK heuristic = (TRIKECTIK) GHIK.heuristic();
-                heuristic.setTRIKFraction(continuousPath ? 0.3f : 0.05f); //First 5 iterations will use TRIK the others use combined heuristic
+                heuristic.setTRIKFraction(continuous ? 0.1f : 0.1f); //First 5 iterations will use TRIK the others use combined heuristic
             }
             if(GHIK.mode() == nub.ik.solver.GHIK.HeuristicMode.ECTIK_DAMP){
-                GHIK.context().setDelegationIterationsRatio(continuousPath ? 0.4f : 0.1f);  //Apply smoothing on first ten iterations
+                GHIK.context().setDelegationIterationsRatio(continuous ? 0.4f : 0.1f);  //Apply smoothing on first ten iterations
             }
         }
 
@@ -200,10 +200,6 @@ public class AccuracyVSTime {
             Vector des = chain.get(chain.size() - 1).position().get();
             if(Vector.distance(des, prev) < 5) t--;
             else{
-                if(random.nextFloat() < 0.2f){
-                    //Totally random and possibly unreacheable
-                    targetPositions.add(new Vector(boneLength * numJoints * random.nextFloat(), boneLength * numJoints * random.nextFloat(), boneLength * numJoints * random.nextFloat()));
-                }
                 targetPositions.add(des);
             }
 
@@ -212,13 +208,13 @@ public class AccuracyVSTime {
 
     public static void generateRandomPath(int n, int seed, Util.ConstraintType constraintType) {
         PApplet pa = new PApplet();
-        pa.randomSeed(0);
-        pa.noiseSeed(0);
+        pa.randomSeed(seed);
+        pa.noiseSeed(seed);
         List<Node> chain = Util.generateDetachedChain(numJoints, boneLength, randRotation, randLength);
         Util.generateConstraints(chain, constraintType, seed, true);
         targetPositions = new ArrayList<Vector>();
         initialConfig = new ArrayList<Quaternion>();
-        float step = 0.01f;
+        float step = 0.1f;
         float last = step * n;
         double mean_dist = 0;
 
@@ -280,13 +276,13 @@ public class AccuracyVSTime {
                 _statisticsPerSolver.put(solversType[s], new SolverStats());
             }
 
-            int c_seed = 0;
+            int c_seed = 13;
             Util.ConstraintType constraintType = constraintTypes[k];
 
             for (int s = 0; s < numStructures; s++) {
                 numJoints = random.nextInt(16) + 4;
                 System.out.println("On structure " + s + " joints : " + numJoints + " constraint : " + constraintType);
-                if (continuousPath){
+                /*if (continuousPath){
                     if(lissajous){
                         generateLissajousCurve(numPostures,
                             c_seed,
@@ -300,11 +296,15 @@ public class AccuracyVSTime {
                         generateRandomPath(numPostures, c_seed, constraintType);
                     }
                 }
-                else generateRandomReachablePositions(numPostures, c_seed, constraintType);
-
-
+                else*/
+                generateRandomPath(numPostures, c_seed, constraintType);
                 for (int i = 0; i < numSolvers; i++) {
-                    generateExperiment(solversType[i], _statisticsPerSolver.get(solversType[i]), constraintType, continuousPath ? 50 : 50, c_seed);
+                    generateExperiment(solversType[i], _statisticsPerSolver.get(solversType[i]), constraintType, continuousPath ? 50 : 50, c_seed, true);
+                }
+
+                generateRandomReachablePositions(numPostures, c_seed, constraintType);
+                for (int i = 0; i < numSolvers; i++) {
+                    generateExperiment(solversType[i], _statisticsPerSolver.get(solversType[i]), constraintType, continuousPath ? 50 : 50, c_seed, false);
                 }
                 c_seed = random.nextInt(100000);
             }

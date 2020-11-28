@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.util.*;
 
 public class MoCapPerformance {
-    static String dir = "C:/Users/olgaa/Desktop/Sebas/Thesis/Results/MoCapPerformance/";
+    static String dir = "C:/Users/olgaa/Desktop/Sebas/Thesis/Results/MoCapPerformance/paper/";
 
     static GHIK.HeuristicMode heuristicsMode[] = {
             GHIK.HeuristicMode.CCD,
@@ -29,11 +29,11 @@ public class MoCapPerformance {
             GHIK.HeuristicMode.BFIK_TRIK,
             GHIK.HeuristicMode.ECTIK,
             GHIK.HeuristicMode.TRIK_ECTIK,
-            GHIK.HeuristicMode.ECTIK_DAMP,
+            //GHIK.HeuristicMode.ECTIK_DAMP,
     }; //Place Here Solvers that you want to compare
 
     static int iterationsChain = 5;
-    static int iterations = 3;
+    static int iterations = 5;
     static float maxError = 0.01f;
     static int effs;
 
@@ -555,11 +555,18 @@ public class MoCapPerformance {
     }
 
     public static double motionDistribution(HashMap<Node, Quaternion> prev, HashMap<Node, Quaternion> cur, double dist) {
-        double distrib = 0;
+        List<Double> vals = new ArrayList<Double>();
         for (Node node  : prev.keySet()) {
-            distrib += Math.min(quaternionDistance(prev.get(node), cur.get(node)) / dist, 1);
+            vals.add(quaternionDistance(prev.get(node), cur.get(node)));
         }
-        return distrib / prev.size();
+        return gini(vals);
+    }
+
+    public static double gini(List<Double> values) {
+        double sumOfDifference = values.stream()
+            .flatMapToDouble(v1 -> values.stream().mapToDouble(v2 -> Math.abs(v1 - v2))).sum();
+        double mean = values.stream().mapToDouble(v -> v).average().getAsDouble();
+        return sumOfDifference / (2 * values.size() * values.size() * mean);
     }
 
 

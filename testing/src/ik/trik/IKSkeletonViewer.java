@@ -10,7 +10,7 @@ import processing.core.PApplet;
 import processing.event.MouseEvent;
 
 public class IKSkeletonViewer  extends PApplet {
-  int id = 0;
+  int id = 4;
   String[] paths = new String[]{
       "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__SlowFly.bvh",
       "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Monkey/__Walk.bvh",
@@ -78,7 +78,8 @@ public class IKSkeletonViewer  extends PApplet {
       pg.pushStyle();
       pg.text("Joints " + n_joints, 50 , 100);
       pg.text("Effs " + n_effs, 50 , 150);
-      pg.text("FPS " + frameRate, 50 , 200);
+      pg.text("Height " + height, 50 , 200);
+      pg.text("FPS " + frameRate, 50 , 250);
       pg.popStyle();
     });
 

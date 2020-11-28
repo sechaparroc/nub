@@ -324,7 +324,7 @@ import java.util.List;
     if (scene.node() == null) return;
     Solver solver = null;
     if (debug) {
-      solver = new GHIKTree(scene.node(), GHIK.HeuristicMode.BFIK_TRIK);
+      solver = new GHIKTree(scene.node(), GHIK.HeuristicMode.TRIK_ECTIK);
       //solver.setTimesPerFrame(1f);
       solvers.add(solver);
     } else {
