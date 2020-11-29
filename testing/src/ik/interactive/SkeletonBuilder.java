@@ -39,7 +39,7 @@ import java.util.List;
   }
 
   public void settings() {
-    size(w, h, renderer);
+    fullScreen(renderer);
   }
 
   public void setup() {
