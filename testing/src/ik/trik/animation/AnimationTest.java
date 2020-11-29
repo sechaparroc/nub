@@ -137,6 +137,18 @@ public class AnimationTest extends PApplet {
     if (key == ' ') {
       showSkeleton = !showSkeleton;
     }
+    if(key == 'n' || key == 'N'){
+      try {
+        panel.loadInterpolator(this, interpolatorPath);
+
+      } catch (Exception e){
+        e.printStackTrace();
+      }
+    }
+    if(key == 'm' || key == 'M'){
+      panel.saveInterpolator(this, interpolatorPath);
+    }
+
   }
 
   public void mouseClicked(MouseEvent event) {
@@ -147,7 +159,7 @@ public class AnimationTest extends PApplet {
         else
           focus.align();
     } else if (focus == controlScene) {
-      if (focus.node() != null) focus.node().interact(new Object[]{"onClicked", event.getButton()});
+      if (focus.node() != null) focus.interact(focus.node(),"onClicked", event.getButton());
     }
   }
 

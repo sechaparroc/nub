@@ -4,6 +4,9 @@ import nub.core.Interpolator;
 import nub.core.Node;
 import nub.processing.TimingTask;
 import nub.timing.Task;
+import processing.core.PApplet;
+import processing.data.JSONArray;
+import processing.data.JSONObject;
 
 import java.util.*;
 
@@ -190,7 +193,7 @@ public class PostureInterpolator {
     _postures.add(new KeyPosture(new Posture(_skeleton), time));
   }
 
-  public HashMap<Float, Node> keyFrames() {
+  public HashMap<Float, Posture> keyFrames() {
     HashMap map = new HashMap<Float, Posture>();
     for (KeyPosture keyPosture : _postures)
       map.put(keyPosture._time, keyPosture._posture);
@@ -268,6 +271,24 @@ public class PostureInterpolator {
       joint.setMagnitude(node.magnitude());
     }
     _skeleton.restoreTargetsState();
+  }
+  public void save(PApplet pApplet, String filename){
+    JSONArray jsonArray = new JSONArray();
+    for(KeyPosture posture : _postures){
+      JSONObject json = posture._posture._save();
+      json.setFloat("time", posture._time);
+      jsonArray.append(json);
+    }
+    pApplet.saveJSONArray(jsonArray, filename);
+  }
 
+  public void load(PApplet pApplet, String filename){
+    this.clear();
+    JSONArray jsonArray = pApplet.loadJSONArray(filename);
+    for(int i = 0; i < jsonArray.size(); i++){
+      Posture posture = new Posture();
+      posture._load(jsonArray.getJSONObject(i));
+      addKeyPosture(posture, jsonArray.getJSONObject(i).getFloat("time"));
+    }
   }
 }

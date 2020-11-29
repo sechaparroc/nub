@@ -15,20 +15,17 @@ import java.util.Map;
 public class SimpleInterpolation extends PApplet {
     Scene scene;
     Skeleton skeleton;
-    Posture initialPosture, finalPosture;
+    PostureInterpolator interpolator;
     Skinning skinning;
-    boolean loadFromFile = true;
     boolean loadMesh = true;
     boolean mode = false; // change the interaction mode (load or save a posture)
 
 
 
-    String skeletonPath = "/testing/data/skeletons/Kangaroo_constrained.json";
-    String initialPosturePath = "/testing/data/skeletons/Kangaroo_initial.json";
-    String finalPosturePath = "/testing/data/skeletons/Kangaroo_final.json";
-    String shapePath = "/testing/data/objs/Kangaroo.obj";
-    String texturePath = "/testing/data/objs/Kangaroo_diff.jpg";
-
+    String skeletonPath = "./testing/data/skeletons/Kangaroo_constrained.json";
+    String shapePath = "./testing/data/objs/Kangaroo.obj";
+    String texturePath = "./testing/data/objs/Kangaroo_diff.jpg";
+    String interpolatorPath = "./testing/data/skeletons/Kangaroo_interpolator.json";
 
 
 
@@ -50,11 +47,7 @@ public class SimpleInterpolation extends PApplet {
         skeleton.addTargets();
         skeleton.setTargetRadius(0.03f * scene.radius());
         //Load posteures
-        if(loadFromFile){
-            initialPosture = new Posture(this, initialPosturePath);
-            finalPosture = new Posture(this, finalPosturePath);
-        }
-
+        interpolator = new PostureInterpolator(skeleton);
         //Enable skinning
         if(loadMesh){
             skinning = new GPULinearBlendSkinning(skeleton, shapePath, texturePath, scene.radius(), false);
@@ -102,24 +95,23 @@ public class SimpleInterpolation extends PApplet {
     }
 
     public void keyPressed(){
-        if(key == '1'){
-            if(mode){
-                initialPosture.loadValues(skeleton);
-            }
-            else initialPosture = new Posture(skeleton);
+        if(key == 'c' || key == 'C'){
+            interpolator.clear();
+        }
+        if(key == 's' || key == 'S'){
+            interpolator.save(this, interpolatorPath);
+        }
+        if(key == 'l' || key == 'L'){
+            interpolator.load(this, interpolatorPath);
+        }
+        if(key == 'k' || key == 'K'){
+            interpolator.addKeyPosture(new Posture(skeleton), 1);
+        }
+        if(key == ' '){
+            interpolator.run();
+        }
 
-        }
-        if(key == '2'){
-            if(mode){
-                finalPosture.loadValues(skeleton);
-            }
-            else{
-                finalPosture = new Posture(skeleton);
-            }
-        }
-        if(key == 'm' || key == 'M'){
-            mode = !mode;
-        }
+
         if(key == 'd' || key == 'D'){
             //fix
             Node current = scene.node();
@@ -151,26 +143,6 @@ public class SimpleInterpolation extends PApplet {
             //restore target position
             skeleton.restoreTargetsState();
         }
-        if(key == 's' || key == 'S'){
-            //save postures
-            if(initialPosture != null)
-                initialPosture.save(this, initialPosturePath);
-            if(finalPosture != null)
-                finalPosture.save(this, finalPosturePath);
-        }
-
-        if(key == ' '){
-            catmullInterpolation(1);
-        }
-    }
-
-    public void catmullInterpolation(float duration){
-        //Apply catmull interpolation between the 2 given postures
-        PostureInterpolator interpolator = new PostureInterpolator(skeleton);
-        interpolator.addKeyPosture(initialPosture, 0);
-        interpolator.addKeyPosture(finalPosture, duration);
-        interpolator.addKeyPosture(initialPosture, duration);
-        interpolator.run();
     }
 
     public static void main(String[] args) {

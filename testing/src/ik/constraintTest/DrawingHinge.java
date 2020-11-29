@@ -22,7 +22,7 @@ public class DrawingHinge extends PApplet {
   int mode = -1;
 
   ThetaControl control;
-  Node j0, j1;
+  Joint j0, j1;
   static PFont font;
 
   public void settings() {
@@ -30,7 +30,7 @@ public class DrawingHinge extends PApplet {
   }
 
   public void setup() {
-    font = createFont("Arial", 38);
+    font = createFont("Zapfino", 38);
     constraintScene = new Scene(createGraphics( w / 2, h, P3D));
     constraintScene.setType(Graph.Type.ORTHOGRAPHIC);
     constraintScene.fit(1);
@@ -44,57 +44,13 @@ public class DrawingHinge extends PApplet {
 
     //Create a Joint
     Joint.constraintFactor = 0.9f;
-    j0 = new Node(){
-        public void graphics(PGraphics pGraphics) {
-          float radius = constraintScene.radius();
-          Hinge constraint = (Hinge) constraint();
-          pGraphics.push();
-          pGraphics.lights();
-          pGraphics.noStroke();
-          pGraphics.fill(62, 203, 55, 150);
-          Node reference = Node.detach(new Vector(), new Quaternion(), 1f);
-          reference.setTranslation(new Vector());
-          reference.setRotation(j0.rotation().inverse());
-          Quaternion referenceRotation = rotation().inverse();
-          referenceRotation.compose(constraint.orientation());
-          referenceRotation.compose(new Quaternion(new Vector(1, 0, 0), new Vector(0, 1, 0)));
-          referenceRotation.normalize();
-          pGraphics.rotate(referenceRotation.angle(), (referenceRotation).axis()._vector[0], (referenceRotation).axis()._vector[1], (referenceRotation).axis()._vector[2]);
-          //Draw axis
-          pGraphics.pushStyle();
-          pGraphics.fill(255, 154, 31);
-          Scene.drawArrow(pGraphics, new Vector(), new Vector(constraintScene.radius() / 2, 0, 0), 1f);
-          pGraphics.fill(79, 196, 61);
-          Scene.drawArrow(pGraphics, new Vector(), new Vector(0, 0, constraintScene.radius() / 2), 1f);
-          pGraphics.popStyle();
-          //Write names
-          Vector v = new Vector(radius * (float) Math.cos(-constraint.minAngle()) + 5, radius * (float) Math.sin(-constraint.minAngle()));
-          Vector u = new Vector(radius * (float) Math.cos(constraint.maxAngle()) + 5, radius * (float) Math.sin(constraint.maxAngle()));
-          Vector w = new Vector(radius / 2, 0, 0);
-          Vector s = new Vector(0, 0, radius / 2);
-          pGraphics.pushStyle();
-          pGraphics.noLights();
-          pGraphics.fill(0);
-          pGraphics.textFont(font, 12);
-          pGraphics.text("\u03B8 " + "max", v.x(), v.y());
-          pGraphics.text("\u03B8 " + "min", u.x(), u.y());
-          pGraphics.fill(255, 154, 31);
-          pGraphics.text("Up vector", w.x(), w.y() - 5, w.z() + 5);
-          pGraphics.textAlign(RIGHT, BOTTOM);
-          pGraphics.fill(79, 196, 61);
-          pGraphics.text("Twist vector", s.x() - radius / 4, s.y(), s.z());
-          pGraphics.lights();
-          pGraphics.pop();
-
-        }
-    };
+    j0 = new Joint(constraintScene, color(66, 135, 245), 0.1f * constraintScene.radius());
     j0.setReference(constraintRoot);
-    j0.enableHint(Node.BONE | Node.CONSTRAINT);
-    j0.configHint(Node.BONE, color(66, 135, 245), 0.1f * constraintScene.radius(), true);
+    j0.setRoot(true);
     j0.translate(-constraintScene.radius() * 0.5f, 0, 0);
-    j1 = new Node();//(constraintScene, color(66, 135, 245), 0.1f * constraintScene.radius());
-    j1.enableHint(Node.BONE, color(66, 135, 245), 0.1f * constraintScene.radius(), true);
+    j1 = new Joint(constraintScene, color(66, 135, 245), 0.1f * constraintScene.radius());
     j1.setReference(j0);
+
     Vector v = new Vector(1f, 0, 0);
     v.normalize();
     v.multiply(constraintScene.radius());
@@ -214,7 +170,7 @@ public class DrawingHinge extends PApplet {
       //Draw base according to each radius
       pg.fill(_color, _scene.node() == this ? 255 : 100);
       pg.noStroke();
-      Scene.drawArc(pg, _scene.radius() * 0.7f, -_min, _max, 30);
+      drawArc(pg, _scene.radius() * 0.7f, -_min, _max, 30);
       //draw semi-axe
       pg.fill(0);
       pg.stroke(0);
@@ -296,6 +252,20 @@ public class DrawingHinge extends PApplet {
     }
   }
 
+
+  public static void drawArc(PGraphics pGraphics, float radius, float minAngle, float maxAngle, int detail) {
+    pGraphics.beginShape(PApplet.TRIANGLE_FAN);
+    if (pGraphics.is3D()) {
+      pGraphics.vertex(0, 0, 0);
+    } else {
+      pGraphics.vertex(0, 0);
+    }
+    float step = (maxAngle - minAngle) / detail;
+    for (float theta = minAngle; theta < maxAngle; theta += step)
+      pGraphics.vertex(radius * (float) Math.cos(theta), radius * (float) Math.sin(theta));
+    pGraphics.vertex(radius * (float) Math.cos(maxAngle), radius * (float) Math.sin(maxAngle));
+    pGraphics.endShape(PApplet.CLOSE);
+  }
 
 
   public static class Joint extends Node {
@@ -399,9 +369,9 @@ public class DrawingHinge extends PApplet {
         //Draw axis
         pGraphics.pushStyle();
         pGraphics.fill(255, 154, 31);
-        _scene.drawArrow(pGraphics, new Vector(), new Vector(radius / 2, 0, 0), 1f);
+        _scene.drawArrow(new Vector(), new Vector(radius / 2, 0, 0), 1f);
         pGraphics.fill(79, 196, 61);
-        _scene.drawArrow(pGraphics, new Vector(), new Vector(0, 0, radius / 2), 1f);
+        _scene.drawArrow(new Vector(), new Vector(0, 0, radius / 2), 1f);
         pGraphics.popStyle();
 
         //Write names
@@ -465,8 +435,8 @@ public class DrawingHinge extends PApplet {
     Scene prev = focus;
     focus = mouseX < w / 2 ? constraintScene : thetaScene;
     if (prev != focus && prev != null) {
-      if (prev.node() != null) prev.node().interact(new Object[]{"Clear"});
-      if (focus != null && focus.node() != null) focus.node().interact(new Object[]{"Clear"});
+      if (prev.node() != null) prev.interact(prev.node(),"Clear");
+      if (focus != null && focus.node() != null) focus.interact(focus.node(),"Clear");
     }
 
   }
@@ -477,7 +447,7 @@ public class DrawingHinge extends PApplet {
 
   public void mouseDragged() {
     if (focus == thetaScene) {
-      if (focus.node() != null) focus.node().interact(new Object[]{"OnScaling", new Vector(focus.mouseX(), focus.mouseY())});
+      if (focus.node() != null) focus.interact(focus.node(),"OnScaling", new Vector(focus.mouseX(), focus.mouseY()));
       return;
     }
     if (mouseButton == LEFT)
@@ -490,7 +460,7 @@ public class DrawingHinge extends PApplet {
 
   public void mouseReleased() {
     if (focus == thetaScene) {
-      if (focus.node() != null) focus.node().interact(new Object[]{"Scale"});
+      if (focus.node() != null) focus.interact(focus.node(),"Scale");
       return;
     }
   }

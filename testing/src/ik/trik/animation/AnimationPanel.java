@@ -2,12 +2,18 @@ package ik.trik.animation;
 
 import nub.core.Node;
 import nub.core.constraint.Constraint;
+import nub.ik.animation.Posture;
 import nub.ik.animation.PostureInterpolator;
 import nub.ik.animation.Skeleton;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
+import processing.core.PApplet;
 import processing.core.PFont;
+
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 public class AnimationPanel extends Node {
   protected int _gray1, _gray2, _gray3, _gray4, _red, _blue1, _blue2, _green1, _green2, _yellow, _white;
@@ -79,6 +85,19 @@ public class AnimationPanel extends Node {
     _postureInterpolator.run();
   }
 
+  public void saveInterpolator(PApplet pApplet, String file){
+    _postureInterpolator.clear();
+    addKeyPostures();
+    _postureInterpolator.save(pApplet, file);
+  }
+
+  public void loadInterpolator(PApplet pApplet, String file){
+    PostureInterpolator aux = new PostureInterpolator(_postureInterpolator.skeleton());
+    aux.load(pApplet, file);
+    loadKeyPostures(aux);
+  }
+
+
   public void addKeyPostures() {
     float prev = 0;
     for (KeyPoint keyPoint : _timeLine._points) {
@@ -88,6 +107,22 @@ public class AnimationPanel extends Node {
       prev = time;
     }
   }
+
+  public void loadKeyPostures(PostureInterpolator pi) {
+    float prev = 0;
+    SortedSet<Float> keys = new TreeSet<>(pi.keyFrames().keySet());
+    int i = 0;
+    for(float t : keys){
+      _timeLine._current = _timeLine._points[i];
+      _timeLine._current.deletePosture();
+      //_timeLine._current._time = t;
+      //_timeLine._current.setTranslation(_timeLine._spaceStep * t, 0, 0);
+      pi.keyFrames().get(t).loadValues(pi.skeleton());
+      _timeLine._current.savePosture();
+      i++;
+    }
+  }
+
 
   public void toggleCurrentKeyPoint() {
     KeyPoint p = _timeLine._current;
