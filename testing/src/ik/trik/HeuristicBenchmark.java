@@ -9,7 +9,6 @@ import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
-import nub.processing.TimingTask;
 import nub.timing.Task;
 import processing.core.PApplet;
 import processing.event.MouseEvent;
@@ -27,13 +26,13 @@ public class HeuristicBenchmark extends PApplet {
   float boneLength = 50; //Define length of segments (bones)
 
   //Benchmark Parameters
-  Util.ConstraintType constraintType = Util.ConstraintType.NONE; //Choose what kind of constraints apply to chain
+  Util.ConstraintType constraintType = Util.ConstraintType.HINGE_ALIGNED; //Choose what kind of constraints apply to chain
   Random random = new Random();
   ArrayList<Solver> solvers; //Will store Solvers
   int randRotation = -1; //Set seed to generate initial random rotations, otherwise set to -1
   int randLength = 0; //Set seed to generate random segment lengths, otherwise set to -1
 
-  Util.SolverType solversType[] = {Util.SolverType.CCD, Util.SolverType.TIK, Util.SolverType.TRIK, Util.SolverType.BFIK_TRIK, Util.SolverType.TRIK_ECTIK};
+  Util.SolverType solversType[] = {Util.SolverType.CCD, Util.SolverType.TIK, Util.SolverType.TRIK, Util.SolverType.BFIK_TRIK, Util.SolverType.TRIK_ECTIK, Util.SolverType.FABRIK};
   ArrayList<ArrayList<Node>> structures = new ArrayList<>(); //Keep Structures
   ArrayList<Node> idleSkeleton;
   ArrayList<Node> targets = new ArrayList<Node>(); //Keep targets
@@ -88,19 +87,11 @@ public class HeuristicBenchmark extends PApplet {
       //6. Define solver parameters
       solvers.get(i).setMaxError(-10f);
       solvers.get(i).setMinDistance(-10f);
-      solvers.get(i).setTimesPerFrame(15);
-      solvers.get(i).setMaxIterations(15);
+      solvers.get(i).setTimesPerFrame(1);
+      solvers.get(i).setMaxIterations(50);
       //7. Set targets
       solvers.get(i).setTarget(structures.get(i).get(numJoints - 1), targets.get(i));
       targets.get(i).setPosition(structures.get(i).get(numJoints - 1).position());
-      //8. Register task
-      TimingTask task = new TimingTask() {
-        @Override
-        public void execute() {
-          if (solve) solver.solve();
-        }
-      };
-      task.run(40);
       Interpolator interpolator = new Interpolator(targets.get(i));
       interpolator.configHint(Interpolator.SPLINE);
       interpolators.add(interpolator);
@@ -133,6 +124,7 @@ public class HeuristicBenchmark extends PApplet {
     scene.render();
     scene.beginHUD();
     for (int i = 0; i < solvers.size(); i++) {
+      if(solve) solvers.get(i).solve();
       Util.printInfo(scene, solvers.get(i), structures.get(i).get(0).position());
     }
     scene.endHUD();

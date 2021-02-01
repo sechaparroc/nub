@@ -4,6 +4,7 @@ import nub.core.Node;
 import nub.core.constraint.*;
 import nub.ik.solver.Solver;
 import nub.ik.solver.GHIK;
+import nub.ik.solver.fabrik.ChainSolver;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -24,7 +25,8 @@ public class Util {
     TIK, BFIK_TIK,
     TRIK, BFIK_TRIK,
     ECTIK, ECTIK_DAMP,
-    TRIK_ECTIK
+    TRIK_ECTIK,
+    FABRIK
   }
 
   public static Solver createSolver(SolverType type, List<Node> structure) {
@@ -72,6 +74,10 @@ public class Util {
       case TRIK_ECTIK:{
         GHIK solver = new GHIK(structure, GHIK.HeuristicMode.TRIK_ECTIK);
         return solver;
+      }
+
+      case FABRIK:{
+        return new ChainSolver(structure);
       }
 
       default:
@@ -363,16 +369,22 @@ public class Util {
 
       String heuristics = String.join(" ", GHIK.mode().name().split("_"));
       if (GHIK.enableTwist()) heuristics += "\nWITH TWIST";
-      String error = "\n Error (pos): " + String.format("%.7f", GHIK.positionError());
+      String error = "\n Error (pos): " + String.format("%.3f", GHIK.positionError());
       if (GHIK.direction()) {
-        error += "\n Error (or): " + String.format("%.7f", GHIK.orientationError());
+        error += "\n Error (or): " + String.format("%.3f", GHIK.orientationError());
       }
+      error += "\nAccum error : " + solver.accumulatedError();
+      pg.text(heuristics + error + "\n iter : " + solver.lastIteration(), pos.x() - 30, pos.y() + 10, pos.x() + 30, pos.y() + 50);
+    } else if (solver instanceof ChainSolver) {
+      String heuristics = "FABRIK";
+      String error = "\n Error (pos): " + String.format("%.3f", solver.error());
       error += "\nAccum error : " + solver.accumulatedError();
       pg.text(heuristics + error + "\n iter : " + solver.lastIteration(), pos.x() - 30, pos.y() + 10, pos.x() + 30, pos.y() + 50);
     }
 
     pg.popStyle();
   }
+
 
   public static ArrayList<Node> detachedCopy(List<? extends Node> chain) {
     ArrayList<Node> copy = new ArrayList<Node>();
