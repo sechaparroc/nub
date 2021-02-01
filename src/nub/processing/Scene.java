@@ -1841,7 +1841,7 @@ public class Scene extends Graph {
    * @see #drawAxes(float)
    */
   public void drawAxes() {
-    drawAxes(_radius);
+    drawAxes(_radius * 0.25f);
   }
 
   /**
@@ -3565,8 +3565,12 @@ public class Scene extends Graph {
     } else{
       if(m > radius) {
         if (width <= 0 || retained) {
+          pGraphics.pushStyle();
+          pGraphics.strokeWeight(3);
           pGraphics.line(radius * v.x(), radius * v.y(), radius * v.z(),
                   (m - radius) * v.x(), (m - radius) * v.y(), (m - radius) * v.z());
+          pGraphics.popStyle();
+
         } else {
           pGraphics.noStroke();
           pGraphics.pushMatrix();

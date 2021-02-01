@@ -396,7 +396,7 @@ public class Context {
     float radius = _radiusRelativeToBoneAverage ? _searchingAreaRadius * _avgLength : _searchingAreaRadius;
     if (_direction) {
       float orientationError = orientationError(effRotation, targetRotation, false);
-      float weighted_error = error / radius;
+      float weighted_error = radius != 0 ? error / radius : error;
       error = w1 * weighted_error + w2 * orientationError;
     }
     return error;

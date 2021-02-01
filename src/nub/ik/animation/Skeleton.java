@@ -505,6 +505,17 @@ public class Skeleton {
     }
   }
 
+  public void enableDirection(boolean direction, boolean innerChains){
+    for(Solver s : solvers()){
+      if(s instanceof GHIKTree){
+        ((GHIKTree) s).setDirection(direction, innerChains);
+      } else if(s instanceof GHIK){
+        ((GHIK) s).setDirection(direction);
+      }
+    }
+  }
+
+
   public void disableIK() {
     for (Solver solver : _solvers.values()) {
       Graph.stopSolver(solver);

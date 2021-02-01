@@ -278,12 +278,17 @@ public class GHIK extends Solver {
     }
 
     public float positionError() {
-        return _context.positionError(_context.chain().get(_context.endEffectorId()).position(), _context.target().position());
+        return _context.positionError(_context.chain().get(_context.endEffectorId()).position(), _context.worldTarget().position());
     }
 
     public float orientationError() {
-        return _context.orientationError(_context.chain().get(_context.endEffectorId()).orientation(), _context.target().orientation(), true);
+        return _context.orientationError(_context.chain().get(_context.endEffectorId()).orientation(), _context.worldTarget().orientation(), true);
     }
+
+    public float orientationError(boolean angles) {
+        return _context.orientationError(_context.chain().get(_context.endEffectorId()).orientation(), _context.worldTarget().orientation(), angles);
+    }
+
 
     public Node target() {
         return _context.target();
@@ -300,8 +305,14 @@ public class GHIK extends Solver {
     @Override
     public float error() {
         return context().error(_context.chain().get(_context.endEffectorId()).position(), _context.worldTarget().position(),
-                _context.chain().get(_context.endEffectorId()).orientation(), _context.worldTarget().orientation(), 1, 1);
+                _context.chain().get(_context.endEffectorId()).orientation(), _context.worldTarget().orientation(), 1, _context.orientationWeight());
     }
+
+    public float error(float wo) {
+        return context().error(_context.chain().get(_context.endEffectorId()).position(), _context.worldTarget().position(),
+            _context.chain().get(_context.endEffectorId()).orientation(), _context.worldTarget().orientation(), 1, wo);
+    }
+
 
     @Override
     public void setTarget(Node endEffector, Node target) {
