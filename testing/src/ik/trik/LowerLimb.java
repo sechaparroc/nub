@@ -49,7 +49,7 @@ public class LowerLimb extends PApplet {
     solver.setTarget(skeleton.get(skeleton.size() - 1), target);
 
     List<Node> skeleton2 = createSkeleton(scene, numJoints, boneLength, radius, color(0, 255, 0));
-    GHIK solver2 = new GHIK(skeleton2, GHIK.HeuristicMode.TRIK_ECTIK);
+    GHIK solver2 = new GHIK(skeleton2, GHIK.HeuristicMode.BFIK);
     solver2.context().enableDelegation(true);
 
     //solver2.enableSmooth(true);

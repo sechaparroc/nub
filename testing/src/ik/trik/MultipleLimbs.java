@@ -78,7 +78,7 @@ public class MultipleLimbs extends PApplet {
 
 
   public GHIKTree createSolver(Node root, float radius) {
-    GHIKTree solver = new GHIKTree(root, GHIK.HeuristicMode.TRIK_ECTIK);
+    GHIKTree solver = new GHIKTree(root, GHIK.HeuristicMode.BFIK);
     solver.setTimesPerFrame(10);
     solver.setMaxIterations(10);
     solver.setChainTimesPerFrame(15);

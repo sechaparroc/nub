@@ -4,7 +4,7 @@ import ik.basic.Util;
 import nub.core.Node;
 import nub.ik.solver.Solver;
 import nub.ik.solver.NodeInformation;
-import nub.ik.solver.heuristic.TRIKECTIK;
+import nub.ik.solver.heuristic.BFIK;
 import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -45,14 +45,9 @@ public class GeneralizedDistanceVSIterations {
 
   static Util.SolverType solversType[] = {
       Util.SolverType.CCD,
-      Util.SolverType.BFIK_CCD,
       Util.SolverType.TIK,
-      Util.SolverType.BFIK_TIK,
       Util.SolverType.TRIK,
-      Util.SolverType.BFIK_TRIK,
-      Util.SolverType.ECTIK,
-      Util.SolverType.TRIK_ECTIK,
-      Util.SolverType.ECTIK_DAMP,
+      Util.SolverType.BFIK,
   };
 
   static List<Vector> targetPositions;
@@ -77,8 +72,8 @@ public class GeneralizedDistanceVSIterations {
     if(solver instanceof GHIK){
       GHIK GHIK = (GHIK) solver;
       GHIK.enableDeadLockResolution(true);
-      if(GHIK.heuristic() instanceof TRIKECTIK){
-        TRIKECTIK heuristic = (TRIKECTIK) GHIK.heuristic();
+      if(GHIK.heuristic() instanceof BFIK){
+        BFIK heuristic = (BFIK) GHIK.heuristic();
         heuristic.setTRIKFraction(0.05f); //First 5 iterations will use TRIK the others use combined heuristic
       }
     }

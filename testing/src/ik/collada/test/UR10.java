@@ -99,7 +99,7 @@ public class UR10 extends PApplet {
 
 
     if (!ccd) {
-      solver = new GHIK(branch, GHIK.HeuristicMode.TRIK_ECTIK);
+      solver = new GHIK(branch, GHIK.HeuristicMode.BFIK);
     } else {
       solver = new GHIK(branch, GHIK.HeuristicMode.ECTIK);
     }

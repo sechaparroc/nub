@@ -25,10 +25,74 @@ public class Viewer extends PApplet {
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__SlowFly.bvh",
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Monkey/__Run.bvh",
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Eagle/__Strike1.bvh",
-            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Puppy/Puppy_IdleEnergetic.bvh"
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Puppy/Puppy_IdleEnergetic.bvh",
+            //BVH used in Paper
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Cat/CAT_TPOSE.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Cat/CAT_IdlePurr.bvh", //9
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Cat/CAT_LickCleanIdle.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Cat/CAT_StretchYawnIdle.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Cat/CAT_Walk.bvh",
+
+
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/cmu-mocap-master/data/001/01_03.bvh", // 14
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/cmu-mocap-master/data/013/13_17.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/cmu-mocap-master/data/090/90_02.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/cmu-mocap-master/data/090/90_05.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/cmu-mocap-master/data/055/55_02.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/cmu-mocap-master/data/090/90_28.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/cmu-mocap-master/data/088/88_01.bvh",
+            "C:/Users/olgaa/Documents/Processing/libraries/nub/examples/BVHReconstruction/0017_ParkourRoll001.bvh",
+
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__Idle.bvh",//Dragon 22
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__Idle2.bvh",//Dragon 22
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__Idle3.bvh",//Dragon 22
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__Attack.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__Attack2.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__Attack3.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__Die.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__Fly.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__SlowFly.bvh",
+
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Monkey/__Attack1.bvh", //Monkey 31
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Monkey/__Attack2.bvh", //Monkey 32
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Monkey/__Attack3.bvh", //Monkey 33
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Monkey/__Attack4.bvh", //Monkey 34
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Monkey/__B1Die.bvh", //Monkey 35
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Monkey/__Idle1.bvh", // 36
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Monkey/__Idle2.bvh", // 37
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Monkey/__Idle3.bvh", // 38
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Monkey/__Run.bvh", // 39
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Monkey/__Walk.bvh", // 40
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Monkey/__Die.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Monkey/__Run.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Monkey/__Walk.bvh",
+
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/SpiderG/__Attack.bvh", //Spider 44
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/SpiderG/__Attack3.bvh", //Spider 45
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/SpiderG/__Attack7.bvh", //Spider 46
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/SpiderG/__Burrough.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/SpiderG/__ComeOut.bvh", //48
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/SpiderG/__Fangs.bvh", //49
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/SpiderG/__Run.bvh", //50
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/SpiderG/__Walk.bvh", //51
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/SpiderG/__Die.bvh", //52
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/SpiderG/__Idle.bvh", //53
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/SpiderG/__Idle2.bvh", //54
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/SpiderG/__TPOSE.bvh", //55
+
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Tyranno/__TPOSE.bvh",// Tyranno 56
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Tyranno/__Attack.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Tyranno/__Attack2.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Tyranno/__Fall.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Tyranno/__HeadButt.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Tyranno/__Idle.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Tyranno/__Idle2.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Tyranno/__Walk.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Tyranno/__Run.bvh",
+
     };
 
-    String path = paths[5];
+    String path = paths[12];
     boolean absolute = true;
     Scene scene;
     BVHLoader loader;
@@ -39,19 +103,29 @@ public class Viewer extends PApplet {
     Collection<Integer> indices;
     boolean usePositionError = true;
     boolean drawAvgError = true;
+    boolean useFABRIK = false;
+    int skip =1;
+    String modelName = "cat";
 
     boolean readNext = false, solve = false;
     float sk_height = 0;
 
+    float avg_error = 0;
+
+    boolean useWristAnkles = true;
+    boolean showInfo = false, showParams = false;
+
     public void settings(){
-        size(1900, 1000, P3D);
+        fullScreen(P3D);
+        //size(1900, 1000, P3D);
     }
 
     public void setup(){
+        frameRate(15);
         PFont myFont = createFont("Times New Roman Bold", 50, true);
         textFont(myFont);
 
-        Scene._retainedBones = false;
+        Scene._retainedBones = false; //Set to true to increase speed
         //frameRate(24);
         //1. Setup Scene
         scene = new Scene(this);
@@ -60,10 +134,19 @@ public class Viewer extends PApplet {
 
         //2. Instantiate loader
         loader = new BVHLoader(absolute ? path : (sketchPath() + path), scene, null);
-        sk_height = calculateHeight(loader);
+        humanoidEFFs(loader);
+        //dragonEFFs(loader);
+        //catEFFs(loader);
+        loader.nextPosture(true);
+        loader.nextPosture(true);
+
+        sk_height = calculateHeight(loader, false);
+
+        scene.setBounds(sk_height * 3);
+
+        scene.fit(0);
+
         //Skip first two postures
-        loader.nextPosture(true);
-        loader.nextPosture(true);
         loader.generateConstraints();
         loader.skeleton().setRadius(scene.radius() * 0.01f);
         loader.skeleton().setBoneWidth(scene.radius() * 0.01f);
@@ -80,7 +163,7 @@ public class Viewer extends PApplet {
         IKSkeleton1.setRadius(scene.radius() * 0.01f);
         IKSkeleton1.setBoneWidth(scene.radius() * 0.01f);
 
-        IKSkeleton1.enableIK(GHIK.HeuristicMode.CCD);
+        IKSkeleton1.enableIK(GHIK.HeuristicMode.TRIK_ECTIK);
         IKSkeleton1.setMaxError(0.01f);
         IKSkeleton1.addTargets();
         skeletons.add(IKSkeleton1);
@@ -94,7 +177,7 @@ public class Viewer extends PApplet {
         IKSkeleton2.setBoneWidth(scene.radius() * 0.01f);
         IKSkeleton2.setDepth(true);
 
-        IKSkeleton2.enableIK(GHIK.HeuristicMode.TRIK_ECTIK);
+        IKSkeleton2.enableIK(GHIK.HeuristicMode.BFIK);
         IKSkeleton2.enableDirection(true, true);
         IKSkeleton2.setMaxError(0.001f * sk_height);
         println("Height : " + sk_height + " Max error " + 0.01f * sk_height);
@@ -113,23 +196,30 @@ public class Viewer extends PApplet {
             //pg.text("S2 error " + IKSkeleton2.solvers().get(0).error() / IKSkeleton2.endEffectors().size(), 50 , 150);
             //pg.text("FPS " + frameRate, 50 , 200);
             pg.popStyle();
-            drawTimeArray(errorPerFrame, 0, height - height / 3, width, height / 3, drawAvgError ? 50 : errorPerFrame.size(), usePositionError ? sk_height * 0.2f : PI / 4, sk_height);
-            if(!drawAvgError) pickFromPane(indices,0, height - height / 3, width, height / 3, errorPerFrame.size(), usePositionError ? sk_height * 0.2f : PI / 4 );
-            else highlightWorst(indices, 0.8f *width, 0.1f * height,  0.2f * width,2f / 3f * height - 0.2f * height, sk_height);
-            drawInfo(10, 0.1f * height, 0.2f * width, 2f / 3f * height - 0.2f * height);
+            if(showInfo) {
+                drawTimeArray(errorPerFrame, 0, height - height / 4, width, height / 4, drawAvgError ? 50 : errorPerFrame.size(), usePositionError ? sk_height * 0.2f : PI / 4, sk_height);
+                if (!drawAvgError)
+                    pickFromPane(indices, 0, height - height / 4, width, height / 4, errorPerFrame.size(), usePositionError ? sk_height * 0.2f : PI / 4);
+                else
+                    highlightWorst(indices, 0.8f * width, 0.1f * height, 0.2f * width, 3f / 4f * height - 0.2f * height, sk_height);
+            }
+            drawInfo(10, 0.1f * height, 0.2f * width, 3f / 4f * height - 0.2f * height);
         });
 
         //4. Set scene
-        scene.setBounds(sk_height * 3);
-        scene.fit(0);
-        scene.enableHint(Graph.BACKGROUND, color(255));
-        scene.enableHint(Graph.AXES, 10);
+        scene.enableHint(Graph.BACKGROUND, color(0));
+        scene.enableHint(Graph.AXES, sk_height * 3);
 
         //loader.skeleton().cull(true);
 
         //IKSkeleton1.enableIK(false);
         //IKSkeleton2.enableIK(false);
-
+        scene.eye().setConstraint(new Constraint() {
+            @Override
+            public Quaternion constrainRotation(Quaternion rotation, Node node) {
+                return new Quaternion(0,rotation.eulerAngles().y(),0);
+            }
+        });
     }
 
     public void draw(){
@@ -139,15 +229,34 @@ public class Viewer extends PApplet {
         specular(255, 255, 255);
         shininess(10);
         scene.render();
-        if(readNext) readNextPosture();
+
+        if(readNext) readNextPosture(skip);
+        if(record){
+            saveFrame("C:/Users/olgaa/Desktop/Img" + frameCount + ".png");
+            record = false;
+        }
+
     }
 
+    boolean record = false;
     public void keyPressed(){
         if(key == 'W' || key == 'w'){
             readNext = !readNext;
         }
         if(key == 'S' || key == 's'){
-            readNextPosture();
+            readNextPosture(skip);
+        }
+        if(key == 'R' || key == 'r'){
+            record = !record;
+        }
+        if(key == 'h' || key == 'H'){
+            toggleHints();
+        }
+        if(key == 'j' || key == 'J'){
+            loader.skeleton().reference().cull = !loader.skeleton().reference().cull;
+        }
+        if(key == 'k' || key == 'k'){
+            showInfo = !showInfo;
         }
     }
 
@@ -170,7 +279,15 @@ public class Viewer extends PApplet {
     }
 
     public void mouseClicked(MouseEvent event){
-        if(scene.node() != null ) System.out.println(scene.node().id());
+        if(scene.node() != null ){
+            System.out.println("Node name : " + skeletons.get(0).jointName(scene.node()));
+            for(Node child : scene.node().children()){
+                System.out.println("---> Node " + skeletons.get(0).jointName(child));
+
+            }
+
+            System.out.println(scene.node().id() + " " + scene.node().position());
+        }
         if(event.getCount() == 2)
             if(event.getButton() == LEFT)
                 scene.focus();
@@ -178,8 +295,10 @@ public class Viewer extends PApplet {
                 scene.align();
     }
 
-    void readNextPosture(){
-        loader.nextPosture();
+    void readNextPosture(int skip){
+        for(int i = 0; i < skip; i++)
+            loader.nextPosture();
+
         for(Skeleton skeleton : skeletons){
             //move the root of the skeleton
             for(int i = 0; i < loader.skeleton().reference().children().size(); i++){
@@ -204,22 +323,17 @@ public class Viewer extends PApplet {
             //Set the targets
             for(Map.Entry<String, Node> entry : skeleton.targets().entrySet()){
                 Node desired =  loader.skeleton().joint(entry.getKey());
+                //EFF own rotation is known
+                //skeleton.joint(entry.getKey()).setRotation(desired.rotation().get());
                 entry.getValue().setTranslation(loader.skeleton().reference().location(desired));
                 entry.getValue().setOrientation(loader.skeleton().reference().displacement(new Quaternion(), desired));
-                skeleton.joint(entry.getKey()).setConstraint(null);
-                //skeleton.joint(entry.getKey()).setRotation(loader.skeleton().joint(entry.getKey()).rotation().get());
-                //skeleton.joint(entry.getKey()).setConstraint(new Constraint() {
-                    //@Override
-                    //public Quaternion constrainRotation(Quaternion rotation, Node node) {
-                        //return new Quaternion();
-                    //}
-                //});
             }
             skeleton.IKStatusChanged();
             skeleton.solveIK();
         }
         if(drawAvgError){
             errorPerFrame.add(usePositionError ? avgPositionDistance() : avgRotationDistance());
+            avg_error += avgPositionDistance();
             if(usePositionError) positionDistancePerJoint(accumulatedError);
             else rotationDistancePerJoint(accumulatedError);
             indices = sortIndices();
@@ -231,11 +345,13 @@ public class Viewer extends PApplet {
 
 
     //Some useful functions
-    float calculateHeight(BVHLoader parser){ //calculates the height of the skeleton
+    float calculateHeight(BVHLoader parser, boolean useY){ //calculates the height of the skeleton
         Vector min = new Vector(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE);
-        Vector max = Vector.multiply(min, -1);
-        for(Node n : parser.skeleton().BFS()){
-            Vector pos = parser.skeleton().reference().children().get(0).location(n);
+        Vector max = new Vector(-Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE);;
+        for(Node n : parser.skeleton().joints().values()){
+            //Vector pos = parser.skeleton().reference().children().get(0).location(n);
+            Vector pos = n.position().get();
+            if(n.children().isEmpty())System.out.println("pos " + parser.skeleton().jointName(n) + " " +  pos);
             if(max.x() < pos.x()) max.setX(pos.x());
             if(max.y() < pos.y()) max.setY(pos.y());
             if(max.z() < pos.z()) max.setZ(pos.z());
@@ -243,10 +359,12 @@ public class Viewer extends PApplet {
             if(min.y() > pos.y()) min.setY(pos.y());
             if(min.z() > pos.z()) min.setZ(pos.z());
         }
+        System.out.println("max" + max + " min " + min);
         float mX = max.x() - min.x();
         float mY = max.y() - min.y();
         float mZ = max.z() - min.z();
-        return Math.max(Math.max(mX, mY), mZ);
+        System.out.println("mX" + mX + " mY " + mY + "mZ" + mZ);
+        return mY;
     }
 
     //Draw error at each Frame
@@ -306,17 +424,31 @@ public class Viewer extends PApplet {
         int n = 8;
         pushStyle();
         textAlign(LEFT, CENTER);
-        fill(0);
+        fill(255);
         float y_col = y + k++ * (1.f * h / (n + 1));
         textSize(24);
         text("Height: " + String.format("%.2f",sk_height / sk_height * 100), x + 10, y_col);
+        y_col = y + k++ * (1.f * h / (n + 1));
+        fill(0,0,255);
+        ellipse(x + 22, y_col + 2, 20, 20);
+        fill(255);
+        text("Original", x + 44, y_col);
+        y_col = y + k++ * (1.f * h / (n + 1));
+        fill(0,255,0);
+        ellipse(x + 22, y_col + 2, 20, 20);
+        fill(255);
+        text("Reconstruction", x + 44, y_col);
+
         y_col = y + k++ * (1.f * h / (n + 1));
         text("# Joints: " + loader.skeleton().joints().size(), x + 10, y_col);
         y_col = y + k++ * (1.f * h / (n + 1));
         text("# End effectors: " + loader.skeleton().endEffectors().size(), x + 10, y_col);
         y_col = y + k++ * (1.f * h / (n + 1));
         float e = skeletons.get(0).solvers().get(0).error() / skeletons.get(0).endEffectors().size();
-        text("Average distance error per end effector: " + String.format("%.2f",  e / sk_height * 100), x + 10, y_col);
+        e = Math.max(0, e - 0.001f * sk_height );
+        text("Average distance error per end effector: " + String.format("%.2f",  e / sk_height * 100) + "%", x + 10, y_col);
+
+
 
 
         popStyle();
@@ -329,10 +461,10 @@ public class Viewer extends PApplet {
         int n = 8;
         pushStyle();
         textAlign(LEFT, CENTER);
-        fill(0);
+        fill(255);
         float y_col = y + k++ * (1.f * h / (n + 1));
         textSize(24);
-        text("Joint location average error", x + 10, y_col);
+        text("Joints with worst position error: ", x + 10, y_col);
         textSize(20);
         for(int idx : indices){
             if(k == n) break;
@@ -422,7 +554,7 @@ public class Viewer extends PApplet {
             rect(x + x_cur, y + y_cur, w_col, h - y_cur );
         }
 
-        int num_ticks = 7;
+        int num_ticks = 8;
         textSize(18);
         noLights();
         float ticks_step = 1f / num_ticks;
@@ -437,10 +569,89 @@ public class Viewer extends PApplet {
         }
 
         noLights();
-        fill(0);
+        fill(255);
         textSize(32);
-        text("Joints’ location average mean absolute error", x, y - 10);
+        if(errorPerFrame.size() > 0)
+        text("Mean per Joint position error: ( Avg " + String.format("%.2f", (avg_error / sk_height * 100f) / errorPerFrame.size()) + "%)", x, y - 10);
         pop();
+    }
+
+    public void removeChildren(Skeleton sk, Node node){
+        while(!node.children().isEmpty()){
+            Node child = node.children().get(0);
+            removeChildren(sk, child);
+            sk.joints().remove(sk.jointName(child));
+            sk.names().remove(child);
+            child.setReference(null);
+            Scene.prune(child);
+        }
+    }
+
+
+    public void removeChildren(BVHLoader loader, String names[]){
+        Skeleton sk = loader.skeleton();
+        for(String name : names){
+            if(sk.joints().containsKey(name) && useWristAnkles) {
+                removeChildren(sk, sk.joint(name));
+            }
+        }
+    }
+
+    public void toggleHints(){
+        for(Node n : skeletons.get(0).joints().values()){
+            if(showParams){
+                n.enableHint(Node.AXES);
+                n.enableHint(Node.CONSTRAINT);
+            } else{
+                n.disableHint(Node.AXES);
+                n.disableHint(Node.CONSTRAINT);
+            }
+        }
+        for(Node n : loader.skeleton().joints().values()){
+            if(showParams){
+                n.enableHint(Node.AXES);
+                n.enableHint(Node.CONSTRAINT);
+            } else{
+                n.disableHint(Node.AXES);
+                n.disableHint(Node.CONSTRAINT);
+            }
+        }
+        showParams = !showParams;
+    }
+
+    public void obtainEFFS(BVHLoader loader, String names[]){
+        Skeleton sk = loader.skeleton();
+        for(String name : names){
+            if(sk.joints().containsKey(name) && useWristAnkles) {
+                Node n = sk.joint(name);
+                sk.joints().remove(name);
+                sk.names().remove(n);
+                n.setReference(null);
+                Scene.prune(n);
+            }
+        }
+    }
+
+    public void humanoidEFFs(BVHLoader loader){
+        String names[] = new String[]{"RTHUMB", "RIGHTHANDINDEX1", "LTHUMB", "LEFTTOEBASE", "RIGHTTOEBASE", "LEFTHANDINDEX1", "LEFTFINGERBASE", "RIGHTFINGERBASE"};
+        obtainEFFS(loader, names);
+    }
+
+    public void catEFFs(BVHLoader loader){
+        Skeleton sk = loader.skeleton();
+        String names[] = new String[]{"BIP01_R_TOE0NUB", "BIP01_L_TOE0NUB", "BIP01_R_FINGER0NUB", "BIP01_L_FINGER0NUB", "BIP01_R_TOE0", "BIP01_L_TOE0", "BIP01_R_FINGER0", "BIP01_L_FINGER0"};
+        obtainEFFS(loader, names);
+        for(Node node : loader.skeleton().BFS()){
+            if(node.children() == null || node.children().isEmpty() )System.out.println("Name : " + loader.skeleton().jointName(node));
+        }
+    }
+
+    public void dragonEFFs(BVHLoader loader){
+        String names[] = new String[]{"BIP01_L_FOOT", "BIP01_R_FOOT", "BIP01_R_HAND", "BIP01_L_HAND"};
+        removeChildren(loader, names);
+        for(Node node : loader.skeleton().BFS()){
+            if(node.children() == null || node.children().isEmpty() )System.out.println("Name : " + loader.skeleton().jointName(node));
+        }
     }
 
 

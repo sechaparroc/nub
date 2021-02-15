@@ -21,12 +21,7 @@ public class Util {
   public enum ConstraintType {NONE, HINGE, CONE_POLYGON, CONE_ELLIPSE, CONE_CIRCLE, MIX, HINGE_ALIGNED, MIX_CONSTRAINED}
 
   public enum SolverType {
-    CCD, BFIK_CCD,
-    TIK, BFIK_TIK,
-    TRIK, BFIK_TRIK,
-    ECTIK, ECTIK_DAMP,
-    TRIK_ECTIK,
-    FABRIK
+    CCD, TIK, TRIK, BFIK, FABRIK
   }
 
   public static Solver createSolver(SolverType type, List<Node> structure) {
@@ -35,44 +30,17 @@ public class Util {
         GHIK solver = new GHIK(structure, GHIK.HeuristicMode.CCD);
         return solver;
       }
-
-      case BFIK_CCD:{
-        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.BFIK_CCD);
-        return solver;
-      }
-
       case TRIK:{
         GHIK solver = new GHIK(structure, GHIK.HeuristicMode.TRIK);
         return solver;
       }
-
-      case BFIK_TRIK:{
-        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.BFIK_TRIK);
-        return solver;
-      }
-
       case TIK:{
         GHIK solver = new GHIK(structure, GHIK.HeuristicMode.TIK);
         return solver;
       }
 
-      case BFIK_TIK:{
-        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.BFIK_TIK);
-        return solver;
-      }
-
-      case ECTIK_DAMP:{
-        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.ECTIK_DAMP);
-        return solver;
-      }
-
-      case ECTIK:{
-        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.ECTIK);
-        return solver;
-      }
-
-      case TRIK_ECTIK:{
-        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.TRIK_ECTIK);
+      case BFIK:{
+        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.BFIK);
         return solver;
       }
 
@@ -287,10 +255,10 @@ public class Util {
           float m = (3 * random.nextFloat() + 1) * 20;
           float s = 20;
 
-          float down = radians((float) Math.min(Math.max(random.nextGaussian() * m + s, 0), 120));
-          float up = radians((float) Math.min(Math.max(random.nextGaussian() * m + s, 0), 120));
-          float left = radians((float) Math.min(Math.max(random.nextGaussian() * m + s, 0), 120));
-          float right = radians((float) Math.min(Math.max(random.nextGaussian() * m + s, 0), 120));
+          float down = radians((float) Math.min(Math.max(random.nextGaussian() * m + s, 3), 120));
+          float up = radians((float) Math.min(Math.max(random.nextGaussian() * m + s, 3), 120));
+          float left = radians((float) Math.min(Math.max(random.nextGaussian() * m + s, 3), 120));
+          float right = radians((float) Math.min(Math.max(random.nextGaussian() * m + s, 3), 120));
 
           //down = left = right = up = radians(40);
           constraint = new SphericalPolygon(down, up, left, right);
@@ -300,7 +268,7 @@ public class Util {
         }
         case CONE_CIRCLE: {
           if (!is3D) break;
-          float r = radians((float) Math.min(Math.max(random.nextGaussian() * 30 + 30, 0), 80));
+          float r = radians((float) Math.min(Math.max(random.nextGaussian() * 30 + 30, 3), 80));
           //r = radians(40);
           constraint = new SphericalPolygon(r, r, r, r);
           Quaternion rest = Quaternion.compose(structure.get(i).rotation().get(), offset);
@@ -358,27 +326,37 @@ public class Util {
     }
   }
 
-  public static void printInfo(Scene scene, Solver solver, Vector basePosition) {
+  public static void printInfo(Scene scene, Solver solver, Vector basePosition){
+    printInfo(scene, solver, basePosition, 100f);
+  }
+
+  public static void printInfo(Scene scene, Solver solver, Vector basePosition, float sk_height) {
     PGraphics pg = scene.context();
     pg.pushStyle();
     pg.fill(255);
-    pg.textSize(15);
+    pg.textSize(25);
     Vector pos = scene.screenLocation(basePosition);
     if (solver instanceof GHIK) {
       GHIK GHIK = (GHIK) solver;
-
       String heuristics = String.join(" ", GHIK.mode().name().split("_"));
+
+      if(GHIK.mode().name().equals("TRIK_ECTIK")){
+        heuristics = "B&FIK";
+      }
+
       if (GHIK.enableTwist()) heuristics += "\nWITH TWIST";
-      String error = "\n Error (pos): " + String.format("%.3f", GHIK.positionError());
+      String error = "\n Error (pos): " + String.format("%.3f", solver.error() / sk_height * 100f) + "%";
+      error += "\nAverage error : " + String.format("%.3f", solver.averageError()  / sk_height * 100f) + "%";
+
       if (GHIK.direction()) {
         error += "\n Error (or): " + String.format("%.3f", GHIK.orientationError());
       }
-      error += "\nAccum error : " + solver.accumulatedError();
+      //error += "\nAverage error : " + solver.accumulatedError() / fc;
       pg.text(heuristics + error + "\n iter : " + solver.lastIteration(), pos.x() - 30, pos.y() + 10, pos.x() + 30, pos.y() + 50);
     } else if (solver instanceof ChainSolver) {
       String heuristics = "FABRIK";
-      String error = "\n Error (pos): " + String.format("%.3f", solver.error());
-      error += "\nAccum error : " + solver.accumulatedError();
+      String error = "\n Error (pos): " + String.format("%.3f", solver.error() / sk_height * 100f) + "%";
+      error += "\nAverage error : " + String.format("%.3f", (solver.averageError() ) / sk_height * 100f) + "%";
       pg.text(heuristics + error + "\n iter : " + solver.lastIteration(), pos.x() - 30, pos.y() + 10, pos.x() + 30, pos.y() + 50);
     }
 

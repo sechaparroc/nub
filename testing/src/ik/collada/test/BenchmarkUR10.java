@@ -27,7 +27,7 @@ public class BenchmarkUR10 extends PApplet {
   String path = "/testing/data/dae/";
   String dae = "ur10_joint_limited_robot.dae";
   Model[] models = new Model[5];
-  String solvers_type[] = {"FABRIK", "CCD", "NUMERICAL", "TRIK"};
+  String solvers_type[] = {"FABRIK", "CCD", "NUMERICAL", "BFIK"};
   List<Solver> solvers = new ArrayList<>();
   List<Vector> positions = new ArrayList<>();
   List<Target> targets = new ArrayList<>();
@@ -96,8 +96,8 @@ public class BenchmarkUR10 extends PApplet {
           solver = new GHIK(branch, GHIK.HeuristicMode.CCD);
           break;
         }
-        case "TRIK": {
-          solver = new GHIK(branch, GHIK.HeuristicMode.ECTIK_DAMP);
+        case "BFIK": {
+          solver = new GHIK(branch, GHIK.HeuristicMode.BFIK);
           break;
         }
         default: {

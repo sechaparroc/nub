@@ -97,7 +97,7 @@ public class NaiveLocomotion extends PApplet {
       }
 
       case ECTIK: {
-        solver = new GHIK(limb, GHIK.HeuristicMode.TRIK_ECTIK);
+        solver = new GHIK(limb, GHIK.HeuristicMode.BFIK);
         ((GHIK) solver).setTarget(target);
         break;
       }

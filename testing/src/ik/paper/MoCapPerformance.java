@@ -5,8 +5,11 @@ import nub.core.constraint.Constraint;
 import nub.ik.loader.bvh.BVHLoader;
 import nub.ik.solver.GHIKTree;
 import nub.ik.solver.GHIK;
+import nub.ik.solver.Solver;
+import nub.ik.solver.fabrik.FABRIKTree;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
+import nub.processing.Scene;
 import processing.core.PApplet;
 import processing.data.JSONArray;
 import processing.data.JSONObject;
@@ -18,26 +21,27 @@ import java.io.IOException;
 import java.util.*;
 
 public class MoCapPerformance {
-    static String dir = "C:/Users/olgaa/Desktop/Sebas/Thesis/Results/MoCapPerformance/paper/";
+    static String dir = "C:/Users/olgaa/Desktop/Sebas/Thesis/Results/MoCapPerformance/revised/Z3";
 
     static GHIK.HeuristicMode heuristicsMode[] = {
             GHIK.HeuristicMode.CCD,
-            GHIK.HeuristicMode.BFIK_CCD,
+            //GHIK.HeuristicMode.BFIK_CCD,
             GHIK.HeuristicMode.TIK,
-            GHIK.HeuristicMode.BFIK_TIK,
+            //GHIK.HeuristicMode.BFIK_TIK,
             GHIK.HeuristicMode.TRIK,
-            GHIK.HeuristicMode.BFIK_TRIK,
-            GHIK.HeuristicMode.ECTIK,
-            GHIK.HeuristicMode.TRIK_ECTIK,
-            //GHIK.HeuristicMode.ECTIK_DAMP,
+            //GHIK.HeuristicMode.BFIK_TRIK,
+            //GHIK.HeuristicMode.ECTIK,
+            GHIK.HeuristicMode.BFIK,
+            //GHIK.HeuristicMode.ECTIK_DAMP, //Dummy NAME --- Use FABRIK
     }; //Place Here Solvers that you want to compare
 
     static int iterationsChain = 5;
     static int iterations = 5;
-    static float maxError = 0.01f;
+    static float maxError = 0.001f;
     static int effs;
 
     static String startAt = "Cat";
+
     static int n_packages = 1;
 
     public static List<BVHPackage> generateZooPackages(){
@@ -70,16 +74,20 @@ public class MoCapPerformance {
     public static BVHLoader loadBVH(String path){
         BVHLoader loader = new BVHLoader(path, null);
         loader.setLoop(false);
-
         //skip first two frames
         loader.nextPosture(true);
         loader.nextPosture(true);
+        //Use proper EFFS
+        humanoidEFFs(loader);
         //generate constraints
         loader.generateConstraints();
         return loader;
     }
 
     public static void generateExperiment(BVHLoader loader, GHIK.HeuristicMode mode, BVHStats stats, float height){
+        if(startAt.equals("Human")){
+            height = calculateHeight(loader);
+        }
         //1. reset the loader
         loader.postureAt(0);
         //2. create the appropriate skeleton
@@ -101,12 +109,16 @@ public class MoCapPerformance {
             skeleton.solver.solve();
             double end = (System.nanoTime() - start) / 1000000.0;
 
-            stats.errorSt.addValue(skeleton.solver.error() / skeleton.endEffectors.size());
+            float error = skeleton.solver.error() / skeleton.endEffectors.size();
+            error  = Math.max(0, error - 0.001f * height );
+
+            error = error / height * 100f;
+            stats.errorSt.addValue(error);
             stats.iterationSt.addValue(skeleton.solver.lastIteration());
             stats.timeSt.addValue(end);
 
             nextPos = skeleton.obtainPositions();
-            stats.distancePosSt.addValue(distanceBetweenPostures(prevPos, nextPos));
+            stats.distancePosSt.addValue(distanceBetweenPostures(prevPos, nextPos) / height * 100f);
             prevPos = nextPos;
 
             nextOrs = skeleton.obtainOrientations();
@@ -119,7 +131,7 @@ public class MoCapPerformance {
             if(distRot > Float.MIN_VALUE) stats.motionSt.addValue(motionDistribution(prevRots, nextRots, distRot));
             prevRots = nextRots;
 
-            stats.positionErrorSt.addValue(skeleton.positionDistance());
+            stats.positionErrorSt.addValue(skeleton.positionDistance() / height * 100f);
             stats.rotationErrorSt.addValue(skeleton.rotationDistance());
             stats.orientationErrorSt.addValue(skeleton.orientationDistance());
             loader.nextPosture();
@@ -331,7 +343,7 @@ public class MoCapPerformance {
 
 
     public static class Skeleton{
-        GHIKTree solver;
+        Solver solver;
         GHIK.HeuristicMode mode;
         BVHLoader loader;
         HashMap<String, Node> structure;
@@ -367,23 +379,25 @@ public class MoCapPerformance {
         }
 
         void createSolver(float maxError, int iterationsChain, int iterations, float height){
-            solver = new GHIKTree(root, mode);
-            //define attributes
-            solver.setMaxError(maxError * height); //1% of the skeleton height
-            solver.setDirection(true);
-            solver.setTimesPerFrame(iterations);
-            solver.setMaxIterations(iterations);
-            solver.setChainTimesPerFrame(1);
-            solver.setChainMaxIterations(iterationsChain);
             targets = new HashMap<>();
             //Create a target per end effector
+            GHIKTree gsolver = new GHIKTree(root, mode);
+            //define attributes
+            gsolver.setMaxError(maxError * height); //1% of the skeleton height
+            gsolver.setDirection(true, true);
+            gsolver.setTimesPerFrame(iterations);
+            gsolver.setMaxIterations(iterations);
+            gsolver.setChainTimesPerFrame(1);
+            gsolver.setChainMaxIterations(iterationsChain);
+            solver = gsolver;
             for(String s : endEffectors){
                 Node node = structure.get(s);
                 Node target = Node.detach(new Vector(), new Quaternion(), 1);
                 target.setPosition(node.position().get());
                 target.setOrientation(node.orientation().get());
                 targets.put(s, target);
-                solver.addTarget(node, target);
+                if(solver instanceof GHIKTree) ((GHIKTree) solver).addTarget(node, target);
+                else if(solver instanceof FABRIKTree) ((FABRIKTree) solver).addTarget(node, target);
             }
         }
 
@@ -401,7 +415,7 @@ public class MoCapPerformance {
                 target.setPosition(next.position().get());
                 target.setOrientation(next.orientation().get());
                 //modify end effector rotation
-                joint.setRotation(next.rotation().get());
+                //joint.setRotation(next.rotation().get());
             }
         }
 
@@ -499,10 +513,12 @@ public class MoCapPerformance {
                 files.remove(idx);
             }
             BVHLoader auxLoader = new BVHLoader(path + name + "/" + t_pose, null);
-            Vector max = new Vector(), min = new Vector(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE);
-            max = Vector.multiply(min, -1);
+            auxLoader.nextPosture(true);
+            auxLoader.nextPosture(true);
+            Vector min = new Vector(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE);
+            Vector max = new Vector(-Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE);;
             for(Node n : auxLoader.skeleton().BFS()){
-                Vector pos = auxLoader.skeleton().reference().location(n);
+                Vector pos = n.position().get();
                 if(max.x() < pos.x()) max.setX(pos.x());
                 if(max.y() < pos.y()) max.setY(pos.y());
                 if(max.z() < pos.z()) max.setZ(pos.z());
@@ -513,7 +529,7 @@ public class MoCapPerformance {
             float mX = max.x() - min.x();
             float mY = max.y() - min.y();
             float mZ = max.z() - min.z();
-            height = Math.max(Math.max(mX, mY), mZ);
+            height = mY;
         }
     }
 
@@ -578,6 +594,38 @@ public class MoCapPerformance {
         double dot = s1 * a._quaternion[0] * s2 * b._quaternion[0] + s1 * a._quaternion[1] * s2 * b._quaternion[1] + s1 * a._quaternion[2] * s2 * b._quaternion[2] + s1 * a._quaternion[3] * s2 * b._quaternion[3];
         dot = Math.max(Math.min(dot, 1), -1);
         return Math.acos(2 * Math.pow(dot, 2) - 1);
+    }
+
+    public static void humanoidEFFs(BVHLoader loader){
+        nub.ik.animation.Skeleton sk = loader.skeleton();
+        String names[] = new String[]{"RTHUMB", "RIGHTHANDINDEX1", "LTHUMB", "LEFTTOEBASE", "RIGHTTOEBASE", "LEFTHANDINDEX1", "LEFTFINGERBASE", "RIGHTFINGERBASE"};
+        for(String name : names){
+            if(sk.joints().containsKey(name)) {
+                Node n = sk.joint(name);
+                sk.joints().remove(name);
+                sk.names().remove(n);
+                n.setReference(null);
+                Scene.prune(n);
+            }
+        }
+    }
+
+    public static float calculateHeight(BVHLoader parser){ //calculates the height of the skeleton
+        Vector min = new Vector(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE);
+        Vector max = Vector.multiply(min, -1);
+        for(Node n : parser.skeleton().BFS()){
+            Vector pos = parser.skeleton().reference().children().get(0).location(n);
+            if(max.x() < pos.x()) max.setX(pos.x());
+            if(max.y() < pos.y()) max.setY(pos.y());
+            if(max.z() < pos.z()) max.setZ(pos.z());
+            if(min.x() > pos.x()) min.setX(pos.x());
+            if(min.y() > pos.y()) min.setY(pos.y());
+            if(min.z() > pos.z()) min.setZ(pos.z());
+        }
+        float mX = max.x() - min.x();
+        float mY = max.y() - min.y();
+        float mZ = max.z() - min.z();
+        return Math.max(Math.max(mX, mY), mZ);
     }
 
     public static class Statistics {
@@ -656,5 +704,4 @@ public class MoCapPerformance {
             return stats;
         }
     }
-
 }

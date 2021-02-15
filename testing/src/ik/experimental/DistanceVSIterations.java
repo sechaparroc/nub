@@ -33,7 +33,7 @@ public class DistanceVSIterations {
   static Util.ConstraintType constraintTypes[] = {Util.ConstraintType.NONE, Util.ConstraintType.HINGE, Util.ConstraintType.HINGE_ALIGNED, Util.ConstraintType.CONE_CIRCLE, Util.ConstraintType.CONE_ELLIPSE, Util.ConstraintType.MIX, Util.ConstraintType.MIX_CONSTRAINED}; //Choose what kind of constraints apply to chain
   //static Util.ConstraintType constraintTypes[] = {Util.ConstraintType.CONE_CIRCLE, Util.ConstraintType.CONE_ELLIPSE, Util.ConstraintType.MIX}; //Choose what kind of constraints apply to chain
   //static Util.ConstraintType constraintTypes[] = {Util.ConstraintType.HINGE_ALIGNED}; //Choose what kind of constraints apply to chain
-  static Util.SolverType solversType[] = {Util.SolverType.CCD, Util.SolverType.TIK, Util.SolverType.ECTIK, Util.SolverType.ECTIK_DAMP};
+  static Util.SolverType solversType[] = {Util.SolverType.CCD, Util.SolverType.TIK, Util.SolverType.BFIK};
   static List<Vector> targetPositions;
 
 

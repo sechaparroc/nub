@@ -78,7 +78,7 @@ public class TRIKTest extends PApplet {
         target.setPosition(endEffector.position());
         targets.add(target);
         //3. Relate the structure with a Solver. In this example we instantiate a solver
-        solver = new GHIK(skeleton, GHIK.HeuristicMode.ECTIK_DAMP);
+        solver = new GHIK(skeleton, GHIK.HeuristicMode.TRIK);
         //Optionally you could modify the following parameters of the Solver:
         //Maximum distance between end effector and target, If is below maxError, then we stop executing IK solver (Default value is 0.01)
         //solver.setMaxError(1);

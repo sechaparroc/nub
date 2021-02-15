@@ -4,7 +4,7 @@ import ik.basic.Util;
 import nub.core.Node;
 import nub.ik.solver.Solver;
 import nub.ik.solver.NodeInformation;
-import nub.ik.solver.heuristic.TRIKECTIK;
+import nub.ik.solver.heuristic.BFIK;
 import nub.ik.solver.GHIK;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -26,7 +26,7 @@ public class AccuracyVSTime {
     static boolean continuousPath = true;
     static boolean lissajous = false;
 
-    static String dir = "C:/Users/olgaa/Desktop/Sebas/Thesis/Results/AccuracyVSTime/Paper/";
+    static String dir = "C:/Users/olgaa/Desktop/Sebas/Thesis/Results/AccuracyVSTime/Revised/Single/Final/";
 
     static int numStructures = 500;
     static int numPostures = 100; //Set the number of different postures to solve
@@ -49,14 +49,9 @@ public class AccuracyVSTime {
 
     static Util.SolverType solversType[] = {
         Util.SolverType.CCD,
-        Util.SolverType.BFIK_CCD,
         Util.SolverType.TIK,
-        Util.SolverType.BFIK_TIK,
         Util.SolverType.TRIK,
-        Util.SolverType.BFIK_TRIK,
-        Util.SolverType.ECTIK,
-        Util.SolverType.TRIK_ECTIK,
-        //Util.SolverType.COMBINED_EXPRESSIVE,
+        Util.SolverType.BFIK,
     }; //Place Here Solvers that you want to compare
 
     static List<Vector> targetPositions;
@@ -66,16 +61,23 @@ public class AccuracyVSTime {
 
     public static void generateExperiment(Util.SolverType type, SolverStats solverStats, Util.ConstraintType constraintType, int iterations, int seed, boolean continuous) {
         //1. Generate structure
-        List<Node> structure = Util.generateDetachedChain(numJoints, boneLength, randRotation, randLength);
+        List<Node> structure = Util.generateDetachedChain(numJoints, boneLength, randRotation, seed + 10);
         if(continuous){
           for(int i = 0; i < initialConfig.size(); i++){
             structure.get(i).setRotation(initialConfig.get(i).get());
           }
         }
 
+        float sk_height = 0;
+        int k = 0;
+
         //Save the current values
         List<Quaternion> rotations = new ArrayList<Quaternion>();
-        for(Node n : structure) rotations.add(n.rotation().get());
+        for(Node n : structure){
+            rotations.add(n.rotation().get());
+            if(k > 0) sk_height += n.translation().magnitude();
+            k++;
+        }
 
         Node endEffector = structure.get(structure.size() - 1);
         //2. Apply constraints
@@ -83,19 +85,16 @@ public class AccuracyVSTime {
         //3. generate solver
         Solver solver = Util.createSolver(type, structure);
         //4. Define solver parameters
-        solver.setMaxError(-1);
+        solver.setMaxError(sk_height * accuracyThreshold * 0.5f);
         solver.setMaxIterations(iterations);
         solver.setTimesPerFrame(1);
         solver.setMinDistance(-1);
         if(solver instanceof GHIK){
             GHIK GHIK = (GHIK) solver;
-            GHIK.enableDeadLockResolution(false);
-            if(GHIK.heuristic() instanceof TRIKECTIK){
-                TRIKECTIK heuristic = (TRIKECTIK) GHIK.heuristic();
+            GHIK.enableDeadLockResolution(true);
+            if(GHIK.heuristic() instanceof BFIK){
+                BFIK heuristic = (BFIK) GHIK.heuristic();
                 heuristic.setTRIKFraction(continuous ? 0.1f : 0.1f); //First 5 iterations will use TRIK the others use combined heuristic
-            }
-            if(GHIK.mode() == nub.ik.solver.GHIK.HeuristicMode.ECTIK_DAMP){
-                GHIK.context().setDelegationIterationsRatio(continuous ? 0.4f : 0.1f);  //Apply smoothing on first ten iterations
             }
         }
 
@@ -113,6 +112,7 @@ public class AccuracyVSTime {
         for (Vector t : targetPositions) {
             if (sample % 100 == 0) System.out.println(type.name() + "On sample : " + sample);
             target.setPosition(t.get());
+            ((GHIK) solver).reset();
             solver.change(true);
             float minError = Float.MAX_VALUE;
             int lastIteration = -1;
@@ -122,15 +122,19 @@ public class AccuracyVSTime {
                 long start = System.nanoTime();
                 solver.solve();
                 elapsedTime += System.nanoTime() - start;
-                minError = solver.error();
+                minError = ((GHIK)solver).positionError();
                 lastIteration = i + 1;
-                if(GHIK.log){
-                    System.out.println("Error " + minError);
-                }
-                if(minError <= accuracyThreshold){
+                if(minError <= accuracyThreshold * sk_height){
                     break;
                 }
             }
+
+            //Re-scale errors assuming that structure has 100 unit length
+            /*if(minError > sk_height * accuracyThreshold) {
+                System.out.println("thr : " + sk_height * accuracyThreshold);
+                System.out.println("min error : " + minError);
+                System.out.println("scaled error : " + minError / sk_height * 100f);
+            }*/
 
             if(minError > Float.MAX_VALUE){
                 solver.error();
@@ -159,13 +163,16 @@ public class AccuracyVSTime {
                 throw new RuntimeException("ex" + minError + " it " + lastIteration);
             }
 
+            minError = Math.max(0, minError - accuracyThreshold * sk_height);
 
-            solverStats.errorSt.addValue(minError);
+
+
+            solverStats.errorSt.addValue(minError / sk_height * 100f);
             solverStats.iterationSt.addValue(lastIteration);
             solverStats.timeSt.addValue(elapsedTime / 1000000.0);
 
             nextPos = obtainPositions(structure);
-            solverStats.distancePosSt.addValue(distanceBetweenPostures(prevPos, nextPos));
+            solverStats.distancePosSt.addValue(distanceBetweenPostures(prevPos, nextPos) / sk_height * 100f);
             prevPos = nextPos;
 
             nextOrs = obtainOrientations(structure);
@@ -183,7 +190,7 @@ public class AccuracyVSTime {
     }
 
     public static void generateRandomReachablePositions(int n, int seed, Util.ConstraintType constraintType) {
-        List<Node> chain = Util.generateDetachedChain(numJoints, boneLength, randRotation, randLength);
+        List<Node> chain = Util.generateDetachedChain(numJoints, boneLength, randRotation, seed + 10);
         Util.generateConstraints(chain, constraintType, seed, true);
 
         targetPositions = new ArrayList<Vector>();
@@ -210,7 +217,7 @@ public class AccuracyVSTime {
         PApplet pa = new PApplet();
         pa.randomSeed(seed);
         pa.noiseSeed(seed);
-        List<Node> chain = Util.generateDetachedChain(numJoints, boneLength, randRotation, randLength);
+        List<Node> chain = Util.generateDetachedChain(numJoints, boneLength, randRotation, seed + 10);
         Util.generateConstraints(chain, constraintType, seed, true);
         targetPositions = new ArrayList<Vector>();
         initialConfig = new ArrayList<Quaternion>();
@@ -481,7 +488,7 @@ public class AccuracyVSTime {
         return dist / prev.size();
     }
 
-    public static double distanceBetweenRotations(List<Quaternion> prev, List<Quaternion> cur) {
+    public static double    distanceBetweenRotations(List<Quaternion> prev, List<Quaternion> cur) {
         double dist = 0;
         for (int i = 0; i < prev.size(); i++) {
             dist += quaternionDistance(prev.get(i), cur.get(i));

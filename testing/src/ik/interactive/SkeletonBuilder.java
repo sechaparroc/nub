@@ -8,6 +8,7 @@ import nub.core.constraint.Hinge;
 import nub.ik.solver.Solver;
 import nub.ik.solver.GHIKTree;
 import nub.ik.solver.GHIK;
+import nub.ik.solver.fabrik.FABRIKTree;
 import nub.primitives.Vector;
 import nub.processing.Scene;
 import processing.core.PApplet;
@@ -324,12 +325,12 @@ import java.util.List;
     if (scene.node() == null) return;
     Solver solver = null;
     if (debug) {
-      solver = new GHIKTree(scene.node(), GHIK.HeuristicMode.TRIK_ECTIK);
+      solver = new FABRIKTree(scene.node());
       //solver.setTimesPerFrame(1f);
       solvers.add(solver);
     } else {
       if (scene.node() != null) {
-        solver = scene.registerTreeSolver(scene.node());
+        solver = scene.registerFABRIKTreeSolver(scene.node());
         solvers.add(solver);
       }
     }
@@ -343,6 +344,7 @@ import java.util.List;
       Target target = new Target(radius * 1.2f, endEffector.position().get(), endEffector.orientation().get());
       target.setReference(scene.node().reference());
       if (solver instanceof GHIKTree) ((GHIKTree) solver).addTarget(endEffector, target);
+      else if (solver instanceof FABRIKTree) ((FABRIKTree) solver).addTarget(endEffector, target);
       targets.add(target);
     }
   }

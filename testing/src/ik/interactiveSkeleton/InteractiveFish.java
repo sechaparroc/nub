@@ -64,7 +64,7 @@ public class InteractiveFish extends PApplet {
     Node endEffector = skeleton.get(skeleton.size() - 1);
 
     //4.2 relate a skeleton with an IK Solver
-    GHIK solver = new GHIK(skeleton, GHIK.HeuristicMode.ECTIK_DAMP);
+    GHIK solver = new GHIK(skeleton, GHIK.HeuristicMode.TRIK);
     //solver.smooth(true);
     solver.setTimesPerFrame(2);
     solver.setMaxIterations(2);

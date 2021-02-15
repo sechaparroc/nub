@@ -67,7 +67,7 @@ public class StructureViewer extends PApplet {
       Util.generateConstraints(structure, Util.ConstraintType.HINGE_ALIGNED, 13, scene.is3D());
       Util.generateConstraints(idle, Util.ConstraintType.HINGE_ALIGNED, 13, scene.is3D());
 
-      GHIK solver = new GHIK(structure, GHIK.HeuristicMode.TRIK_ECTIK, false);
+      GHIK solver = new GHIK(structure, GHIK.HeuristicMode.BFIK, false);
       //solver.setHeuristic(new CCDViz(  solver.context(), viz));
       solver.setMaxError(-10f);
       solver.setMinDistance(-10f);

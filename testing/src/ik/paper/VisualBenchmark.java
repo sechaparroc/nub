@@ -33,16 +33,11 @@ public class VisualBenchmark extends PApplet {
 
 
     Util.SolverType solversType[] = {
-            //Util.SolverType.TRIANGULATION_HEURISTIC,
-            //Util.SolverType.BACK_AND_FORTH_TRIANGULATION_HEURISTIC,
             Util.SolverType.CCD,
-            Util.SolverType.BFIK_CCD,
             Util.SolverType.TRIK,
             Util.SolverType.TIK,
-            Util.SolverType.BFIK_TRIK,
-            Util.SolverType.ECTIK,
-            Util.SolverType.ECTIK_DAMP,
-            Util.SolverType.TRIK_ECTIK,
+            Util.SolverType.BFIK
+
     }; //Place Here Solvers that you want to compare
 
     ArrayList<ArrayList<Node>> structures = new ArrayList<>(); //Keep Structures

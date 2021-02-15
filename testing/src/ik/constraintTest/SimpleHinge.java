@@ -45,7 +45,7 @@ public class SimpleHinge extends PApplet {
     List<Node> skeleton = new ArrayList<Node>();
     skeleton.add(j1);
     skeleton.add(j2);
-    solver = new GHIK(skeleton, GHIK.HeuristicMode.ECTIK_DAMP);
+    solver = new GHIK(skeleton, GHIK.HeuristicMode.BFIK);
     Node target = Util.createTarget(scene, scene.radius() * 0.07f);
     target.set(j2);
     solver.setTarget(j2, target);
