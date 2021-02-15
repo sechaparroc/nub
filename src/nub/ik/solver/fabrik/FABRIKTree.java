@@ -1,8 +1,8 @@
-package nub.ik.solver;
+package nub.ik.solver.fabrik;
 
 import nub.core.Node;
-import nub.ik.solver.heuristic.CCD;
-import nub.ik.solver.heuristic.Util;
+import nub.core.constraint.Constraint;
+import nub.ik.solver.*;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 
@@ -11,12 +11,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class GHIKTree extends Solver {
+public class FABRIKTree extends Solver{
   protected static class TreeNode {
     protected TreeNode _parent;
     protected List<TreeNode> _children;
     protected List<TreeNode> _reachableLeafNodes; //Reachable leaf nodes from current node
-    protected GHIK _solver;
+    protected ChainSolver _solver;
     protected float _weight = 1.f;
     protected boolean _outerTarget = false;
 
@@ -25,14 +25,14 @@ public class GHIKTree extends Solver {
       _reachableLeafNodes = new ArrayList<TreeNode>();
     }
 
-    public TreeNode(GHIK solver) {
+    public TreeNode(ChainSolver solver) {
       this._solver = solver;
       _solver.setTimesPerFrame(1);
       _children = new ArrayList<TreeNode>();
       _reachableLeafNodes = new ArrayList<TreeNode>();
     }
 
-    protected TreeNode(TreeNode parent, GHIK solver) {
+    protected TreeNode(TreeNode parent, ChainSolver solver) {
       this._parent = parent;
       this._solver = solver;
       if (parent != null) {
@@ -54,13 +54,12 @@ public class GHIKTree extends Solver {
       return _weight;
     }
 
-    protected GHIK _solver() {
+    protected ChainSolver _solver() {
       return _solver;
     }
   }
 
   protected TreeNode _root;
-  protected GHIK.HeuristicMode _mode;
   protected List<List<NodeState>> _initial, _bestSubchains;
   protected float _bestVal = 99999f, _bestDist = 999999f;
   protected boolean _innerChains = false;
@@ -68,15 +67,9 @@ public class GHIKTree extends Solver {
   protected HashMap<Node, Node> _endEffectorMap = new HashMap<>();
   protected float _distanceFactor = 2;
 
-
-  public GHIKTree(Node root) {
-    this(root, GHIK.HeuristicMode.BFIK_TRIK);
-  }
-
-  public GHIKTree(Node root, GHIK.HeuristicMode mode) {
+  public FABRIKTree(Node root) {
     super();
     TreeNode dummy = new TreeNode(); //Dummy TreeNode to Keep Reference
-    _mode = mode;
     _setup(dummy, root, new ArrayList<Node>());
     //dummy must have only a child,
     this._root = dummy._children().get(0);
@@ -93,11 +86,11 @@ public class GHIKTree extends Solver {
     if (node == null) return;
     if (node.children().isEmpty()) { //Is a leaf node, hence we've found a chain of the structure
       list.add(node);
-      GHIK solver = new GHIK(list, _mode);
+      ChainSolver solver = new ChainSolver(list);
       new TreeNode(parent, solver);
     } else if (node.children().size() > 1) {
       list.add(node);
-      GHIK solver = new GHIK(list, _mode);
+      ChainSolver solver = new ChainSolver(list);
       TreeNode treeNode = new TreeNode(parent, solver);
       for (Node child : node.children()) {
         List<Node> newList = new ArrayList<>();
@@ -127,10 +120,10 @@ public class GHIKTree extends Solver {
     targets.clear();
     effs_centroid.set(0,0,0);
     targets_centroid.set(0,0,0);
-    Node node = usableChain ? treeNode._solver.context().usableChain().get(treeNode._solver.context().endEffectorId()) : treeNode._solver.context().chain().get(treeNode._solver.context().endEffectorId());
+    Node node = usableChain ? treeNode._solver.internalChain().get(treeNode._solver.chain().size() -1) : treeNode._solver.chain().get(treeNode._solver.chain().size() -1);
     int i = 0;
     for(TreeNode leaf : treeNode._reachableLeafNodes){
-      Vector eff = node.location(leaf._solver.context().chain().get(leaf._solver.context().endEffectorId()));
+      Vector eff = node.location(leaf._solver.chain().get(leaf._solver.chain().size() - 1));
       if(eff.magnitude() < 0.1) continue; //Too near from current node
       Vector target = node.location(leaf._solver.target());
       effs.add(eff);
@@ -143,115 +136,42 @@ public class GHIKTree extends Solver {
     targets_centroid.divide(i);
   }
 
-  protected void _applyFIXO(TreeNode treeNode, Quaternion expected, Node target, float w){
-    expected.set(new Quaternion());
-    Node node = treeNode._solver.context().usableChain().get(treeNode._solver.context().endEffectorId());
-    int i = 0;
-    for(TreeNode leaf : treeNode._reachableLeafNodes){
-      Node reacheable = leaf._solver.context().chain().get(leaf._solver.context().endEffectorId());
-      if(treeNode._solver.direction()) {
-        Quaternion or = _findExpectedOrientation(node, reacheable, leaf._solver.target());
-        if(i > 0) expected.set(Quaternion.slerp(expected, or, 0.5f, false));
-        else expected.set(or);
-      }
-      i++;
+  protected float _applyBestRotation(TreeNode treeNode, Node target, List<Vector> effs, List<Vector> targets){
+    ChainSolver solver = treeNode._solver;
+    Quaternion rotation = FA3R.FA3R(targets, effs, new Vector(), new Vector());
+    if(solver.chain().get(solver.chain().size() - 1).constraint() != null)
+      rotation = solver.chain().get(solver.chain().size() - 1).constraint().constrainRotation(rotation, solver.chain().get(solver.chain().size() - 1));
+    //Avoid the rotation if the angle is relative small
+    if(Math.abs(rotation.angle()) < Math.toRadians(2))
+      rotation = new Quaternion();
+    //constraint the rotation
+    float prev_error = 0;
+    float next_error = 0;
+    for(int k = 0; k < effs.size(); k++){
+      prev_error += Math.pow(Vector.subtract(effs.get(k), targets.get(k)).magnitude(), _distanceFactor);
+      next_error += Math.pow(Vector.subtract(rotation.rotate(effs.get(k)), targets.get(k)).magnitude(), _distanceFactor);
     }
+    prev_error /= effs.size();
+    next_error /= effs.size();
 
-    expected.set(Quaternion.slerp(new Quaternion(), expected, w));
-    expected.set(Util.clampRotation(expected, (float) Math.toRadians(20.f)));
-
-    Quaternion q = target.orientation().get();
-    float e = _checkFIXO(treeNode, expected);
-    if(e > 0.2f){
-      q.compose(expected);
-    }
-    q.normalize();
+    Quaternion q = solver.chain().get(solver.chain().size() - 1).orientation().get();
     target.setOrientation(q.get());
 
-    //treeNode._solver.context().usableChain().get(treeNode._solver.context().endEffectorId()).setOrientation(target.orientation().get());
-  }
-
-  //Check if rotation is good enough
-  protected float _checkFIXO(TreeNode treeNode, Quaternion expected){
-    Node node = treeNode._solver.context().usableChain().get(treeNode._solver.context().endEffectorId());
-    Quaternion q = node.orientation();
-    Quaternion inv = node.orientation().inverse();
-    float curr = 0, exp = 0;
-
-    for(TreeNode leaf : treeNode._reachableLeafNodes){
-      Node reacheable = leaf._solver.context().chain().get(leaf._solver.context().endEffectorId());
-      Quaternion q_cur = reacheable.orientation();
-      if(treeNode._solver.direction()) {
-        Quaternion relative = Quaternion.compose(inv, q_cur);
-        Quaternion q_exp = Quaternion.compose(q, expected);
-        q_exp.compose(relative);
-        exp += Context.quaternionDistance(q_exp, leaf._solver.target().orientation());
-        curr += Context.quaternionDistance(q_cur, leaf._solver.target().orientation());
-      }
+    if(next_error < prev_error) {
+      target.rotate(rotation);
+      solver.chain().get(solver.chain().size() - 1).rotate(rotation);
+      return next_error;
     }
-    return curr - exp;
-  }
-
-
-
-  protected void _fixEndEffectorOrientation(TreeNode treeNode, Node target){
-    Node eff = treeNode._solver.context().chain().get(treeNode._solver.context().endEffectorId());
-    //Node ueff = treeNode._solver.context().usableChain().get(treeNode._solver.context().endEffectorId());
-    Quaternion rotation = Quaternion.compose(eff.orientation().inverse(), target.orientation());
-    rotation.normalize();
-
-    //Quaternion urotation = Quaternion.compose(ueff.orientation().inverse(), target.orientation());
-    //urotation.normalize();
-    if(Math.abs(rotation.angle()) > Math.toRadians(2)) {
-      eff.rotate(rotation);
-    }
-  }
-
-
-  protected Quaternion _findExpectedOrientation(Node node, Node eff, Node target){
-    //Find relative orientation
-    Quaternion delta = Quaternion.compose(eff.orientation().inverse(), target.orientation());
-    //delta = Quaternion.compose(node.orientation(), delta);
-    return delta;
-  }
-
-
-  protected float _applyBestRotation(TreeNode treeNode, Node target, List<Vector> effs, List<Vector> targets){
-      GHIK solver = treeNode._solver;
-      Quaternion rotation = FA3R.FA3R(targets, effs, new Vector(), new Vector());
-      if(solver.context().chain().get(solver.context().endEffectorId()).constraint() != null)
-          rotation = solver.context().chain().get(solver.context().endEffectorId()).constraint().constrainRotation(rotation, solver.context().chain().get(solver.context().endEffectorId()));
-      //Avoid the rotation if the angle is relative small
-      if(Math.abs(rotation.angle()) < Math.toRadians(2))
-          rotation = new Quaternion();
-      //constraint the rotation
-      float prev_error = 0;
-      float next_error = 0;
-      for(int k = 0; k < effs.size(); k++){
-          prev_error += Math.pow(Vector.subtract(effs.get(k), targets.get(k)).magnitude(), _distanceFactor);
-          next_error += Math.pow(Vector.subtract(rotation.rotate(effs.get(k)), targets.get(k)).magnitude(), _distanceFactor);
-      }
-      prev_error /= effs.size();
-      next_error /= effs.size();
-
-      Quaternion q = solver.context().chain().get(solver.context().endEffectorId()).orientation().get();
-      target.setOrientation(q.get());
-
-      if(next_error < prev_error) {
-          target.rotate(rotation);
-          solver.context().chain().get(solver.context().endEffectorId()).rotate(rotation);
-          return next_error;
-      }
-      return prev_error;
+    return prev_error;
   }
 
   protected void moveParent(TreeNode node){
     if(node._parent == null) return;
-    Node subbase = node._parent._solver.context().chain().get(node._parent._solver.context().chain().size() - 1);
-    GHIK solver = node._solver;
+    Node subbase = node._parent._solver.chain().get(node._parent._solver.chain().size() - 1);
+    ChainSolver solver = node._solver;
     if(solver.target() == null) return;
     //target w.r.t subbase
-    Vector v1 = subbase.location(solver.context().chain().get(solver.context().endEffectorId()).position());
+    Vector v1 = subbase.location(solver.chain().get(solver.chain().size() - 1).position());
     Vector v2 = subbase.location(solver.target().position());
     Quaternion q = new Quaternion(v1, v2);
     q = new Quaternion(q.axis(), q.angle() * 0.2f);
@@ -261,29 +181,21 @@ public class GHIKTree extends Solver {
 
   protected boolean _solve(TreeNode treeNode) {
     if (treeNode._children == null || treeNode._children.isEmpty()) {
-      GHIK solver = treeNode._solver;
+      ChainSolver solver = treeNode._solver;
       if (solver.target() == null) return false;
       //solve ik for current chain
-      solver.reset();
-      if(solver.direction()){
-        //Apply to EFF
-        Context context = solver.heuristic().context();
-        NodeInformation j_i = context.usableChainInformation().get(solver.context().endEffectorId());
-        Quaternion deltaDirection = CCD.findOrientationalCCD(j_i, context.usableChainInformation().get(context.endEffectorId()), context.worldTarget());
-        deltaDirection = Util.clampRotation(deltaDirection, (float) Math.PI, (iteration() + 1.f) / maxIterations());
-        j_i.rotateAndUpdateCache(deltaDirection, true, context.endEffectorInformation());
-      }
+      solver._reset();
       for(int i = 0; i < solver.maxIterations(); i++) {
         solver.solve(); //Perform a given number of iterations
       }
       moveParent(treeNode);
       return true;
     }
-    GHIK solver = treeNode._solver;
+    ChainSolver solver = treeNode._solver;
     for (TreeNode child : treeNode._children()) {
       _solve(child);
     }
-    solver.reset();
+    solver._reset();
     List<Vector> effs = new ArrayList<Vector>();
     List<Vector> targets = new ArrayList<Vector>();
     Vector effs_centroid = new Vector();
@@ -296,26 +208,20 @@ public class GHIKTree extends Solver {
       Vector targetTranslation = Vector.subtract(targets_centroid, effs_centroid);
       targetTranslation.multiply(_trust < 0.6f ? 0.8f : 1);
       Node target = solver.target() == null ? Node.detach(new Vector(), new Quaternion(), 1f) : solver.target();
-      target.setPosition(solver.context().chain().get(solver.context().endEffectorId()).worldLocation(targetTranslation).get());
+      target.setPosition(solver.chain().get(solver.chain().size() - 1).worldLocation(targetTranslation).get());
       solver.setTarget(target);
       //Apply best rotation
       _applyBestRotation(treeNode, target, effs, targets);
       _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid,false);
       targetTranslation = Vector.subtract(targets_centroid, effs_centroid);
-      target.setPosition(solver.context().chain().get(solver.context().endEffectorId()).worldLocation(targetTranslation));
-      if (solver.context().chain().size() >= 2) {//If the solver has only a node we require to update manually
-        if (!(solver.context().chain().size() == 2 && solver.context().chain().get(1).translation().magnitude() < 0.1)) {
-          solver.reset();
+      target.setPosition(solver.chain().get(solver.chain().size() - 1).worldLocation(targetTranslation));
+      if (solver.chain().size() >= 2) {//If the solver has only a node we require to update manually
+        if (!(solver.chain().size() == 2 && solver.chain().get(1).translation().magnitude() < 0.1)) {
+          solver._reset();
           //Apply best rotation & keep best state
-          if(_innerChains){
-            _applyFIXO(treeNode, expected, target, 0.5f * (iteration() + 1.f) / maxIterations() );
-            _fixEndEffectorOrientation(treeNode, target);
-          }
           _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid, true);
           targetTranslation = Vector.subtract(targets_centroid, effs_centroid);
-          target.setPosition(solver.context().usableChain().get(solver.context().endEffectorId()).worldLocation(targetTranslation));
-
-          //if(solver.direction()) CCD.applyOrientationalCCD(solver.heuristic(), solver.context().endEffectorId());
+          target.setPosition(solver.internalChain().get(solver.chain().size() - 1).worldLocation(targetTranslation));
           solver.solve(); //Perform a given number of iterations
           //Fix eff rotation
           _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid, false);
@@ -343,7 +249,7 @@ public class GHIKTree extends Solver {
 
   protected boolean _changed(TreeNode treeNode) {
     if (treeNode == null) return false;
-    if (treeNode._solver().changed() && treeNode._children().isEmpty()) return true;
+    if (treeNode._solver()._changed() && treeNode._children().isEmpty()) return true;
     for (TreeNode child : treeNode._children()) {
       if (_changed(child)) return true;
     }
@@ -358,47 +264,9 @@ public class GHIKTree extends Solver {
   protected void _reset(TreeNode treeNode) {
     if (treeNode == null) return;
     //Update Previous Target
-    if (treeNode._solver().changed()) treeNode._solver().reset();
+    if (treeNode._solver()._changed()) treeNode._solver()._reset();
     for (TreeNode child : treeNode._children()) {
       _reset(child);
-    }
-  }
-
-  public void set2D(boolean is2D) {
-    _set2D(is2D, _root);
-  }
-
-  protected void _set2D(boolean is2D, TreeNode treeNode) {
-    if (treeNode == null) return;
-    if (treeNode._children().isEmpty()) treeNode._solver.context().set2D(is2D);
-    for (TreeNode child : treeNode._children()) {
-      _setDirection(is2D, child, false);
-    }
-  }
-
-  public void setDirection(boolean direction) {
-    _setDirection(direction, _root, false);
-  }
-
-
-  public void setDirection(boolean direction, boolean innerChains) {
-    _setDirection(direction, _root, innerChains);
-  }
-
-  protected void _setDirection(boolean direction, TreeNode treeNode, boolean innerchains) {
-    if (treeNode == null) return;
-    if (treeNode._children().isEmpty()){
-      treeNode._solver.context().setDirection(direction);
-      treeNode._solver.context().setOrientationWeight(0.5f);
-    } else{
-      if(innerchains) {
-        _innerChains = true;
-        treeNode._solver.context().setDirection(direction);
-        treeNode._solver.context().setOrientationWeight(0.3f);
-      }
-    }
-    for (TreeNode child : treeNode._children()) {
-      _setDirection(direction, child, innerchains);
     }
   }
 
@@ -433,7 +301,7 @@ public class GHIKTree extends Solver {
   }
 
   public Node head() {
-    return (Node) _root._solver().context().chain().get(0);
+    return (Node) _root._solver().chain().get(0);
   }
 
 
@@ -441,7 +309,7 @@ public class GHIKTree extends Solver {
     if (treeNode == null) return false;
     boolean nodeFound = false;
     Node prevEndEffector = null;
-    for (Node node : treeNode._solver().context().chain()) {
+    for (Node node : treeNode._solver().chain()) {
       if (node == endEffector) {
         treeNode._solver().setTarget(endEffector, target);
         nodeFound = true;
@@ -453,7 +321,7 @@ public class GHIKTree extends Solver {
       treeNode._outerTarget = true;
       _endEffectorMap.put(endEffector, target);
       if(prevEndEffector != null){
-          _endEffectorMap.remove(prevEndEffector);
+        _endEffectorMap.remove(prevEndEffector);
       }
       return true;
     }
@@ -509,19 +377,6 @@ public class GHIKTree extends Solver {
     }
   }
 
-  public void setSearchingAreaRadius(float radius, boolean relativeToBoneAvg) {
-    _setSearchingAreaRadius(radius, relativeToBoneAvg, _root);
-  }
-
-  protected void _setSearchingAreaRadius(float radius, boolean relativeToBoneAvg, TreeNode node) {
-    if (node == null) return;
-    node._solver.context().setSearchingAreaRadius(radius, relativeToBoneAvg);
-    for (TreeNode child : node._children()) {
-      _setSearchingAreaRadius(radius, relativeToBoneAvg, child);
-    }
-
-  }
-
   protected List<List<NodeState>> _obtainSubchains(){
     List<List<NodeState>> subchains = new ArrayList<>();
     List<TreeNode> frontier = new ArrayList<>();
@@ -529,7 +384,7 @@ public class GHIKTree extends Solver {
     while(!frontier.isEmpty()){
       TreeNode current = frontier.remove(0);
       if(current._children != null) frontier.addAll(current._children);
-      subchains.add(Context.saveState(current._solver.context().chainInformation()));
+      subchains.add(saveState(current._solver.chain()));
     }
     return subchains;
   }
@@ -547,7 +402,7 @@ public class GHIKTree extends Solver {
       for(int j = 0; j < sa.size(); j++){
         NodeState na = sa.get(j);
         NodeState nb = sb.get(j);
-        d += Context.quaternionDistance(na.orientation(), nb.orientation());
+        d += Context.quaternionDistance(na._orientation, nb._orientation);
       }
       dist += d;
     }
@@ -557,13 +412,13 @@ public class GHIKTree extends Solver {
 
   protected void _updateToBest(){
     for(List<NodeState> state : _bestSubchains){
-      Context.restoreState(state);
+      restoreState(state);
     }
   }
 
   protected float _trust = 1f;
   protected void _saveBest(){
-    float curError = error(_root._solver.direction());
+    float curError = error();
     if(Math.abs(curError - _bestVal) < _maxError*2){
       List<List<NodeState>> sc = _obtainSubchains();
       float dist = distance(sc, _initial);
@@ -590,15 +445,39 @@ public class GHIKTree extends Solver {
     }
   }
 
-  public void setOrientationWeight(float orientationWeight) {
-    setOrientationWeight(orientationWeight, _root);
+  //Save Chain states
+  protected static class NodeState{
+    protected Node _node;
+    protected Quaternion _rotation, _orientation;
+    protected Vector _translation, _position;
+    protected NodeState(Node node) {
+         _node = node;
+        _rotation = node.rotation().get();
+        _translation = node.translation().get();
+        _orientation = node.orientation().get();
+        _position = node.position().get();
+      }
   }
 
-  protected void setOrientationWeight(float orientationWeight, TreeNode node) {
-    if (node == null) return;
-    node._solver.context().setOrientationWeight(orientationWeight);
-    for (TreeNode child : node._children()) {
-      setOrientationWeight(orientationWeight, child);
+  public static List<NodeState> saveState(List<? extends Node> chain){
+    List<NodeState> state = new ArrayList<NodeState>();
+    for(Node  node : chain){
+      state.add(new NodeState(node));
+    }
+    return state;
+  }
+
+  public static void restoreState(List<NodeState> state){
+    for(NodeState nodeState : state){
+      Node node = nodeState._node;
+      Constraint constraint = node.constraint();
+      node.setConstraint(null);
+      node.setRotation(nodeState._rotation.get());
+      node.setTranslation(nodeState._translation.get());
+      node.setConstraint(constraint);
     }
   }
+
+
+
 }

@@ -13,7 +13,7 @@ public class GHIK extends Solver {
         CCD, BFIK_CCD,
         TIK, BFIK_TIK,
         TRIK, BFIK_TRIK,
-        ECTIK, ECTIK_DAMP, TRIK_ECTIK
+        ECTIK, BFIK
     }
     protected boolean _swapOrder = false; //swap the order of traversal at each iteration
     protected boolean _enableDeadLockResolution = false;
@@ -85,16 +85,8 @@ public class GHIK extends Solver {
                 _heuristic = new ECTIK(_context);
                 break;
             }
-            case ECTIK_DAMP: {
-                _heuristic = new ECTIK(_context);
-                //expressive parameters
-                context().enableDelegation(true);
-                context().setClamping(0.4f);
-                context().setMaxAngle((float)Math.toRadians(40));
-                break;
-            }
-            case TRIK_ECTIK: {
-                _heuristic = new TRIKECTIK(_context);
+            case BFIK: {
+                _heuristic = new BFIK(_context);
                 break;
             }
         }
@@ -188,12 +180,6 @@ public class GHIK extends Solver {
 
         //Define dead lock if eff does not move to a better position after a given number of iterations
         if (_enableDeadLockResolution) {
-            if (Math.abs(_best - _previousBest) < Float.MIN_VALUE) { //DeadLock
-                context().incrementDeadlockCounter();
-            } else {
-                context().resetDeadlockCounter();
-            }
-
             if (context().deadlockCounter() == context().lockTimesCriteria()) { //apply random perturbation
                 for (int i = 0; i < _context.endEffectorId(); i++) {
                     NodeInformation j_i = _context.usableChainInformation().get(i);
@@ -207,9 +193,14 @@ public class GHIK extends Solver {
             }
         }
         _update(); //update if required
-
-
-        _previousBest = _best;
+        if (_enableDeadLockResolution) {
+            if (Math.abs(_best - _previousBest) < _maxError * 0.1f) { //DeadLock
+                context().incrementDeadlockCounter();
+            } else {
+                context().resetDeadlockCounter();
+            }
+            _previousBest = _best;
+        }
 
         if (error() <= _maxError) {
             return true;

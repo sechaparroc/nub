@@ -35,6 +35,7 @@ public abstract class Solver {
   protected boolean _change_temp = false; //TODO : Clean this!
   protected boolean _accumulate = false;
   protected float _accumulatedError = 0; //TODO : Remove this
+  protected int _accumulatedTimes = 0; //TODO : Remove this
 
   /*Getters and setters*/
   public int lastIteration() {
@@ -69,8 +70,12 @@ public abstract class Solver {
     _change_temp = change;
   }
 
-  public float accumulatedError() {
-    return _accumulatedError;
+  public float averageError() {
+    return _accumulatedError /_accumulatedTimes;
+  }
+
+  public int accumulatedTimes(){
+    return _accumulatedTimes;
   }
 
   /*Performs an Iteration of Solver Algorithm */
@@ -119,6 +124,7 @@ public abstract class Solver {
     if (_iterations >= _maxIterations) {
       if (_accumulate) {
         _accumulatedError += error();
+        _accumulatedTimes += 1;
         _accumulate = false;
       }
     }

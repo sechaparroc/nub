@@ -14,6 +14,7 @@ package nub.core;
 import nub.ik.solver.Solver;
 import nub.ik.solver.GHIKTree;
 import nub.ik.solver.GHIK;
+import nub.ik.solver.fabrik.FABRIKTree;
 import nub.primitives.Matrix;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
@@ -4899,7 +4900,7 @@ public class Graph {
    * Registers the given chain to solve IK.
    */
   public static GHIKTree registerTreeSolver(Node node){
-    return registerTreeSolver(node, GHIK.HeuristicMode.TRIK_ECTIK);
+    return registerTreeSolver(node, GHIK.HeuristicMode.BFIK);
   }
 
   public static GHIKTree registerTreeSolver(Node node, GHIK.HeuristicMode mode) {
@@ -4927,6 +4928,34 @@ public class Graph {
     _solverTasks.put(solver, task);
     return solver;
   }
+
+  public static FABRIKTree registerFABRIKTreeSolver(Node node) {
+    for (Solver solver : _solvers) {
+      Node head = null;
+      if (solver instanceof GHIKTree) head = ((GHIKTree) solver).head();
+      else if (solver instanceof FABRIKTree) head = ((FABRIKTree) solver).head();
+      else return null;
+      //If Head is Contained in any structure do nothing
+      if (!((isReachable(head) && isReachable(node)) ? Node.path(head, node) : new ArrayList<Node>()).isEmpty())
+        return null;
+    }
+
+    FABRIKTree solver;
+
+    solver = new FABRIKTree(node);
+    _solvers.add(solver);
+    //Add task
+    Task task = new Task() {
+      @Override
+      public void execute() {
+        solver.solve();
+      }
+    };
+    task.run(40);
+    _solverTasks.put(solver, task);
+    return solver;
+  }
+
 
   /**
    * Unregisters the IK Solver with the given Frame as branchRoot
@@ -4966,6 +4995,7 @@ public class Graph {
   public static boolean addIKTarget(Node endEffector, Node target) {
     for (Solver solver : _solvers) {
       if (solver instanceof GHIKTree && ((GHIKTree) solver).addTarget(endEffector, target)) return true;
+      else if (solver instanceof FABRIKTree && ((FABRIKTree) solver).addTarget(endEffector, target)) return true;
     }
     return false;
   }

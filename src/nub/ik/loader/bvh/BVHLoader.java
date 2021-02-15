@@ -2,6 +2,7 @@ package nub.ik.loader.bvh;
 
 import nub.core.Node;
 import nub.core.constraint.AxisPlaneConstraint;
+import nub.core.constraint.Constraint;
 import nub.core.constraint.SphericalPolygon;
 import nub.ik.animation.Posture;
 import nub.ik.animation.Skeleton;
@@ -369,9 +370,9 @@ public class BVHLoader {
         Vector up = rest.orthogonalVector();
         Vector right = Vector.cross(rest, up, null);
 
-        if (node.children() == null || node.children().isEmpty()) {
+        /*if (node.children() == null || node.children().isEmpty()) {
             return;
-        }
+        }*/
 
         float minTwist = 0, maxTwist = 0;
         float upAngle = 0, downAngle = 0, leftAngle = 0, rightAngle = 0;
@@ -404,20 +405,28 @@ public class BVHLoader {
             if(rightAng > 0)rightAngle = Math.max(rightAng, rightAngle);
             else leftAngle = Math.max(-rightAng, leftAngle);
         }
+        if(upAngle + downAngle + leftAngle + rightAngle + minTwist + maxTwist < 0.00001f){
+            node.setConstraint(new Constraint() {
+                @Override
+                public Quaternion constrainRotation(Quaternion rotation, Node node) {
+                    return new Quaternion();
+                }
+            });
+        } else {
+            //Clamp angles between 5 and 178 degrees
+            upAngle = Math.min(Math.max(upAngle + (float) Math.toRadians(3), (float) Math.toRadians(5)), (float) Math.toRadians(178));
+            downAngle = Math.min(Math.max(downAngle + (float) Math.toRadians(3), (float) Math.toRadians(5)), (float) Math.toRadians(178));
+            leftAngle = Math.min(Math.max(leftAngle + (float) Math.toRadians(3), (float) Math.toRadians(5)), (float) Math.toRadians(178));
+            rightAngle = Math.min(Math.max(rightAngle + (float) Math.toRadians(3), (float) Math.toRadians(5)), (float) Math.toRadians(178));
+            minTwist = Math.min(Math.max(minTwist + (float) Math.toRadians(3), (float) Math.toRadians(5)), (float) Math.toRadians(178));
+            maxTwist = Math.min(Math.max(maxTwist + (float) Math.toRadians(3), (float) Math.toRadians(5)), (float) Math.toRadians(178));
 
-        //Clamp angles between 5 and 178 degrees
-        upAngle = Math.min(Math.max(upAngle + (float) Math.toRadians(3), (float) Math.toRadians(5)), (float) Math.toRadians(178));
-        downAngle = Math.min(Math.max(downAngle + (float) Math.toRadians(3), (float) Math.toRadians(5)), (float) Math.toRadians(178));
-        leftAngle = Math.min(Math.max(leftAngle + (float) Math.toRadians(3), (float) Math.toRadians(5)), (float) Math.toRadians(178));
-        rightAngle = Math.min(Math.max(rightAngle + (float) Math.toRadians(3), (float) Math.toRadians(5)), (float) Math.toRadians(178));
-        minTwist = Math.min(Math.max(minTwist + (float) Math.toRadians(3), (float) Math.toRadians(5)), (float) Math.toRadians(178));
-        maxTwist = Math.min(Math.max(maxTwist + (float) Math.toRadians(3), (float) Math.toRadians(5)), (float) Math.toRadians(178));
-
-        SphericalPolygon constraint = new SphericalPolygon(downAngle, upAngle, leftAngle, rightAngle);
-        constraint.setTranslationConstraintType(AxisPlaneConstraint.Type.FREE);
-        constraint.setRestRotation(restRotation.get(), right.get(), rest.get());
-        constraint.setTwistLimits(minTwist, maxTwist);
-        node.setConstraint(constraint);
+            SphericalPolygon constraint = new SphericalPolygon(downAngle, upAngle, leftAngle, rightAngle);
+            constraint.setTranslationConstraintType(AxisPlaneConstraint.Type.FREE);
+            constraint.setRestRotation(restRotation.get(), right.get(), rest.get());
+            constraint.setTwistLimits(minTwist, maxTwist);
+            node.setConstraint(constraint);
+        }
     }
 
     protected float calcAngle(Vector axis, Quaternion q){

@@ -393,8 +393,8 @@ public class Context {
 
   public float error(Vector effPosition, Vector targetPosition, Quaternion effRotation, Quaternion targetRotation, float w1, float w2) {
     float error = positionError(effPosition, targetPosition);
-    float radius = _radiusRelativeToBoneAverage ? _searchingAreaRadius * _avgLength : _searchingAreaRadius;
     if (_direction) {
+      float radius = _radiusRelativeToBoneAverage ? _searchingAreaRadius * _avgLength : _searchingAreaRadius;
       float orientationError = orientationError(effRotation, targetRotation, false);
       float weighted_error = radius != 0 ? error / radius : error;
       error = w1 * weighted_error + w2 * orientationError;

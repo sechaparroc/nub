@@ -20,6 +20,7 @@ import nub.core.constraint.Hinge;
 import nub.ik.solver.Solver;
 import nub.ik.solver.GHIKTree;
 import nub.ik.solver.GHIK;
+import nub.ik.solver.fabrik.FABRIKTree;
 import nub.primitives.Quaternion;
 import nub.processing.Scene;
 import processing.core.PConstants;
@@ -126,6 +127,7 @@ public class Skeleton {
       if(!joint._boneDepth) pg.hint(PConstants.ENABLE_DEPTH_TEST);
     });
     joint.enableHint(Node.CONSTRAINT);
+    joint.enableHint(Node.AXES, radius * 4);
 
     _joints.put(name, joint);
     _names.put(joint, name);
@@ -173,6 +175,7 @@ public class Skeleton {
 
     Node joint = new Node();
     joint.enableHint(Node.CONSTRAINT);
+    joint.enableHint(Node.AXES, radius * 4);
     joint.enableHint(Node.BONE, color, radius, radius / 4f, _depth);
     _joints.put(name, joint);
     _names.put(joint, name);
@@ -481,7 +484,7 @@ public class Skeleton {
   }
 
   public void enableIK(){
-    enableIK(GHIK.HeuristicMode.TRIK_ECTIK);
+    enableIK(GHIK.HeuristicMode.BFIK);
   }
 
   public void enableIK(GHIK.HeuristicMode mode) {
@@ -494,6 +497,19 @@ public class Skeleton {
       }
     }
   }
+
+  public void enableFABRIK() {
+    for (Node child : _reference.children()) {
+      if (!_solvers.containsKey(child)) {
+        FABRIKTree s = Graph.registerFABRIKTreeSolver(child);
+        _solvers.put(child, s);
+      } else {
+        Graph.executeSolver(_solvers.get(child));
+      }
+    }
+  }
+
+
 
   public void enableDirection(boolean direction){
     for(Solver s : solvers()){

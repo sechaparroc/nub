@@ -3,22 +3,22 @@ package nub.ik.solver.heuristic;
 import nub.ik.solver.Context;
 import nub.ik.solver.NodeInformation;
 
-public class TRIKECTIK extends Heuristic{
+public class BFIK extends Heuristic{
     protected float _trikFraction; //Define how much of the iterations must use TRIK Heuristic (parameter between 0 and 1)
     protected int _trikIterations;
     protected int _times = 2; //How many passes of CCD must the combined heuristic perform
 
-    public TRIKECTIK(Context context, float trikFraction, int times){
+    public BFIK(Context context, float trikFraction, int times){
         super(context);
         _trikFraction = trikFraction;
         _times = times;
     }
 
-    public TRIKECTIK(Context context, float trikFraction){
+    public BFIK(Context context, float trikFraction){
         this(context, trikFraction, 2);
     }
 
-    public TRIKECTIK(Context context){
+    public BFIK(Context context){
         this(context, 0.3f, 2);
     }
 
