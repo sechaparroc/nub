@@ -426,6 +426,15 @@ public class GHIKTree extends Solver {
     return e;
   }
 
+  public float orientationError() {
+    float e = 0;
+    for (Map.Entry<Node, Node> entry : _endEffectorMap.entrySet()) {
+      e += Math.toRadians(Context.orientationError(entry.getKey().orientation(), entry.getValue().orientation(), true));
+    }
+    return e;
+  }
+
+
 
   @Override
   public void setTarget(Node endEffector, Node target) {

@@ -388,7 +388,7 @@ public class Context {
   }
 
   public float error(NodeInformation eff, Node target) {
-    return error(eff.positionCache(), target.position(), eff.orientationCache(), target.orientation(), 1, 1);
+    return error(eff.positionCache(), target.position(), eff.orientationCache(), target.orientation(), 1, _orientationWeight);
   }
 
   public float error(Vector effPosition, Vector targetPosition, Quaternion effRotation, Quaternion targetRotation, float w1, float w2) {

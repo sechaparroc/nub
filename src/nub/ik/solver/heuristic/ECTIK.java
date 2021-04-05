@@ -87,7 +87,7 @@ public class ECTIK extends Heuristic {
       float dist;
       if (!context.applyDelegation()) {
         dist = context.error(endEffector, context.worldTarget());
-        if(!context.direction())dist /= context.searchingAreaRadius();
+        //if(!context.direction())dist /= context.searchingAreaRadius();
       } else {
         float error = context.positionError(endEffector.positionCache(), target);
         if (context.direction()) {

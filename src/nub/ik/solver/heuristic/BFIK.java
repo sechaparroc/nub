@@ -38,11 +38,13 @@ public class BFIK extends Heuristic{
         if(_context.currentIteration() < _trikIterations){
             TRIK.applyTRIK(this, i);
             NodeInformation j_i1 = _context.usableChainInformation().get(i + 1);
-            //for (int t = 0; t < _times; t++) {
+            for (int t = 0; t < _times; t++) {
                 j_i1.updateCacheUsingReference();
-                CCD.applyCCD(this, i + 1, 0.3f);
-                CCD.applyCCD(this, i, 0.3f);
-            //}
+                CCD.applyCCD(this, i + 1,1);
+                CCD.applyCCD(this, i, 1);
+                //CCD.applyCCD(this, i + 1, 0.3f);
+                //CCD.applyCCD(this, i, 0.3f);
+            }
             j_i1.updateCacheUsingReference();
             CCD.applyOrientationalCCD(this, i + 1);
         } else {

@@ -13,7 +13,8 @@ public class GHIK extends Solver {
         CCD, BFIK_CCD,
         TIK, BFIK_TIK,
         TRIK, BFIK_TRIK,
-        ECTIK, BFIK
+        ECTIK, BFIK,
+        FABRIK //DELETE THIS SOON!
     }
     protected boolean _swapOrder = false; //swap the order of traversal at each iteration
     protected boolean _enableDeadLockResolution = false;
@@ -24,10 +25,15 @@ public class GHIK extends Solver {
     //Steady state algorithm
     protected float _current = 10e10f, _best = 10e10f, _previousBest = 10e10f;
     protected int _stepCounter;
+    protected int _totalDeadlock = 0;
     protected boolean _enableTwist; //Apply a twisting movement after each step
 
     public void enableDeadLockResolution(boolean enable) {
         _enableDeadLockResolution = enable;
+    }
+
+    public int totalDeadlock(){
+        return _totalDeadlock;
     }
 
 
@@ -134,7 +140,7 @@ public class GHIK extends Solver {
             if (context().topToBottom()) _context.usableChainInformation().get(i + 1).updateCacheUsingReference();
 
         } else {
-            _current = context().error(_context.usableChainInformation().get(_context.endEffectorId()), _context.worldTarget(), 1, 1);
+            _current = context().error(_context.usableChainInformation().get(_context.endEffectorId()), _context.worldTarget());
             _update();
             _stepCounter = -1;
             if (_swapOrder) {
@@ -175,16 +181,19 @@ public class GHIK extends Solver {
         //Obtain current error
         if (_context.debug()) System.out.println("Current error: ");
         //measure the error depending on position error
-        _current = context().error(_context.usableChainInformation().get(_context.endEffectorId()), _context.worldTarget(), 1, 1);
+        _current = context().error(_context.usableChainInformation().get(_context.endEffectorId()), _context.worldTarget());
         if (_context.debug()) System.out.println("Current :" + _current + "Best error: " + _best);
 
         //Define dead lock if eff does not move to a better position after a given number of iterations
         if (_enableDeadLockResolution) {
             if (context().deadlockCounter() == context().lockTimesCriteria()) { //apply random perturbation
+                _totalDeadlock += 1;
                 for (int i = 0; i < _context.endEffectorId(); i++) {
                     NodeInformation j_i = _context.usableChainInformation().get(i);
                     Quaternion q = Quaternion.random();
-                    if (j_i.node().constraint() != null) j_i.node().constraint().constrainRotation(q, j_i.node());
+                    if (j_i.node().constraint() != null){
+                        q = j_i.node().constraint().constrainRotation(q, j_i.node());
+                    }
                     j_i.node().rotate(q);
                 }
                 NodeInformation._updateCache(_context.usableChainInformation());
@@ -253,6 +262,7 @@ public class GHIK extends Solver {
         NodeInformation._copyCache(_context.chainInformation(), _context.usableChainInformation());
 
         _iterations = 0;
+        _totalDeadlock = 0;
         _context.update();
         if (_context.target() != null) {
             _best = context().error(_context.chainInformation().get(_context.endEffectorId()), _context.target());
@@ -262,8 +272,8 @@ public class GHIK extends Solver {
         _previousBest = 10e10f;
 
         if (_context.singleStep()) _stepCounter = 0;
-        if (_swapOrder && context().topToBottom() == false) {
-            context().setTopToBottom(true);
+        if (_swapOrder && context().topToBottom() == true) {
+            context().setTopToBottom(false);
         }
         context().resetDeadlockCounter();
     }
