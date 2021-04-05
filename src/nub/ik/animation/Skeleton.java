@@ -127,7 +127,6 @@ public class Skeleton {
       if(!joint._boneDepth) pg.hint(PConstants.ENABLE_DEPTH_TEST);
     });
     joint.enableHint(Node.CONSTRAINT);
-    joint.enableHint(Node.AXES, radius * 4);
 
     _joints.put(name, joint);
     _names.put(joint, name);
@@ -175,7 +174,7 @@ public class Skeleton {
 
     Node joint = new Node();
     joint.enableHint(Node.CONSTRAINT);
-    joint.enableHint(Node.AXES, radius * 4);
+    //joint.enableHint(Node.AXES, radius * 4);
     joint.enableHint(Node.BONE, color, radius, radius / 4f, _depth);
     _joints.put(name, joint);
     _names.put(joint, name);
@@ -315,6 +314,15 @@ public class Skeleton {
   public void setBoneWidth(float width){
     for(Node node : BFS()){
       node._boneWidth = width;
+    }
+  }
+
+  public void setAxes(boolean axes){
+    for(Node node : BFS()){
+      if(axes)
+        node.enableHint(Node.AXES, node._boneRadius * 4);
+      else
+        node.disableHint(Node.AXES);
     }
   }
 
