@@ -58,7 +58,6 @@ public class Hinge extends Constraint {
   protected Quaternion _orientation = new Quaternion();
 
   protected AxisPlaneConstraint.Type transConstraintType = AxisPlaneConstraint.Type.FORBIDDEN;
-  ;
   protected Vector transConstraintDir = new Vector();
 
 

@@ -58,7 +58,6 @@ public abstract class ConeConstraint extends Constraint {
   protected float _min = (float) Math.PI, _max = (float) Math.PI;
 
   protected AxisPlaneConstraint.Type transConstraintType = AxisPlaneConstraint.Type.FORBIDDEN;
-  ;
   protected Vector transConstraintDir = new Vector();
 
 
