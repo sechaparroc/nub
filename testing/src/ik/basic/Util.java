@@ -4,7 +4,7 @@ import nub.core.Node;
 import nub.core.constraint.*;
 import nub.ik.solver.Solver;
 import nub.ik.solver.GHIK;
-import nub.ik.solver.fabrik.ChainSolver;
+import nub.ik.solver.fabrik.FABRIKChain;
 import nub.primitives.Quaternion;
 import nub.primitives.Vector;
 import nub.processing.Scene;
@@ -21,7 +21,7 @@ public class Util {
   public enum ConstraintType {NONE, HINGE, CONE_POLYGON, CONE_ELLIPSE, CONE_CIRCLE, MIX, HINGE_ALIGNED, MIX_CONSTRAINED}
 
   public enum SolverType {
-    CCD, TIK, TRIK, BFIK, FABRIK
+    CCD, TIK, TRIK, BFIK, FABRIK, BFTRIK, BFCCD, BFTIK, FABRIK_O, FABRIK_P
   }
 
   public static Solver createSolver(SolverType type, List<Node> structure) {
@@ -44,8 +44,29 @@ public class Util {
         return solver;
       }
 
-      case FABRIK:{
-        return new ChainSolver(structure);
+      case FABRIK_O:{
+        return new FABRIKChain(structure);
+      }
+
+      case FABRIK_P:{
+        FABRIKChain solver = new FABRIKChain(structure);
+        solver.workInOrientationSpace(false);
+        return solver;
+      }
+
+      case BFCCD:{
+        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.BFIK_CCD);
+        return solver;
+      }
+
+      case BFTIK:{
+        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.BFIK_TIK);
+        return solver;
+      }
+
+      case BFTRIK:{
+        GHIK solver = new GHIK(structure, GHIK.HeuristicMode.BFIK_TRIK);
+        return solver;
       }
 
       default:
@@ -340,10 +361,6 @@ public class Util {
       GHIK GHIK = (GHIK) solver;
       String heuristics = String.join(" ", GHIK.mode().name().split("_"));
 
-      if(GHIK.mode().name().equals("TRIK_ECTIK")){
-        heuristics = "B&FIK";
-      }
-
       if (GHIK.enableTwist()) heuristics += "\nWITH TWIST";
       String error = "\n Error (pos): " + String.format("%.3f", solver.error() / sk_height * 100f) + "%";
       error += "\nAverage error : " + String.format("%.3f", solver.averageError()  / sk_height * 100f) + "%";
@@ -353,8 +370,8 @@ public class Util {
       }
       //error += "\nAverage error : " + solver.accumulatedError() / fc;
       pg.text(heuristics + error + "\n iter : " + solver.lastIteration(), pos.x() - 30, pos.y() + 10, pos.x() + 30, pos.y() + 50);
-    } else if (solver instanceof ChainSolver) {
-      String heuristics = "FABRIK";
+    } else if (solver instanceof FABRIKChain) {
+      String heuristics = "FABRIKC";
       String error = "\n Error (pos): " + String.format("%.3f", solver.error() / sk_height * 100f) + "%";
       error += "\nAverage error : " + String.format("%.3f", (solver.averageError() ) / sk_height * 100f) + "%";
       pg.text(heuristics + error + "\n iter : " + solver.lastIteration(), pos.x() - 30, pos.y() + 10, pos.x() + 30, pos.y() + 50);

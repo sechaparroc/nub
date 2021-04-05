@@ -41,7 +41,7 @@ public class Viewer extends PApplet {
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/cmu-mocap-master/data/055/55_02.bvh",
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/cmu-mocap-master/data/090/90_28.bvh",
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/cmu-mocap-master/data/088/88_01.bvh",
-            "C:/Users/olgaa/Documents/Processing/libraries/nub/examples/BVHReconstruction/0017_ParkourRoll001.bvh",
+            "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Human/0017_ParkourRoll001.bvh",
 
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__Idle.bvh",//Dragon 22
             "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Dragon/__Idle2.bvh",//Dragon 22
@@ -93,6 +93,7 @@ public class Viewer extends PApplet {
     };
 
     String path = paths[12];
+    //String path = "C:/Users/olgaa/Desktop/Sebas/Thesis/BVH_FILES/truebones/Truebone_Z-OO/Cat/CAT_TPOSE.bvh";
     boolean absolute = true;
     Scene scene;
     BVHLoader loader;
@@ -121,7 +122,6 @@ public class Viewer extends PApplet {
     }
 
     public void setup(){
-        frameRate(15);
         PFont myFont = createFont("Times New Roman Bold", 50, true);
         textFont(myFont);
 
@@ -326,7 +326,7 @@ public class Viewer extends PApplet {
                 //EFF own rotation is known
                 //skeleton.joint(entry.getKey()).setRotation(desired.rotation().get());
                 entry.getValue().setTranslation(loader.skeleton().reference().location(desired));
-                entry.getValue().setOrientation(loader.skeleton().reference().displacement(new Quaternion(), desired));
+                entry.getValue().setRotation(loader.skeleton().reference().displacement(new Quaternion(), desired));
             }
             skeleton.IKStatusChanged();
             skeleton.solveIK();

@@ -15,7 +15,7 @@ import processing.event.MouseEvent;
 
 public class AnimationTest extends PApplet {
   Scene mainScene, controlScene, focus;
-  String jsonPath = "/testing/data/skeletons/Dummy_constrained.json";
+  String jsonPath = "/testing/data/skeletons/Hand_constrained.json";
   String shapePath = "/testing/data/objs/Rigged_Hand.obj";
   String texturePath = "/testing/data/objs/HAND_C.jpg";
   String interpolatorPath = "/testing/data/skeletons/hand_interpolation.json";

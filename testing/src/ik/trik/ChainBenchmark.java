@@ -3,6 +3,7 @@ package ik.trik;
 import ik.basic.Util;
 import nub.core.*;
 import nub.ik.solver.*;
+import nub.ik.solver.fabrik.FABRIKChain;
 import nub.primitives.*;
 import nub.core.constraint.*;
 import nub.processing.*;
@@ -17,9 +18,9 @@ import java.util.Random;
 
 public class ChainBenchmark extends PApplet {
   int numJoints = 10; //Define the number of joints that each chain will contain
-  Util.ConstraintType constraintType = Util.ConstraintType.MIX_CONSTRAINED  ; //Choose among Util.ConstraintType.NONE, Util.ConstraintType.HINGE, Util.ConstraintType.CONE_ELLIPSE, Util.ConstraintType.MIX_CONSTRAINED
-  //Util.SolverType solversType[] = {Util.SolverType.CCD, Util.SolverType.TIK, Util.SolverType.TRIK, Util.SolverType.BFIK_TRIK, Util.SolverType.TRIK_ECTIK}; //If you wish you could add other Solvers, as the ones listed above
-  Util.SolverType solversType[] = {Util.SolverType.BFIK, Util.SolverType.TRIK, Util.SolverType.TIK, Util.SolverType.CCD}; //If you wish you could add other Solvers, as the ones listed above
+  Util.ConstraintType constraintType = Util.ConstraintType.NONE  ; //Choose among Util.ConstraintType.NONE, Util.ConstraintType.HINGE, Util.ConstraintType.CONE_ELLIPSE, Util.ConstraintType.MIX_CONSTRAINED
+  //Util.SolverType solversType[] = {Util.SolverType.FABRIK_CORE, Util.SolverType.TRIK, Util.SolverType.FABRIK, Util.SolverType.CCD, Util.SolverType.BFTRIK}; //If you wish you could add other Solvers, as the ones listed above
+  Util.SolverType solversType[] = {Util.SolverType.FABRIK_P, Util.SolverType.FABRIK_O, Util.SolverType.TRIK, Util.SolverType.BFIK }; //If you wish you could add other Solvers, as the ones listed above
   //-------------------------------------------------------------------
   //Scene Parameters
   ArrayList<Solver> solvers; //Will store Solvers
@@ -49,7 +50,7 @@ public class ChainBenchmark extends PApplet {
     PFont myFont = createFont("Times New Roman Bold", 50, true);
     textFont(myFont);
 
-    cols = new int[]{color(50, 168, 82),color(49, 138, 168), color(82, 38, 191), color(209, 178, 38)};
+    cols = new int[]{color(50, 168, 82),color(49, 138, 168), color(82, 38, 191), color(209, 178, 38), color(100, 78, 138)};
 
     scene = new Scene(this);
     if (scene.is3D()) scene.setType(Graph.Type.ORTHOGRAPHIC);
@@ -58,6 +59,8 @@ public class ChainBenchmark extends PApplet {
     int numSolvers = solversType.length;
     //1. Create Targets
     targets = Util.createTargets(numSolvers, scene, targetRadius);
+    for(Node n : targets) n.enableHint(Node.AXES, targetRadius * 2f);
+
     float alpha = 1.f * width / height > 1.5f ? 0.5f * width / height : 0.5f;
     alpha *= numSolvers / 4f; //avoid undesirable overlapping
     //2. Generate IK Chains
@@ -96,10 +99,18 @@ public class ChainBenchmark extends PApplet {
         //Uncomment to swap order from root to end effector and end effector to root at each iteration
         //solver.setSwapOrder(true);
         //Uncomment to enable Dead lock resolution
-        ((GHIK)solver).enableDeadLockResolution(true);
+        if(solver instanceof  GHIK){
+          ((GHIK)solver).enableDeadLockResolution(true);
+          ((GHIK)solver).context().setSingleStep(false);
+        }
+        if(solver instanceof FABRIKChain) {
+          ((FABRIKChain) solver).enableDeadLockResolution(true);
+        }
         //solver.context().setLockTimesCriteria(10);
       }
+
       //7. Set targets
+      structures.get(i).get(numJoints - 1).enableHint(Node.AXES, targetRadius * 2);
       solvers.get(i).setTarget(structures.get(i).get(numJoints - 1), targets.get(i));
       targets.get(i).setPosition(structures.get(i).get(numJoints - 1).position());
       //8. Register task
@@ -123,6 +134,8 @@ public class ChainBenchmark extends PApplet {
 
   }
 
+  float o_w = 0.5f, o_r = 1;
+
   public void draw() {
     lights();
     ambientLight(102, 102, 102);
@@ -141,15 +154,13 @@ public class ChainBenchmark extends PApplet {
     stroke(255);
     textAlign(CENTER, CENTER);
     text("IK Heuristic steps benchmark", width * 0.5f, 100);
+    text("O w " + o_w + " Searching rad " + o_r, width * 0.5f, 150);
     popStyle();
 
     for (int i = 0; i < solvers.size(); i++) {
       Util.printInfo(scene, solvers.get(i), structures.get(i).get(0).position(), sk_height);
     }
     scene.endHUD();
-
-
-
   }
 
 
@@ -181,7 +192,7 @@ public class ChainBenchmark extends PApplet {
       float maxDist = 0, minDist = Float.MAX_VALUE;
       Vector prev = node.position();
       int n = 100;
-      float step = 1f;
+      float step = 0.1f;
       float last = step * n;
 
 
@@ -246,8 +257,25 @@ public class ChainBenchmark extends PApplet {
     if (key == '0') {
       for (Solver s : solvers) {
         if (s instanceof GHIK){
-          ((GHIK) s).context().setOrientationWeight(1);
           ((GHIK) s).context().setDirection(!((GHIK) s).context().direction());
+        }
+      }
+    }
+
+    if(key == 'h'){
+      for (Solver s : solvers) {
+        if (s instanceof GHIK){
+          ((GHIK) s).context().setOrientationWeight(((GHIK) s).context().orientationWeight() + 1);
+          o_w = ((GHIK) s).context().orientationWeight() + 1;
+        }
+      }
+    }
+
+    if(key == 'j'){
+      for (Solver s : solvers) {
+        if (s instanceof GHIK){
+          ((GHIK) s).context().setSearchingAreaRadius(((GHIK) s).context().searchingAreaRadius() + 1);
+          o_r = ((GHIK) s).context().searchingAreaRadius() + 1;
         }
       }
     }
@@ -299,6 +327,8 @@ public class ChainBenchmark extends PApplet {
     } else if (mouseButton == RIGHT) {
       if (targets.contains(scene.node())) {
         for (Node target : targets) scene.translateNode(target, scene.mouseDX(), scene.mouseDY(), 0, 0);
+        if(solve) for (Solver s : solvers) s.solve();
+
       } else {
         scene.mouseTranslate();
       }
