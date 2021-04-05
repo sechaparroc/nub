@@ -16,7 +16,7 @@ public class FABRIKTree extends Solver{
     protected TreeNode _parent;
     protected List<TreeNode> _children;
     protected List<TreeNode> _reachableLeafNodes; //Reachable leaf nodes from current node
-    protected ChainSolver _solver;
+    protected FABRIKChain _solver;
     protected float _weight = 1.f;
     protected boolean _outerTarget = false;
 
@@ -25,14 +25,14 @@ public class FABRIKTree extends Solver{
       _reachableLeafNodes = new ArrayList<TreeNode>();
     }
 
-    public TreeNode(ChainSolver solver) {
+    public TreeNode(FABRIKChain solver) {
       this._solver = solver;
       _solver.setTimesPerFrame(1);
       _children = new ArrayList<TreeNode>();
       _reachableLeafNodes = new ArrayList<TreeNode>();
     }
 
-    protected TreeNode(TreeNode parent, ChainSolver solver) {
+    protected TreeNode(TreeNode parent, FABRIKChain solver) {
       this._parent = parent;
       this._solver = solver;
       if (parent != null) {
@@ -54,7 +54,7 @@ public class FABRIKTree extends Solver{
       return _weight;
     }
 
-    protected ChainSolver _solver() {
+    protected FABRIKChain _solver() {
       return _solver;
     }
   }
@@ -86,11 +86,11 @@ public class FABRIKTree extends Solver{
     if (node == null) return;
     if (node.children().isEmpty()) { //Is a leaf node, hence we've found a chain of the structure
       list.add(node);
-      ChainSolver solver = new ChainSolver(list);
+      FABRIKChain solver = new FABRIKChain(list);
       new TreeNode(parent, solver);
     } else if (node.children().size() > 1) {
       list.add(node);
-      ChainSolver solver = new ChainSolver(list);
+      FABRIKChain solver = new FABRIKChain(list);
       TreeNode treeNode = new TreeNode(parent, solver);
       for (Node child : node.children()) {
         List<Node> newList = new ArrayList<>();
@@ -120,10 +120,10 @@ public class FABRIKTree extends Solver{
     targets.clear();
     effs_centroid.set(0,0,0);
     targets_centroid.set(0,0,0);
-    Node node = usableChain ? treeNode._solver.internalChain().get(treeNode._solver.chain().size() -1) : treeNode._solver.chain().get(treeNode._solver.chain().size() -1);
+    Node node = usableChain ? treeNode._solver.context().usableChain().get(treeNode._solver.context().chain().size() -1) : treeNode._solver.context().chain().get(treeNode._solver.context().chain().size() -1);
     int i = 0;
     for(TreeNode leaf : treeNode._reachableLeafNodes){
-      Vector eff = node.location(leaf._solver.chain().get(leaf._solver.chain().size() - 1));
+      Vector eff = node.location(leaf._solver.context().chain().get(leaf._solver.context().chain().size() - 1));
       if(eff.magnitude() < 0.1) continue; //Too near from current node
       Vector target = node.location(leaf._solver.target());
       effs.add(eff);
@@ -137,10 +137,10 @@ public class FABRIKTree extends Solver{
   }
 
   protected float _applyBestRotation(TreeNode treeNode, Node target, List<Vector> effs, List<Vector> targets){
-    ChainSolver solver = treeNode._solver;
+    FABRIKChain solver = treeNode._solver;
     Quaternion rotation = FA3R.FA3R(targets, effs, new Vector(), new Vector());
-    if(solver.chain().get(solver.chain().size() - 1).constraint() != null)
-      rotation = solver.chain().get(solver.chain().size() - 1).constraint().constrainRotation(rotation, solver.chain().get(solver.chain().size() - 1));
+    if(solver.context().chain().get(solver.context().chain().size() - 1).constraint() != null)
+      rotation = solver.context().chain().get(solver.context().chain().size() - 1).constraint().constrainRotation(rotation, solver.context().chain().get(solver.context().chain().size() - 1));
     //Avoid the rotation if the angle is relative small
     if(Math.abs(rotation.angle()) < Math.toRadians(2))
       rotation = new Quaternion();
@@ -154,12 +154,12 @@ public class FABRIKTree extends Solver{
     prev_error /= effs.size();
     next_error /= effs.size();
 
-    Quaternion q = solver.chain().get(solver.chain().size() - 1).orientation().get();
+    Quaternion q = solver.context().chain().get(solver.context().chain().size() - 1).orientation().get();
     target.setOrientation(q.get());
 
     if(next_error < prev_error) {
       target.rotate(rotation);
-      solver.chain().get(solver.chain().size() - 1).rotate(rotation);
+      solver.context().chain().get(solver.context().chain().size() - 1).rotate(rotation);
       return next_error;
     }
     return prev_error;
@@ -167,11 +167,11 @@ public class FABRIKTree extends Solver{
 
   protected void moveParent(TreeNode node){
     if(node._parent == null) return;
-    Node subbase = node._parent._solver.chain().get(node._parent._solver.chain().size() - 1);
-    ChainSolver solver = node._solver;
+    Node subbase = node._parent._solver.context().chain().get(node._parent._solver.context().chain().size() - 1);
+    FABRIKChain solver = node._solver;
     if(solver.target() == null) return;
     //target w.r.t subbase
-    Vector v1 = subbase.location(solver.chain().get(solver.chain().size() - 1).position());
+    Vector v1 = subbase.location(solver.context().chain().get(solver.context().chain().size() - 1).position());
     Vector v2 = subbase.location(solver.target().position());
     Quaternion q = new Quaternion(v1, v2);
     q = new Quaternion(q.axis(), q.angle() * 0.2f);
@@ -181,7 +181,7 @@ public class FABRIKTree extends Solver{
 
   protected boolean _solve(TreeNode treeNode) {
     if (treeNode._children == null || treeNode._children.isEmpty()) {
-      ChainSolver solver = treeNode._solver;
+      FABRIKChain solver = treeNode._solver;
       if (solver.target() == null) return false;
       //solve ik for current chain
       solver._reset();
@@ -191,7 +191,7 @@ public class FABRIKTree extends Solver{
       moveParent(treeNode);
       return true;
     }
-    ChainSolver solver = treeNode._solver;
+    FABRIKChain solver = treeNode._solver;
     for (TreeNode child : treeNode._children()) {
       _solve(child);
     }
@@ -208,20 +208,20 @@ public class FABRIKTree extends Solver{
       Vector targetTranslation = Vector.subtract(targets_centroid, effs_centroid);
       targetTranslation.multiply(_trust < 0.6f ? 0.8f : 1);
       Node target = solver.target() == null ? Node.detach(new Vector(), new Quaternion(), 1f) : solver.target();
-      target.setPosition(solver.chain().get(solver.chain().size() - 1).worldLocation(targetTranslation).get());
+      target.setPosition(solver.context().chain().get(solver.context().chain().size() - 1).worldLocation(targetTranslation).get());
       solver.setTarget(target);
       //Apply best rotation
       _applyBestRotation(treeNode, target, effs, targets);
       _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid,false);
       targetTranslation = Vector.subtract(targets_centroid, effs_centroid);
-      target.setPosition(solver.chain().get(solver.chain().size() - 1).worldLocation(targetTranslation));
-      if (solver.chain().size() >= 2) {//If the solver has only a node we require to update manually
-        if (!(solver.chain().size() == 2 && solver.chain().get(1).translation().magnitude() < 0.1)) {
+      target.setPosition(solver.context().chain().get(solver.context().chain().size() - 1).worldLocation(targetTranslation));
+      if (solver.context().chain().size() >= 2) {//If the solver has only a node we require to update manually
+        if (!(solver.context().chain().size() == 2 && solver.context().chain().get(1).translation().magnitude() < 0.1)) {
           solver._reset();
           //Apply best rotation & keep best state
           _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid, true);
           targetTranslation = Vector.subtract(targets_centroid, effs_centroid);
-          target.setPosition(solver.internalChain().get(solver.chain().size() - 1).worldLocation(targetTranslation));
+          target.setPosition(solver.context().usableChain().get(solver.context().chain().size() - 1).worldLocation(targetTranslation));
           solver.solve(); //Perform a given number of iterations
           //Fix eff rotation
           _findLeafNodesTargets(treeNode, effs, targets, effs_centroid, targets_centroid, false);
@@ -294,6 +294,15 @@ public class FABRIKTree extends Solver{
     return e;
   }
 
+  public float orientationError() {
+    float e = 0;
+    for (Map.Entry<Node, Node> entry : _endEffectorMap.entrySet()) {
+      e += Math.toRadians(Context.orientationError(entry.getKey().orientation(), entry.getValue().orientation(), true));
+    }
+    return e;
+  }
+
+
 
   @Override
   public void setTarget(Node endEffector, Node target) {
@@ -301,7 +310,7 @@ public class FABRIKTree extends Solver{
   }
 
   public Node head() {
-    return (Node) _root._solver().chain().get(0);
+    return (Node) _root._solver().context().chain().get(0);
   }
 
 
@@ -309,7 +318,7 @@ public class FABRIKTree extends Solver{
     if (treeNode == null) return false;
     boolean nodeFound = false;
     Node prevEndEffector = null;
-    for (Node node : treeNode._solver().chain()) {
+    for (Node node : treeNode._solver().context().chain()) {
       if (node == endEffector) {
         treeNode._solver().setTarget(endEffector, target);
         nodeFound = true;
@@ -384,7 +393,7 @@ public class FABRIKTree extends Solver{
     while(!frontier.isEmpty()){
       TreeNode current = frontier.remove(0);
       if(current._children != null) frontier.addAll(current._children);
-      subchains.add(saveState(current._solver.chain()));
+      subchains.add(saveState(current._solver.context().chain()));
     }
     return subchains;
   }
